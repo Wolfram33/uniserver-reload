@@ -772,6 +772,14 @@ object Main: TMain
           Caption = 'PHP version 83'
           OnClick = MMSS_php83Click
         end
+        object MMSS_php84: TMenuItem
+          Caption = 'PHP version 84'
+          OnClick = MMSS_php84Click
+        end
+        object MMSS_php85: TMenuItem
+          Caption = 'PHP version 85'
+          OnClick = MMSS_php85Click
+        end
       end
       object MMS_select_php_config: TMenuItem
         Caption = 'Select PHP configuration file'

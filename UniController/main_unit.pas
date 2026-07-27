@@ -78,6 +78,8 @@ type
     MMSS_php81: TMenuItem;
     MMSS_php82: TMenuItem;
     MMSS_php83: TMenuItem;
+    MMSS_php84: TMenuItem;
+    MMSS_php85: TMenuItem;
 
     MMS_hosts: TMenuItem;
     MMS_select_portable_browser: TMenuItem;
@@ -194,6 +196,8 @@ type
     procedure MMSS_php81Click(Sender: TObject);
     procedure MMSS_php82Click(Sender: TObject);
     procedure MMSS_php83Click(Sender: TObject);
+    procedure MMSS_php84Click(Sender: TObject);
+    procedure MMSS_php85Click(Sender: TObject);
     procedure MMSS_select_page_to_display1Click(Sender: TObject);
     procedure MMSS_select_page_to_display2Click(Sender: TObject);
     procedure MMSS_apache_access_logClick(Sender: TObject);
@@ -564,6 +568,48 @@ begin
    begin
     UENV_PHP_SELECT :='php83';                                           // Set var
     us_ini_set(USF_US_USER_INI,'USER','PHP_SELECT','php83');             // save to config file
+   end;
+ windows.SetEnvironmentVariable('PHP_SELECT',PCHAR(UENV_PHP_SELECT)); // PHP Select
+ us_set_environment_path;  // Set new enironment paths
+ us_update_server_state;   // Update menus
+ msg_restart_apache;       // Reminder dialog - Restart apache.
+ us_update_go_pear_config; // update paths in go-pear configuration file
+
+end;
+
+procedure TMain.MMSS_php84Click(Sender: TObject);
+begin
+  //Toggle action
+ If Main.MMSS_php84.Checked Then
+   begin
+    UENV_PHP_SELECT :='None';                                            // Set var
+    us_ini_set(USF_US_USER_INI,'USER','PHP_SELECT','None');              // save to config file
+   end
+ Else
+   begin
+    UENV_PHP_SELECT :='php84';                                           // Set var
+    us_ini_set(USF_US_USER_INI,'USER','PHP_SELECT','php84');             // save to config file
+   end;
+ windows.SetEnvironmentVariable('PHP_SELECT',PCHAR(UENV_PHP_SELECT)); // PHP Select
+ us_set_environment_path;  // Set new enironment paths
+ us_update_server_state;   // Update menus
+ msg_restart_apache;       // Reminder dialog - Restart apache.
+ us_update_go_pear_config; // update paths in go-pear configuration file
+
+end;
+
+procedure TMain.MMSS_php85Click(Sender: TObject);
+begin
+  //Toggle action
+ If Main.MMSS_php85.Checked Then
+   begin
+    UENV_PHP_SELECT :='None';                                            // Set var
+    us_ini_set(USF_US_USER_INI,'USER','PHP_SELECT','None');              // save to config file
+   end
+ Else
+   begin
+    UENV_PHP_SELECT :='php85';                                           // Set var
+    us_ini_set(USF_US_USER_INI,'USER','PHP_SELECT','php85');             // save to config file
    end;
  windows.SetEnvironmentVariable('PHP_SELECT',PCHAR(UENV_PHP_SELECT)); // PHP Select
  us_set_environment_path;  // Set new enironment paths
@@ -1289,6 +1335,40 @@ begin
                us_display_in_editor(USF_PHP_INI_PROD_83);
       end;
      //--End PHP 83 selected
+
+     //--PHP 84 selected
+    If UENV_PHP_SELECT ='php84' then
+      begin
+       //Edit config php_test.ini
+           If UENV_PHP_INI_SELECT ='php_test.ini' Then
+              us_display_in_editor(USF_PHP_INI_TEST_84);
+
+       //Edit config php_development.ini
+           If UENV_PHP_INI_SELECT ='php_development.ini' Then
+              us_display_in_editor(USF_PHP_INI_DEV_84);
+
+       //Edit config php_production.ini
+           If UENV_PHP_INI_SELECT ='php_production.ini' Then
+               us_display_in_editor(USF_PHP_INI_PROD_84);
+      end;
+     //--End PHP 84 selected
+
+     //--PHP 85 selected
+    If UENV_PHP_SELECT ='php85' then
+      begin
+       //Edit config php_test.ini
+           If UENV_PHP_INI_SELECT ='php_test.ini' Then
+              us_display_in_editor(USF_PHP_INI_TEST_85);
+
+       //Edit config php_development.ini
+           If UENV_PHP_INI_SELECT ='php_development.ini' Then
+              us_display_in_editor(USF_PHP_INI_DEV_85);
+
+       //Edit config php_production.ini
+           If UENV_PHP_INI_SELECT ='php_production.ini' Then
+               us_display_in_editor(USF_PHP_INI_PROD_85);
+      end;
+     //--End PHP 85 selected
 end;
 
 procedure TMain.MMS_edit_uniformserver_pacClick(Sender: TObject);

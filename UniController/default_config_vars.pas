@@ -45,7 +45,7 @@ Var
    UENV_US_ROOTF_SSL   :String;  // US_ROOTF_SSL   Apache server root folder ssl environment var
 
    UENV_MYSQL_TCP_PORT :string;  // MYSQL_TCP_PORT MySQL port environment var
-   UENV_PHP_SELECT     :string;  // PHP_SELECT     PHP Selected php70, php71, php72, php73, php74, php80, php81, php82, php83 environment var
+   UENV_PHP_SELECT     :string;  // PHP_SELECT     PHP Selected php70, php71, php72, php73, php74, php80, php81, php82, php83, php84, php85 environment var
    UENV_PHP_INI_SELECT :string;  // PHP_INI_SELECT PHP configuration file php_test.ini php_development.ini php_production.ini environment var
 
   //==== End User Config and Enironment variables
@@ -177,6 +177,8 @@ Var
  US_PHP81          :String;  // PHP 81 root folder
  US_PHP82          :String;  // PHP 82 root folder
  US_PHP83          :String;  // PHP 83 root folder
+ US_PHP84          :String;  // PHP 84 root folder
+ US_PHP85          :String;  // PHP 85 root folder
 
  US_PHP70_EXT      :String;  // PHP 70 extensions folder
  US_PHP71_EXT      :String;  // PHP 71 extensions folder
@@ -187,6 +189,8 @@ Var
  US_PHP81_EXT      :String;  // PHP 81 extensions folder
  US_PHP82_EXT      :String;  // PHP 82 extensions folder
  US_PHP83_EXT      :String;  // PHP 83 extensions folder
+ US_PHP84_EXT      :String;  // PHP 84 extensions folder
+ US_PHP85_EXT      :String;  // PHP 85 extensions folder
 
  US_PERL           :String;  // Perl main folder
  US_PERL_BIN       :String;  // Perl binary folder
@@ -289,6 +293,16 @@ Var
  USF_PHP_INI_PROD_83  :String;   // PHP 8.3.* configuration production
  USF_PHP_INI_DEV_83   :String;   // PHP 8.3.* configuration development
  USF_PHP_INI_CLI_83   :String;   // PHP 8.3.* command line config
+
+ USF_PHP_INI_TEST_84  :String;   // PHP 8.4.* configuration
+ USF_PHP_INI_PROD_84  :String;   // PHP 8.4.* configuration production
+ USF_PHP_INI_DEV_84   :String;   // PHP 8.4.* configuration development
+ USF_PHP_INI_CLI_84   :String;   // PHP 8.4.* command line config
+
+ USF_PHP_INI_TEST_85  :String;   // PHP 8.5.* configuration
+ USF_PHP_INI_PROD_85  :String;   // PHP 8.5.* configuration production
+ USF_PHP_INI_DEV_85   :String;   // PHP 8.5.* configuration development
+ USF_PHP_INI_CLI_85   :String;   // PHP 8.5.* command line config
 
  //-- msmtp configuration
  USF_MSMTP_EXE          :String;  // MSMTP executable
@@ -430,6 +444,8 @@ begin
   US_PHP81           := UniConPath +  '\core\php81';        // PHP 81 root folder
   US_PHP82           := UniConPath +  '\core\php82';        // PHP 82 root folder
   US_PHP83           := UniConPath +  '\core\php83';        // PHP 83 root folder
+  US_PHP84           := UniConPath +  '\core\php84';        // PHP 84 root folder
+  US_PHP85           := UniConPath +  '\core\php85';        // PHP 85 root folder
 
   US_PHP70_EXT       := UniConPath +  '\core\php70\extensions'; // PHP 70 extensions folder
   US_PHP71_EXT       := UniConPath +  '\core\php71\extensions'; // PHP 71 extensions folder
@@ -440,6 +456,8 @@ begin
   US_PHP81_EXT       := UniConPath +  '\core\php81\extensions'; // PHP 81 extensions folder
   US_PHP82_EXT       := UniConPath +  '\core\php82\extensions'; // PHP 82 extensions folder
   US_PHP83_EXT       := UniConPath +  '\core\php83\extensions'; // PHP 83 extensions folder
+  US_PHP84_EXT       := UniConPath +  '\core\php84\extensions'; // PHP 84 extensions folder
+  US_PHP85_EXT       := UniConPath +  '\core\php85\extensions'; // PHP 85 extensions folder
 
   US_PERL            := UniConPath +  '\core\perl';         // Perl main folder
   US_PERL_BIN        := UniConPath +  '\core\perl\bin';     // Perl binary folder
@@ -535,6 +553,16 @@ begin
   USF_PHP_INI_PROD_83  := US_PHP83 + '\php_production.ini';  // PHP 8.3.* configuration production
   USF_PHP_INI_DEV_83   := US_PHP83 + '\php_development.ini'; // PHP 8.3.* configuration development
   USF_PHP_INI_CLI_83   := US_PHP83 + '\php-cli.ini';         // PHP 8.3.* command line config
+
+  USF_PHP_INI_TEST_84  := US_PHP84 + '\php_test.ini';        // PHP 8.4.* configuration
+  USF_PHP_INI_PROD_84  := US_PHP84 + '\php_production.ini';  // PHP 8.4.* configuration production
+  USF_PHP_INI_DEV_84   := US_PHP84 + '\php_development.ini'; // PHP 8.4.* configuration development
+  USF_PHP_INI_CLI_84   := US_PHP84 + '\php-cli.ini';         // PHP 8.4.* command line config
+
+  USF_PHP_INI_TEST_85  := US_PHP85 + '\php_test.ini';        // PHP 8.5.* configuration
+  USF_PHP_INI_PROD_85  := US_PHP85 + '\php_production.ini';  // PHP 8.5.* configuration production
+  USF_PHP_INI_DEV_85   := US_PHP85 + '\php_development.ini'; // PHP 8.5.* configuration development
+  USF_PHP_INI_CLI_85   := US_PHP85 + '\php-cli.ini';         // PHP 8.5.* command line config
 
   //-- msmtp configuration
   USF_MSMTP_EXE          := US_MSMTP + '\msmtp.exe';            // MSMTP executable
@@ -762,7 +790,7 @@ begin
 
    UENV_PHP_SELECT := Ini2.ReadString('USER','PHP_SELECT','php83');          // Get user selected PHP version
 
-   //If folders php70, php71, php72, php73, php74, php80, php81, php82 or php83 do not exist
+   //If folders php70, php71, php72, php73, php74, php80, php81, php82, php83, php84 or php85 do not exist
    //or incorrect PHP_SELECT value, override user config. Set var PHP_SELECT to None.
    php_valid := False; // Assume PHP not installed
    If (DirectoryExists(US_PHP70) And (UENV_PHP_SELECT ='php70')) Then php_valid := True;
@@ -774,6 +802,8 @@ begin
    If (DirectoryExists(US_PHP81) And (UENV_PHP_SELECT ='php81')) Then php_valid := True;
    If (DirectoryExists(US_PHP82) And (UENV_PHP_SELECT ='php82')) Then php_valid := True;
    If (DirectoryExists(US_PHP83) And (UENV_PHP_SELECT ='php83')) Then php_valid := True;
+   If (DirectoryExists(US_PHP84) And (UENV_PHP_SELECT ='php84')) Then php_valid := True;
+   If (DirectoryExists(US_PHP85) And (UENV_PHP_SELECT ='php85')) Then php_valid := True;
    If Not php_valid Then UENV_PHP_SELECT :='None';
 
    UENV_PHP_INI_SELECT := Ini2.ReadString('USER','PHP_INI_SELECT','php_test.ini');

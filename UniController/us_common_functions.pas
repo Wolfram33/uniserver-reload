@@ -1449,7 +1449,8 @@ function valid_server_name(server_name:string;display_str:string): boolean;
         end
       Else
         begin
-         If Not ExecRegExpr('^[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,4}(/\S*)?$', server_name) Then
+         // TLD length 2-63 per RFC 1035; allows modern TLDs like .test, .online, .museum
+         If Not ExecRegExpr('^[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,63}(/\S*)?$', server_name) Then
           begin
             valid_input := False;
             SysUtils.Beep; // Alert user
@@ -1570,7 +1571,8 @@ function valid_admin_email(admin_email:string;display_str:string): boolean;
       end
     Else
      begin
-      If Not ExecRegExpr('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$', admin_email) Then
+      // TLD length 2-63 per RFC 1035; allows modern TLDs like .online, .museum
+      If Not ExecRegExpr('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,63}$', admin_email) Then
         begin
           valid_input := False;
           SysUtils.Beep; // Alert user

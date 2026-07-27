@@ -1,0 +1,53 @@
+name: Build
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build UniController & UniService
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Lazarus
+        run: choco install lazarus -y --no-progress
+        shell: pwsh
+
+      - name: Locate lazbuild
+        id: lazbuild
+        shell: pwsh
+        run: |
+          $candidates = @('C:\lazarus\lazbuild.exe', 'C:\tools\lazarus\lazbuild.exe')
+          $lazbuild = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $lazbuild) {
+            $found = Get-ChildItem -Path 'C:\' -Filter lazbuild.exe -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($found) { $lazbuild = $found.FullName }
+          }
+          if (-not $lazbuild) { throw 'lazbuild.exe not found' }
+          "path=$lazbuild" >> $env:GITHUB_OUTPUT
+
+      - name: Build UniController (Release)
+        shell: pwsh
+        run: |
+          & '${{ steps.lazbuild.outputs.path }}' --build-mode=Release UniController\UniController.lpi
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build UniService
+        shell: pwsh
+        run: |
+          & '${{ steps.lazbuild.outputs.path }}' UniService\UniService.lpi
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: uniserver-binaries
+          path: |
+            UniController/UniController.exe
+            UniService/UniService.exe
+          if-no-files-found: error

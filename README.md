@@ -1,5 +1,7 @@
 # Uniform Server Reload
 
+[![Build](https://github.com/Wolfram33/uniserver-reload/actions/workflows/build.yml/badge.svg)](https://github.com/Wolfram33/uniserver-reload/actions/workflows/build.yml)
+
 **A community fork of [The Uniform Server](https://github.com/iamola/uniserver), aiming to continue development.**
 
 The original project — a free lightweight WAMP server solution for Windows — has seen no commits since November 2023.
@@ -20,10 +22,23 @@ The actual server binaries (Apache, PHP, MySQL, phpMyAdmin, …) are not part of
 
 ## Development goals
 
-* [ ] Support for current PHP versions (8.4 / 8.5) in the controller's version switching
+* [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching
+* [x] Automated builds via CI (Lazarus build on Windows runners)
 * [ ] Package current Apache / MariaDB / OpenSSL versions
-* [ ] Work through the open issues of the upstream repository
-* [ ] Automated builds via CI (Free Pascal cross-compilation)
+* [ ] Work through the open issues of the upstream repository (see below)
+
+## Upstream issue triage
+
+Status of the [open upstream issues](https://github.com/iamola/uniserver/issues) in this fork:
+
+| Issue | Status | Notes |
+|---|---|---|
+| [#18](https://github.com/iamola/uniserver/issues/18) PHP 8.4 & 8.5 modules | **Controller side done** | UniController and UniService now recognise `core\php84` and `core\php85`. Packaging the actual PHP builds as modules is a separate release task. |
+| [#20](https://github.com/iamola/uniserver/issues/20) Future PHP versions | **Partially addressed** | php84/php85 added following the existing per-version pattern; a fully dynamic version discovery remains future work. |
+| [#21](https://github.com/iamola/uniserver/issues/21) Host editor rejects TLDs > 3 letters | **Fixed in controller** | Server-name and e-mail validation now accepts TLDs of 2–63 letters (`.test`, `.online`, `.museum`, …). Note: the separate `EdHost.exe` utility shipped with releases is not part of this source repository and still needs the same fix. |
+| [#14](https://github.com/iamola/uniserver/issues/14) Command console customization | Open | Feature request, candidate for future work. |
+| [#17](https://github.com/iamola/uniserver/issues/17) Update modules/plugins | Open | Release/packaging task, not part of the controller source. |
+| [#19](https://github.com/iamola/uniserver/issues/19) Forum captcha broken | Not applicable | Concerns the upstream project's forum infrastructure, not this code base. |
 
 ---
 

@@ -616,6 +616,24 @@ If UENV_PHP_SELECT ='php83' then
  end;
 //--End PHP 83  selected
 
+//--PHP 84  selected
+If UENV_PHP_SELECT ='php84' then
+ begin
+  USF_PHP_INI      := USF_PHP_INI_TEST_84; // config php_test.ini
+  USF_PHP_INI_DEV  := USF_PHP_INI_DEV_84;  // config php_development.ini
+  USF_PHP_INI_PROD := USF_PHP_INI_PROD_84; // php_production.ini
+ end;
+//--End PHP 84  selected
+
+//--PHP 85  selected
+If UENV_PHP_SELECT ='php85' then
+ begin
+  USF_PHP_INI      := USF_PHP_INI_TEST_85; // config php_test.ini
+  USF_PHP_INI_DEV  := USF_PHP_INI_DEV_85;  // config php_development.ini
+  USF_PHP_INI_PROD := USF_PHP_INI_PROD_85; // php_production.ini
+ end;
+//--End PHP 85  selected
+
     //=== Get data from configuration file php_test.ini
    if FileExists(USF_PHP_INI) Then
     begin

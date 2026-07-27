@@ -121,6 +121,9 @@ uses
    TMain.MMSS_php80Click
    TMain.MMSS_php81Click
    TMain.MMSS_php82Click
+   TMain.MMSS_php83Click
+   TMain.MMSS_php84Click
+   TMain.MMSS_php85Click
 
   ORIGINAL_ENV_PATH - Original environment path when controller started
 
@@ -661,8 +664,8 @@ end;
 Apache Server status indicator
 
 A bi-state indicator showing current server status.
- Red   – Server not running
- Green – Server is running
+ Red   ï¿½ Server not running
+ Green ï¿½ Server is running
 This indicator specifically targets Apache.
 
 Inputs:
@@ -980,8 +983,8 @@ end;
 MySQL Server status indicator
 
 A bi-state indicator showing current server status.
- Red   – Server not running
- Green – Server is running
+ Red   ï¿½ Server not running
+ Green ï¿½ Server is running
 This indicator specifically targets MySQL.
 
 Inputs:

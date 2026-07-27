@@ -168,6 +168,28 @@ procedure Tphp_extensions.FormShow(Sender: TObject);
     end;
     //--End PHP 83  selected
 
+    //--PHP 84  selected
+    If UENV_PHP_SELECT ='php84' Then
+    begin
+     str_version := str_version + 'php84';
+     US_PHP_EXTEN  := US_PHP84_EXT;  // PHP extensions folder
+     If UENV_PHP_INI_SELECT ='php_test.ini'        Then USF_PHP_INI_PATH := USF_PHP_INI_TEST_84; // config php_test.ini
+     If UENV_PHP_INI_SELECT ='php_development.ini' Then USF_PHP_INI_PATH := USF_PHP_INI_DEV_84;  // config php_development.ini
+     If UENV_PHP_INI_SELECT ='php_production.ini'  Then USF_PHP_INI_PATH := USF_PHP_INI_PROD_84; // php_production.ini
+    end;
+    //--End PHP 84  selected
+
+    //--PHP 85  selected
+    If UENV_PHP_SELECT ='php85' Then
+    begin
+     str_version := str_version + 'php85';
+     US_PHP_EXTEN  := US_PHP85_EXT;  // PHP extensions folder
+     If UENV_PHP_INI_SELECT ='php_test.ini'        Then USF_PHP_INI_PATH := USF_PHP_INI_TEST_85; // config php_test.ini
+     If UENV_PHP_INI_SELECT ='php_development.ini' Then USF_PHP_INI_PATH := USF_PHP_INI_DEV_85;  // config php_development.ini
+     If UENV_PHP_INI_SELECT ='php_production.ini'  Then USF_PHP_INI_PATH := USF_PHP_INI_PROD_85; // php_production.ini
+    end;
+    //--End PHP 85  selected
+
     //Display text
     Lbl_verson.Caption := str_version;                             //Dispaly currently selected PHP series
     Lbl_file.Caption   := str_file_selected + UENV_PHP_INI_SELECT; //Dispaly currently selected PHP config file
