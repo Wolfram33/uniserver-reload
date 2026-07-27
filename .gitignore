@@ -1,0 +1,12 @@
+# Lazarus / Free Pascal build artifacts
+*.dbg
+*.exe
+*.o
+*.ppu
+*.compiled
+lib/
+backup/
+*.bak
+
+# Windows
+Thumbs.db
