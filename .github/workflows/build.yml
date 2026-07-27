@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build UniController & UniService
@@ -51,3 +54,87 @@ jobs:
             UniController/UniController.exe
             UniService/UniService.exe
           if-no-files-found: error
+
+  package-php-modules:
+    name: Package PHP ${{ matrix.branch }} module
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch: ['8.4', '8.5']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build module
+        run: bash scripts/package-php-module.sh '${{ matrix.branch }}' dist
+
+      - name: Upload module
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-module-${{ matrix.branch }}
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    name: Update rolling release
+    if: github.event_name == 'push'
+    needs: [build, package-php-modules]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect release files
+        run: |
+          mkdir -p release
+          find artifacts -name '*.exe' -exec cp {} release/ \;
+          find artifacts -name '*.zip' -exec cp {} release/ \;
+          find artifacts -name 'module-versions.txt' -exec cat {} \; | sort -u > release-versions.txt
+          echo "Packaged PHP versions:" && cat release-versions.txt
+          ls -l release/
+
+      - name: Build release notes
+        run: |
+          {
+            echo "Rolling development build - automatically updated on every push."
+            echo
+            echo "Built from commit ${GITHUB_SHA} on branch ${GITHUB_REF_NAME}."
+            echo
+            echo "## Contents"
+            echo
+            echo "| File | Description |"
+            echo "|---|---|"
+            echo "| UniController.exe | The Uniform Server controller (replaces the one in your UniServerZ folder) |"
+            echo "| UniService.exe | Windows service module |"
+            echo "| ZeroXV_php84_module.zip | PHP 8.4 module - unzip into the UniServerZ root folder |"
+            echo "| ZeroXV_php85_module.zip | PHP 8.5 module - unzip into the UniServerZ root folder |"
+            echo
+            echo "## Packaged PHP versions"
+            echo
+            sed 's/^/- /' release-versions.txt
+            echo
+            echo "## Installation"
+            echo
+            echo "1. Download and unpack [Uniform Server ZeroXV 15.0.2](https://sourceforge.net/projects/miniserver/) (gives you the \`UniServerZ\` folder)."
+            echo "2. Replace \`UniServerZ\\UniController.exe\` (and \`UniService.exe\` if used) with the ones from this release."
+            echo "3. Unzip the PHP module ZIP(s) into the \`UniServerZ\` root folder (they add \`core\\php84\` / \`core\\php85\`)."
+            echo "4. Start UniController and pick the PHP version under *PHP > Select PHP version*."
+            echo
+            echo "PHP binaries are the official thread-safe x64 builds from windows.php.net,"
+            echo "repackaged in the Uniform Server module layout. Default timezone in the"
+            echo "generated php inis is Europe/London - adjust \`date.timezone\` as needed."
+          } > notes.md
+
+      - name: Create/update release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: Latest development build
+          bodyFile: notes.md
+          prerelease: true
+          allowUpdates: true
+          replacesArtifacts: true
+          removeArtifacts: true
+          artifacts: release/*

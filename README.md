@@ -20,10 +20,27 @@ This repository contains the **source code of the controllers only**, written in
 
 The actual server binaries (Apache, PHP, MySQL, phpMyAdmin, …) are not part of this repository; they are packaged in the Uniform Server ZeroXV releases on SourceForge.
 
+## Downloads
+
+Every push triggers a build that updates the rolling release with fixed download links (no login required):
+
+**➡ [Latest development build](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)**
+
+| File | Description |
+|---|---|
+| `UniController.exe` | Freshly built controller — replaces the one in your `UniServerZ` folder |
+| `UniService.exe` | Windows service module |
+| `ZeroXV_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — unzip into the `UniServerZ` root |
+| `ZeroXV_php85_module.zip` | PHP 8.5 module — unzip into the `UniServerZ` root |
+
+Quick start: unpack [Uniform Server ZeroXV 15.0.2](https://sourceforge.net/projects/miniserver/), replace `UniController.exe`, unzip a PHP module into the `UniServerZ` root folder, then pick the version under *PHP > Select PHP version*.
+
 ## Development goals
 
 * [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching
 * [x] Automated builds via CI (Lazarus build on Windows runners)
+* [x] Package current PHP versions as ready-to-use modules (built by CI, see Downloads)
+* [x] Automatic rolling GitHub release with fixed download links
 * [ ] Package current Apache / MariaDB / OpenSSL versions
 * [ ] Work through the open issues of the upstream repository (see below)
 
