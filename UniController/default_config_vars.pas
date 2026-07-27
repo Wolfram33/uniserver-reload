@@ -804,7 +804,24 @@ begin
    If (DirectoryExists(US_PHP83) And (UENV_PHP_SELECT ='php83')) Then php_valid := True;
    If (DirectoryExists(US_PHP84) And (UENV_PHP_SELECT ='php84')) Then php_valid := True;
    If (DirectoryExists(US_PHP85) And (UENV_PHP_SELECT ='php85')) Then php_valid := True;
-   If Not php_valid Then UENV_PHP_SELECT :='None';
+
+   //Configured version not installed: fall back to the newest installed
+   //PHP version so a fresh install without the default version still works.
+   If Not php_valid Then
+    begin
+     If      DirectoryExists(US_PHP85) Then UENV_PHP_SELECT :='php85'
+     Else If DirectoryExists(US_PHP84) Then UENV_PHP_SELECT :='php84'
+     Else If DirectoryExists(US_PHP83) Then UENV_PHP_SELECT :='php83'
+     Else If DirectoryExists(US_PHP82) Then UENV_PHP_SELECT :='php82'
+     Else If DirectoryExists(US_PHP81) Then UENV_PHP_SELECT :='php81'
+     Else If DirectoryExists(US_PHP80) Then UENV_PHP_SELECT :='php80'
+     Else If DirectoryExists(US_PHP74) Then UENV_PHP_SELECT :='php74'
+     Else If DirectoryExists(US_PHP73) Then UENV_PHP_SELECT :='php73'
+     Else If DirectoryExists(US_PHP72) Then UENV_PHP_SELECT :='php72'
+     Else If DirectoryExists(US_PHP71) Then UENV_PHP_SELECT :='php71'
+     Else If DirectoryExists(US_PHP70) Then UENV_PHP_SELECT :='php70'
+     Else UENV_PHP_SELECT :='None';
+    end;
 
    UENV_PHP_INI_SELECT := Ini2.ReadString('USER','PHP_INI_SELECT','php_test.ini');
 
