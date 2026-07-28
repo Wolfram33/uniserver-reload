@@ -62,6 +62,7 @@ begin
   str2 := str2 + '- Sudeep DSouza (SudeepJD)'+sLineBreak;
   str2 := str2 + '- Davide Bonsangue (BrainStorm)'+sLineBreak;
   str2 := str2 + '- Sylvain Bourdon (sbourdon)'+sLineBreak+sLineBreak;
+  str2 := str2 + 'Uniform Server Reload fork initiated by Rob de Roy' +sLineBreak+sLineBreak;
   Label2.Caption := str2;
 end;
 

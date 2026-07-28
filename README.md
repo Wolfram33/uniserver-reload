@@ -10,6 +10,7 @@ This fork imports the source of its two control programs (UniController and UniS
 * Upstream repository: https://github.com/iamola/uniserver (imported at commit `1704fa1`, 2023-11-25)
 * Upstream downloads: https://sourceforge.net/projects/miniserver/
 * License: BSD (see [LICENSE](LICENSE)) — all credit for the original work goes to The Uniform Server Development Team.
+* Fork initiated by **Rob de Roy**, who gave the impulse to revive the project.
 
 ## Repository contents
 
