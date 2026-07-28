@@ -4,6 +4,8 @@
 
 **A community fork of [The Uniform Server](https://github.com/iamola/uniserver), aiming to continue development.**
 
+**No external dependencies, no installation, no configuration:** the complete WAMP stack — Apache, MySQL, PHP 8.3/8.4/8.5, phpMyAdmin and the updated controller — ships as a **single self-extracting 7-Zip archive** ([`UniServer-Reload.exe`](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)). Unpack it anywhere and everything is immediately ready to run. Nothing needs to be downloaded from SourceForge or windows.php.net, no modules need to be added, no settings need to be changed. Portable as ever: no installer, no registry entries.
+
 The original project — a free lightweight WAMP server solution for Windows — has seen no commits since November 2023.
 This fork imports the source of its two control programs (UniController and UniService) as a clean starting point for further development.
 
@@ -29,13 +31,15 @@ Every push triggers a build that updates the rolling release with fixed download
 
 | File | Description |
 |---|---|
-| **`UniServer-Reload.exe`** | **All-in-one package — complete server with PHP 8.3/8.4/8.5 preinstalled; run it, pick a folder, done** |
-| `UniController.exe` | Controller only — replaces the one in an existing `UniServerZ` folder |
-| `UniService.exe` | Windows service module |
-| `ZeroXV_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — unzip into the `UniServerZ` root |
-| `ZeroXV_php85_module.zip` | PHP 8.5 module — unzip into the `UniServerZ` root |
+| **`UniServer-Reload.exe`** | **All-in-one, zero-setup package: the complete server (Apache, MySQL, phpMyAdmin, PHP 8.3/8.4/8.5, updated controller) in one self-extracting 7-Zip archive — unpack and it runs, no further downloads or configuration** |
+| `UniController.exe` | Controller only — for updating an existing `UniServerZ` installation |
+| `UniService.exe` | Windows service module — for updating an existing installation |
+| `ZeroXV_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
+| `ZeroXV_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
 
-Quick start: run `UniServer-Reload.exe`, extract to a folder of your choice, then start `UniServerZ\UniController.exe`. To switch the PHP version stop Apache first, then use *PHP > Select PHP version*.
+The single-file downloads exist only for users who want to upgrade an existing Uniform Server installation piece by piece; with `UniServer-Reload.exe` none of them are needed.
+
+Quick start: run `UniServer-Reload.exe`, pick a target folder, then start `UniServerZ\UniController.exe` — the servers are ready to go. To switch the PHP version stop Apache first, then use *PHP > Select PHP version*.
 
 ## Development goals
 
