@@ -75,10 +75,34 @@ jobs:
           path: dist/
           if-no-files-found: error
 
+  bundle:
+    name: Build all-in-one bundle
+    needs: [build, package-php-modules]
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Build bundle
+        shell: pwsh
+        run: ./scripts/build-bundle.ps1
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: uniserver-allinone
+          path: dist/UniServer-Reload.exe
+          if-no-files-found: error
+
   release:
     name: Update rolling release
     if: github.event_name == 'push'
-    needs: [build, package-php-modules]
+    needs: [build, package-php-modules, bundle]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -106,21 +130,25 @@ jobs:
             echo
             echo "| File | Description |"
             echo "|---|---|"
-            echo "| UniController.exe | The Uniform Server controller (replaces the one in your UniServerZ folder) |"
+            echo "| **UniServer-Reload.exe** | **All-in-one package: complete server with PHP 8.3/8.4/8.5 - just run it, no further setup** |"
+            echo "| UniController.exe | Controller only (replaces the one in an existing UniServerZ folder) |"
             echo "| UniService.exe | Windows service module |"
-            echo "| ZeroXV_php84_module.zip | PHP 8.4 module - unzip into the UniServerZ root folder |"
-            echo "| ZeroXV_php85_module.zip | PHP 8.5 module - unzip into the UniServerZ root folder |"
+            echo "| ZeroXV_php84_module.zip | PHP 8.4 module - unzip into an existing UniServerZ root folder |"
+            echo "| ZeroXV_php85_module.zip | PHP 8.5 module - unzip into an existing UniServerZ root folder |"
             echo
             echo "## Packaged PHP versions"
             echo
             sed 's/^/- /' release-versions.txt
             echo
-            echo "## Installation"
+            echo "## Installation (all-in-one)"
             echo
-            echo "1. Download and unpack [Uniform Server ZeroXV 15.0.2](https://sourceforge.net/projects/miniserver/) (gives you the \`UniServerZ\` folder)."
-            echo "2. Replace \`UniServerZ\\UniController.exe\` (and \`UniService.exe\` if used) with the ones from this release."
-            echo "3. Unzip the PHP module ZIP(s) into the \`UniServerZ\` root folder (they add \`core\\php84\` / \`core\\php85\`)."
-            echo "4. Start UniController and pick the PHP version under *PHP > Select PHP version*."
+            echo "1. Run \`UniServer-Reload.exe\` and pick a target folder - it extracts a ready-to-use \`UniServerZ\` folder"
+            echo "   (Uniform Server ZeroXV 15.0.2 base with the fork controller and the PHP 8.4/8.5 modules already integrated)."
+            echo "2. Start \`UniServerZ\\UniController.exe\` and start Apache/MySQL."
+            echo "3. To switch the PHP version: stop Apache first, then *PHP > Select PHP version*, then start Apache again."
+            echo
+            echo "Note: the executables are not code-signed; Windows SmartScreen may warn on first run"
+            echo "(More info > Run anyway)."
             echo
             echo "PHP binaries are the official thread-safe x64 builds from windows.php.net,"
             echo "repackaged in the Uniform Server module layout. Default timezone in the"

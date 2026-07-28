@@ -28,12 +28,13 @@ Every push triggers a build that updates the rolling release with fixed download
 
 | File | Description |
 |---|---|
-| `UniController.exe` | Freshly built controller — replaces the one in your `UniServerZ` folder |
+| **`UniServer-Reload.exe`** | **All-in-one package — complete server with PHP 8.3/8.4/8.5 preinstalled; run it, pick a folder, done** |
+| `UniController.exe` | Controller only — replaces the one in an existing `UniServerZ` folder |
 | `UniService.exe` | Windows service module |
 | `ZeroXV_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — unzip into the `UniServerZ` root |
 | `ZeroXV_php85_module.zip` | PHP 8.5 module — unzip into the `UniServerZ` root |
 
-Quick start: unpack [Uniform Server ZeroXV 15.0.2](https://sourceforge.net/projects/miniserver/), replace `UniController.exe`, unzip a PHP module into the `UniServerZ` root folder, then pick the version under *PHP > Select PHP version*.
+Quick start: run `UniServer-Reload.exe`, extract to a folder of your choice, then start `UniServerZ\UniController.exe`. To switch the PHP version stop Apache first, then use *PHP > Select PHP version*.
 
 ## Development goals
 
