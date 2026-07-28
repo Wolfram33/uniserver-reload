@@ -18,7 +18,12 @@ if (-not (Test-Path $sfxModule)) { throw "7z.sfx not found at $sfxModule" }
 # --- Fetch and unpack the upstream base package ------------------------------
 $baseUrl = 'https://downloads.sourceforge.net/project/miniserver/Uniform%20Server%20ZeroXV/15_0_2_ZeroXV/15_0_2_ZeroXV.exe'
 Write-Host '==> Downloading Uniform Server ZeroXV 15.0.2 base package'
-Invoke-WebRequest -Uri $baseUrl -OutFile base.exe -MaximumRedirection 10
+# curl.exe instead of Invoke-WebRequest: SourceForge serves browser-like
+# clients an HTML mirror-selection page instead of the file.
+& curl.exe -fsSL -o base.exe $baseUrl
+if ($LASTEXITCODE -ne 0) { throw "Base package download failed ($LASTEXITCODE)" }
+$size = (Get-Item base.exe).Length
+if ($size -lt 40MB) { throw "Base package download too small ($size bytes) - got an HTML page instead of the installer?" }
 
 Write-Host '==> Extracting base package'
 & $sevenZip x -y -obase base.exe | Out-Null
