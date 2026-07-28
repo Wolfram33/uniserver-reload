@@ -1,12 +1,12 @@
 object About: TAbout
   Left = 951
-  Height = 336
+  Height = 384
   Top = 169
   Width = 455
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'About'
-  ClientHeight = 336
+  ClientHeight = 384
   ClientWidth = 455
   DesignTimePPI = 120
   OnCreate = FormCreate
@@ -269,7 +269,7 @@ object About: TAbout
   object Label4: TLabel
     Left = 178
     Height = 20
-    Top = 300
+    Top = 348
     Width = 65
     Caption = '---oOo---'
     ParentColor = False
