@@ -79,6 +79,14 @@ if ((Get-Content $conf -Raw) -notmatch '<IfDefine php85>') { throw 'httpd.conf p
 # with the fork's version-aware page.
 Copy-Item 'bundle\us_splash\index.php' "$root\home\us_splash\index.php" -Force
 
+# --- Brand bundled documentation ---------------------------------------------
+# header.js/footer.js are included by every manual page: the fork header adds
+# a notice that the manual describes the original 15.0.2 release. The manual
+# landing page gets corrected install instructions.
+Copy-Item 'bundle\us_docs\header.js' "$root\docs\manual\common\header.js" -Force
+Copy-Item 'bundle\us_docs\footer.js' "$root\docs\manual\common\footer.js" -Force
+Copy-Item 'bundle\us_docs\index.html' "$root\docs\manual\index.html" -Force
+
 # --- Pack as self-extracting exe ---------------------------------------------
 Write-Host '==> Packing self-extracting bundle'
 New-Item -ItemType Directory -Force dist | Out-Null
