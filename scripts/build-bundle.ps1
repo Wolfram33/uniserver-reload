@@ -74,6 +74,11 @@ if ($text -notmatch '<IfDefine php84>') {
 }
 if ((Get-Content $conf -Raw) -notmatch '<IfDefine php85>') { throw 'httpd.conf patch failed' }
 
+# --- Install fork splash page ------------------------------------------------
+# Replaces the stock splash page (stale version list, upstream download links)
+# with the fork's version-aware page.
+Copy-Item 'bundle\us_splash\index.php' "$root\home\us_splash\index.php" -Force
+
 # --- Pack as self-extracting exe ---------------------------------------------
 Write-Host '==> Packing self-extracting bundle'
 New-Item -ItemType Directory -Force dist | Out-Null
