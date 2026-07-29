@@ -630,6 +630,43 @@ begin
       sList.Free;     // remove from memory
     end;
 
+  //-- Ensure httpd.conf can load the newer PHP versions.
+  //   The stock 15.0.2 config only carries <IfDefine> include blocks up to
+  //   php83; without a block Apache serves .php files as plain text. Insert
+  //   missing blocks for php84/php85 directly after the php83 block.
+  If FileExists(USF_APACHE_CNF) Then
+    begin
+      sList := TStringList.Create;
+      sList.LoadFromFile(USF_APACHE_CNF);
+      If (Pos('<IfDefine php84>', sList.Text) = 0) or (Pos('<IfDefine php85>', sList.Text) = 0) Then
+        begin
+          for i:=0 to sList.Count-1 do
+            begin
+              if Pos('extra_us/php83.conf', sList[i]) <> 0 then
+                begin
+                  // i points at the Include line; i+1 is its </IfDefine>
+                  If Pos('<IfDefine php85>', sList.Text) = 0 Then
+                    begin
+                      sList.Insert(i+2, '');
+                      sList.Insert(i+3, '<IfDefine php85>');
+                      sList.Insert(i+4, '   Include ${US_ROOTF}/core/apache2/conf/extra_us/php85.conf');
+                      sList.Insert(i+5, '</IfDefine>');
+                    end;
+                  If Pos('<IfDefine php84>', sList.Text) = 0 Then
+                    begin
+                      sList.Insert(i+2, '');
+                      sList.Insert(i+3, '<IfDefine php84>');
+                      sList.Insert(i+4, '   Include ${US_ROOTF}/core/apache2/conf/extra_us/php84.conf');
+                      sList.Insert(i+5, '</IfDefine>');
+                    end;
+                  sList.SaveToFile(USF_APACHE_CNF);
+                  Break;
+                end;
+            end;
+        end;
+      sList.Free;
+    end;
+
 
   //-- MySQL Server
   MY_PWD            := us_get_mysql_password(); // MySQL password from file

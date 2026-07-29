@@ -48,6 +48,32 @@ foreach ($p in 'php84', 'php85') {
   if (-not (Test-Path "$root\core\$p\php.exe")) { throw "core\$p\php.exe missing after merge" }
 }
 
+# --- Patch httpd.conf --------------------------------------------------------
+# The stock config only has <IfDefine> include blocks up to php83; without
+# them Apache serves .php files as plain text for php84/php85.
+$conf = "$root\core\apache2\conf\httpd.conf"
+$text = Get-Content $conf -Raw
+if ($text -notmatch '<IfDefine php84>') {
+  Write-Host '==> Adding php84/php85 include blocks to httpd.conf'
+  $block = @'
+
+
+<IfDefine php84>
+   Include ${US_ROOTF}/core/apache2/conf/extra_us/php84.conf
+</IfDefine>
+
+<IfDefine php85>
+   Include ${US_ROOTF}/core/apache2/conf/extra_us/php85.conf
+</IfDefine>
+'@
+  $anchor = $text.IndexOf('<IfDefine php83>')
+  if ($anchor -lt 0) { throw 'php83 IfDefine block not found in httpd.conf' }
+  $insertAt = $text.IndexOf('</IfDefine>', $anchor) + '</IfDefine>'.Length
+  $text = $text.Insert($insertAt, $block)
+  Set-Content -Path $conf -Value $text -NoNewline
+}
+if ((Get-Content $conf -Raw) -notmatch '<IfDefine php85>') { throw 'httpd.conf patch failed' }
+
 # --- Pack as self-extracting exe ---------------------------------------------
 Write-Host '==> Packing self-extracting bundle'
 New-Item -ItemType Directory -Force dist | Out-Null
