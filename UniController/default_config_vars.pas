@@ -858,6 +858,7 @@ begin
      Else If DirectoryExists(US_PHP71) Then UENV_PHP_SELECT :='php71'
      Else If DirectoryExists(US_PHP70) Then UENV_PHP_SELECT :='php70'
      Else UENV_PHP_SELECT :='None';
+     Ini2.WriteString('USER','PHP_SELECT',UENV_PHP_SELECT); // Persist fallback so config, menu and Apache agree
     end;
 
    UENV_PHP_INI_SELECT := Ini2.ReadString('USER','PHP_INI_SELECT','php_test.ini');
