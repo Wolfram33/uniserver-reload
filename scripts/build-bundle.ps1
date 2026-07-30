@@ -39,8 +39,9 @@ if (-not (Test-Path "$root\UniController.exe")) { throw "Unexpected base package
 Write-Host '==> Checking for latest Apache Lounge build'
 $dlHtml = (& curl.exe -fsSL -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' 'https://www.apachelounge.com/download/') -join "`n"
 if ($LASTEXITCODE -ne 0) { throw 'Could not fetch Apache Lounge download page' }
-# Accept any compiler tag (VS17, VS18, ...): pick the newest patch, then newest VS
-$found = [regex]::Matches($dlHtml, 'httpd-2\.4\.(\d+)-win64-VS(\d+)\.zip') |
+# Accept any compiler tag (VS17, VS18, ...) and the optional -YYMMDD build
+# date in the file name: pick the newest patch, then newest VS
+$found = [regex]::Matches($dlHtml, 'httpd-2\.4\.(\d+)(?:-\d+)?-win64-VS(\d+)\.zip') |
   ForEach-Object { [pscustomobject]@{ Patch = [int]$_.Groups[1].Value; VS = [int]$_.Groups[2].Value; Name = $_.Value } } |
   Sort-Object Patch, VS -Descending | Select-Object -First 1
 if (-not $found) {
