@@ -74,6 +74,18 @@ if ($text -notmatch '<IfDefine php84>') {
 }
 if ((Get-Content $conf -Raw) -notmatch '<IfDefine php85>') { throw 'httpd.conf patch failed' }
 
+# Ensure mod_rewrite works out of the box: the module must be loaded and the
+# served directories need FollowSymLinks, without which Apache rejects
+# RewriteRule in directory/.htaccess context (WordPress-style rewrites).
+$text = Get-Content $conf -Raw
+if ($text -notmatch '(?m)^LoadModule rewrite_module') { throw 'mod_rewrite is not enabled in the stock httpd.conf' }
+$patched = $text -replace '(?m)^(\s*)Options Indexes Includes(\r?)$', '$1Options Indexes Includes FollowSymLinks$2'
+if ($patched -ne $text) {
+  Write-Host '==> Adding FollowSymLinks to Options directives'
+  Set-Content -Path $conf -Value $patched -NoNewline
+}
+if ((Get-Content $conf -Raw) -notmatch 'Options Indexes Includes FollowSymLinks') { throw 'FollowSymLinks patch failed' }
+
 # --- Install fork splash page ------------------------------------------------
 # Replaces the stock splash page (stale version list, upstream download links)
 # with the fork's version-aware page.
