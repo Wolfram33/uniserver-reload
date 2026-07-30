@@ -37,14 +37,20 @@ if (-not (Test-Path "$root\UniController.exe")) { throw "Unexpected base package
 # download page for the newest 2.4.x VS17 win64 build and swap the binary
 # directories while keeping the Uniform Server configuration.
 Write-Host '==> Checking for latest Apache Lounge build'
-$dlHtml = & curl.exe -fsSL -A 'Mozilla/5.0' 'https://www.apachelounge.com/download/'
+$dlHtml = (& curl.exe -fsSL -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' 'https://www.apachelounge.com/download/') -join "`n"
 if ($LASTEXITCODE -ne 0) { throw 'Could not fetch Apache Lounge download page' }
-$patches = [regex]::Matches($dlHtml, 'httpd-2\.4\.(\d+)-win64-VS17\.zip') | ForEach-Object { [int]$_.Groups[1].Value }
-if ($patches.Count -eq 0) { throw 'No httpd VS17 win64 zip found on Apache Lounge page' }
-$patch = ($patches | Measure-Object -Maximum).Maximum
-$apVer = "2.4.$patch"
-Write-Host "==> Downloading Apache $apVer"
-& curl.exe -fsSL -A 'Mozilla/5.0' -e 'https://www.apachelounge.com/download/' -o apache.zip "https://www.apachelounge.com/download/VS17/binaries/httpd-$apVer-win64-VS17.zip"
+# Accept any compiler tag (VS17, VS18, ...): pick the newest patch, then newest VS
+$found = [regex]::Matches($dlHtml, 'httpd-2\.4\.(\d+)-win64-VS(\d+)\.zip') |
+  ForEach-Object { [pscustomobject]@{ Patch = [int]$_.Groups[1].Value; VS = [int]$_.Groups[2].Value; Name = $_.Value } } |
+  Sort-Object Patch, VS -Descending | Select-Object -First 1
+if (-not $found) {
+  Write-Host "--- Page length: $($dlHtml.Length); excerpt: ---"
+  Write-Host ($dlHtml.Substring(0, [Math]::Min(1500, $dlHtml.Length)))
+  throw 'No httpd win64 zip found on Apache Lounge page'
+}
+$apVer = "2.4.$($found.Patch)"
+Write-Host "==> Downloading Apache $apVer ($($found.Name))"
+& curl.exe -fsSL -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' -e 'https://www.apachelounge.com/download/' -o apache.zip "https://www.apachelounge.com/download/VS$($found.VS)/binaries/$($found.Name)"
 if ($LASTEXITCODE -ne 0) { throw 'Apache download failed' }
 if ((Get-Item apache.zip).Length -lt 8MB) { throw 'Apache download suspiciously small - HTML page instead of ZIP?' }
 Expand-Archive apache.zip -DestinationPath apachedist
