@@ -175,6 +175,8 @@ jobs:
             echo "certificate on first start). To remove the 'not secure' browser warning:"
             echo "run *Apache > Apache SSL > Trust certificate in Windows*, confirm the Windows"
             echo "prompt with Yes, then restart the browser completely (Chrome: \`chrome://restart\`)."
+            echo "HTTP and HTTPS serve the same \`www\` folder in this bundle (upstream uses a"
+            echo "separate ssl folder; restore that via \`US_ROOTF_SSL=./ssl\` in us_user.ini)."
             echo "Upgrading from an older install: delete \`core\\apache2\\server_certs\\server.crt\`"
             echo "and \`server.key\` first so a certificate with the subjectAltName entries"
             echo "Chrome requires gets generated."

@@ -96,7 +96,7 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
 	<p>Switch versions in UniController: stop Apache, then <i>PHP &gt; Select PHP version</i>, then start Apache again.</p>
 	<br />
 	<big><strong>HTTPS</strong></big>
-	<p><a href="https://localhost">https://localhost</a> works out of the box. To remove the browser warning: <i>Apache &gt; Apache SSL &gt; Trust certificate in Windows</i>, confirm with Yes, then restart the browser completely.</p>
+	<p><a href="https://localhost">https://localhost</a> works out of the box and serves the same <b>www</b> folder as http. To remove the browser warning: <i>Apache &gt; Apache SSL &gt; Trust certificate in Windows</i>, confirm with Yes, then restart the browser completely.</p>
 	<br />
 	<big><strong>PHP Accelerator</strong></big>
 	<ul>

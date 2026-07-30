@@ -53,6 +53,8 @@ The controller generates a self-signed `localhost` certificate on first start an
 
 The certificate covers `localhost`, `127.0.0.1` and `::1`, is valid for 10 years and is only trusted for the current Windows user.
 
+**Note:** In this fork HTTP and HTTPS serve the **same** `www` folder — apps placed in `www` work on both `http://localhost/...` and `https://localhost/...`. (Upstream serves HTTPS from a separate `ssl` folder, which makes apps 404 over HTTPS.) To restore the classic split set `US_ROOTF_SSL=./ssl` in `home\us_config\us_user.ini`.
+
 ## Development goals
 
 * [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching

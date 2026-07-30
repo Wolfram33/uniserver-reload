@@ -134,6 +134,14 @@ if ($patched -ne $text) {
 }
 if ((Get-Content $conf -Raw) -notmatch 'Options Indexes Includes FollowSymLinks') { throw 'FollowSymLinks patch failed' }
 
+# --- Serve the same document root over HTTP and HTTPS ------------------------
+# Upstream serves https from a separate ssl folder, which surprises users
+# whose apps live in www ('works on http, 404 on https'). Point the SSL root
+# at www; the classic split can be restored via US_ROOTF_SSL=./ssl.
+$userIni = "$root\home\us_config\us_user.ini"
+(Get-Content $userIni -Raw) -replace 'US_ROOTF_SSL=\./ssl', 'US_ROOTF_SSL=./www' | Set-Content $userIni -NoNewline
+if ((Get-Content $userIni -Raw) -notmatch [regex]::Escape('US_ROOTF_SSL=./www')) { throw 'us_user.ini SSL root patch failed' }
+
 # --- Install fork splash page ------------------------------------------------
 # Replaces the stock splash page (stale version list, upstream download links)
 # with the fork's version-aware page.
