@@ -169,6 +169,16 @@ jobs:
             echo "2. Start \`UniServerZ\\UniController.exe\` and start Apache/MySQL."
             echo "3. To switch the PHP version: stop Apache first, then *PHP > Select PHP version*, then start Apache again."
             echo
+            echo "## HTTPS without browser warning"
+            echo
+            echo "https://localhost works out of the box (the controller generates a localhost"
+            echo "certificate on first start). To remove the 'not secure' browser warning:"
+            echo "run *Apache > Apache SSL > Trust certificate in Windows*, confirm the Windows"
+            echo "prompt with Yes, then restart the browser completely (Chrome: \`chrome://restart\`)."
+            echo "Upgrading from an older install: delete \`core\\apache2\\server_certs\\server.crt\`"
+            echo "and \`server.key\` first so a certificate with the subjectAltName entries"
+            echo "Chrome requires gets generated."
+            echo
             echo "Note: the executables are not code-signed; Windows SmartScreen may warn on first run"
             echo "(More info > Run anyway)."
             echo

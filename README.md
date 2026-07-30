@@ -42,6 +42,17 @@ The single-file downloads exist only for users who want to upgrade an existing U
 
 Quick start: run `UniServer-Reload.exe`, pick a target folder, then start `UniServerZ\UniController.exe` — the servers are ready to go. To switch the PHP version stop Apache first, then use *PHP > Select PHP version*.
 
+## HTTPS (`https://localhost` without browser warning)
+
+The controller generates a self-signed `localhost` certificate on first start and enables SSL automatically — `https://localhost` works right away, but browsers mark self-signed certificates as "not secure" until they are trusted. To get the padlock without a warning:
+
+1. **Upgrading from an older install?** Delete `core\apache2\server_certs\server.crt` and `server.key` first (with Apache stopped), then start UniController — certificates created by the old generator lack the subjectAltName entries Chrome requires and are rejected even when trusted. Fresh installs skip this step.
+2. In UniController: **Apache → Apache SSL → Trust certificate in Windows (remove browser warning)** and confirm the Windows security prompt with **Yes**.
+3. **Restart the browser completely** (Chrome: enter `chrome://restart` in the address bar — closing the tab is not enough, and check the system tray for background instances).
+4. Open `https://localhost` — the padlock now shows without a warning.
+
+The certificate covers `localhost`, `127.0.0.1` and `::1`, is valid for 10 years and is only trusted for the current Windows user.
+
 ## Development goals
 
 * [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching
