@@ -138,6 +138,7 @@ type
     MMSS_enable_disable_ssl: TMenuItem;
     MMS_apache_ssl: TMenuItem;
     MMSS_server_cert_key: TMenuItem;
+    MMSS_trust_cert: TMenuItem;
     MMSS_apache_server_information: TMenuItem;
     MMSS_apache_server_status: TMenuItem;
     MMS_apache_server_info_status: TMenuItem;
@@ -217,6 +218,7 @@ type
     procedure MMSS_php_edit_basicClick(Sender: TObject);
     procedure MMSS_php_edit_modulesClick(Sender: TObject);
     procedure MMSS_server_cert_keyClick(Sender: TObject);
+    procedure MMSS_trust_certClick(Sender: TObject);
     procedure MMSS_apache_change_portClick(Sender: TObject);
     procedure MMSS_apache_change_ssl_portClick(Sender: TObject);
     procedure MMSS_apache_select_root_folder_sslClick(Sender: TObject);
@@ -779,6 +781,11 @@ begin
     server_cert_key_gen.ShowModal;
 end;
 
+procedure TMain.MMSS_trust_certClick(Sender: TObject);
+begin
+    us_trust_ssl_cert;  // Add server certificate to the Windows user certificate store
+end;
+
 
 procedure TMain.MMSS_apache_change_portClick(Sender: TObject);
 var
@@ -1101,6 +1108,7 @@ If us_application_is_runable Then   // A draconian check. If a space found in pa
   us_command_line_start_up;         // UniController started with parameters. Process and exit application
 
   us_main_init;                     // Set initial values for variables, paths and environment variables.
+  us_auto_generate_ssl_cert;        // First start: generate localhost certificate and enable SSL
   us_update_server_state;           // Set button and indicator state
   us_update_go_pear_config;         // Update go-pear configuration file if it exists
   us_check_servers_are_runable;     // Warnings ports in use, ZoneAlarm running

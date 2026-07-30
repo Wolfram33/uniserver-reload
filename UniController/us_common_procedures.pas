@@ -36,6 +36,8 @@ procedure apache_indicator(state:String); // Apache Bi-state indicator
 
 procedure us_enable_apache_ssl;           // Enable Apache ssl in configuration file httpd.conf
 procedure us_disable_apache_ssl;          // Disable Apache ssl in configuration file httpd.conf
+procedure us_auto_generate_ssl_cert;      // First start: generate localhost certificate and enable SSL
+procedure us_trust_ssl_cert;              // Add server certificate to the Windows user certificate store
 
 //=== MySQL ===
 procedure us_start_mysql_program;                   // Start MySQL as a standard program
@@ -2192,6 +2194,132 @@ end;
 
 
 //=== HOSTS ===
+
+
+{****************************************************************************
+us_auto_generate_ssl_cert
+ First-start comfort: if no server certificate exists, silently generate a
+ self-signed certificate for localhost (subjectAltName covers localhost,
+ 127.0.0.1 and ::1) using the bundled openssl, install it to the Apache
+ server_certs folder and enable SSL in Apache's configuration file.
+ https://localhost then works out of the box.
+ Does nothing when a certificate already exists or openssl is missing.
+=============================================================================}
+procedure us_auto_generate_ssl_cert;
+Var
+ AProcess: TProcess;
+begin
+ If FileExists(USF_CERT) Then Exit;                            // Certificate already exists
+ If Not FileExists(US_APACHE_BIN + '\openssl.exe') Then Exit;  // OpenSSL not available
+
+ AProcess := TProcess.Create(nil);        // Create process
+ AProcess.Executable := 'cmd';            // Want to run a command prompt
+
+ AProcess.Parameters.Add('/T:B0');        // Set background colour
+ AProcess.Parameters.Add('/c');           // Close when finished
+ AProcess.Parameters.Add('title');        // A title is required
+ AProcess.Parameters.Add('US Cert');      // Title
+
+ AProcess.Parameters.Add('&&');           // Start a new command line
+ AProcess.Parameters.Add('CD');           // Change directory
+ AProcess.Parameters.Add(US_APACHE_BIN);  // To path Apache bin openssl.exe
+
+ AProcess.Parameters.Add('&&');           // Start a new command line
+ AProcess.Parameters.Add('set');          // Set environment variable command Dos
+ AProcess.Parameters.Add('OPENSSL_CONF='+US_OPENSSL + '\openssl.cnf'); // Set cmd variable OPENSSL_CONF
+
+ AProcess.Parameters.Add('&&');           // Start a new command line
+ AProcess.Parameters.Add('openssl');      // Run Openssl program
+ AProcess.Parameters.Add('req');          // Request new certificate
+ AProcess.Parameters.Add('-x509');        // Self-signed certificate (no csr needed)
+ AProcess.Parameters.Add('-newkey');      // and new key
+ AProcess.Parameters.Add('rsa:2048');     // Key size
+ AProcess.Parameters.Add('-batch');       // Run in batch mode (requires no user input)
+ AProcess.Parameters.Add('-nodes');       // Unencrypted key
+ AProcess.Parameters.Add('-keyout');      // Output key
+ AProcess.Parameters.Add('server.key');   // to file server.key
+ AProcess.Parameters.Add('-out');         // Output file is
+ AProcess.Parameters.Add('server.crt');   // certificate file server.crt
+ AProcess.Parameters.Add('-days');        // Validity
+ AProcess.Parameters.Add('3650');         // 10 years
+ AProcess.Parameters.Add('-subj');        // Subject
+ AProcess.Parameters.Add('"/O=UniformServerReload/CN=localhost"');
+ AProcess.Parameters.Add('-addext');      // subjectAltName so browsers accept the name
+ AProcess.Parameters.Add('"subjectAltName=DNS:localhost,IP:127.0.0.1,IP:::1"');
+
+ AProcess.Parameters.Add('&&');           // Start a new command line
+ AProcess.Parameters.Add('set');          // Set environment variable command
+ AProcess.Parameters.Add('OPENSSL_CONF=');// resets OPENSSL_CONF var
+
+ AProcess.Options     := AProcess.Options + [poWaitOnExit];   // Set option wait to complete
+ AProcess.ShowWindow  := swoHIDE;                             // Hide command window
+ AProcess.Execute;                                            // Run command
+ AProcess.Free;                                               // Release process
+
+ //--Create server certificates folder if not exist
+ ForceDirectories(US_APACHE_CERTS);
+
+ //-- Move Certificate and Key to server
+ If FileExists(US_APACHE_BIN + '\server.crt')  Then
+    RenameFile(US_APACHE_BIN + '\server.crt',US_APACHE_CERTS+ '\server.crt');  // Move file
+ If FileExists(US_APACHE_BIN + '\server.key')  Then
+    RenameFile(US_APACHE_BIN + '\server.key',US_APACHE_CERTS+ '\server.key');  // Move file
+
+ //--Certificate created: enable SSL so https://localhost works out of the box
+ If FileExists(USF_CERT) Then
+    us_enable_apache_ssl;
+end;
+{--- End us_auto_generate_ssl_cert -------------------------------------------}
+
+
+{****************************************************************************
+us_trust_ssl_cert
+ Add the server certificate to the Windows certificate store of the current
+ user (certutil -user -addstore Root). After a browser restart
+ https://localhost is shown as secure without a warning.
+ Windows displays its own confirmation prompt before importing.
+=============================================================================}
+procedure us_trust_ssl_cert;
+Var
+ AProcess: TProcess;
+ str: string;
+begin
+ If Not FileExists(USF_CERT) Then
+  begin
+    str := 'No server certificate found.'                          + sLineBreak + sLineBreak;
+    str := str + 'Generate one first via menu:'                    + sLineBreak;
+    str := str + 'Apache > Apache SSL > Server Certificate and Key generator';
+    us_MessageDlg('Trust Certificate', str, mtInformation,[mbOk],0);
+    Exit;
+  end;
+
+ AProcess := TProcess.Create(nil);        // Create process
+ AProcess.Executable := 'certutil';       // Windows certificate utility
+ AProcess.Parameters.Add('-user');        // Current user store (no admin required)
+ AProcess.Parameters.Add('-addstore');    // Add to store
+ AProcess.Parameters.Add('Root');         // Trusted Root Certification Authorities
+ AProcess.Parameters.Add(USF_CERT);       // The server certificate
+ AProcess.Options    := AProcess.Options + [poWaitOnExit];  // Wait to complete
+ AProcess.ShowWindow := swoHIDE;                            // Hide command window
+ AProcess.Execute;                                          // Run command
+
+ If AProcess.ExitStatus = 0 Then
+  begin
+    str := 'The server certificate has been added to the'   + sLineBreak;
+    str := str + 'Windows certificate store of the current user.' + sLineBreak + sLineBreak;
+    str := str + 'Restart your browser; https://localhost will'   + sLineBreak;
+    str := str + 'now be shown as secure without a warning.';
+    us_MessageDlg('Trust Certificate', str, mtInformation,[mbOk],0);
+  end
+ Else
+  begin
+    str := 'Could not add the certificate to the Windows store.'  + sLineBreak;
+    str := str + 'The Windows security prompt may have been declined.';
+    us_MessageDlg('Trust Certificate', str, mtWarning,[mbOk],0);
+  end;
+ AProcess.Free;                           // Release process
+end;
+{--- End us_trust_ssl_cert ---------------------------------------------------}
 
 
 {****************************************************************************

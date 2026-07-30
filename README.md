@@ -44,6 +44,7 @@ Quick start: run `UniServer-Reload.exe`, pick a target folder, then start `UniSe
 ## Development goals
 
 * [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching
+* [x] HTTPS out of the box: the controller auto-generates a `localhost` certificate on first start and enables SSL; *Apache > Apache SSL > Trust certificate* adds it to the Windows store to remove the browser warning
 * [x] Automated builds via CI (Lazarus build on Windows runners)
 * [x] Package current PHP versions as ready-to-use modules (built by CI, see Downloads)
 * [x] Automatic rolling GitHub release with fixed download links

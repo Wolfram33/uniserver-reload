@@ -554,6 +554,10 @@ object Main: TMain
           Caption = 'Enable SSL'
           OnClick = MMSS_enable_disable_sslClick
         end
+        object MMSS_trust_cert: TMenuItem
+          Caption = 'Trust certificate in Windows (remove browser warning)'
+          OnClick = MMSS_trust_certClick
+        end
       end
       object MMS_apache_vhosts: TMenuItem
         Caption = 'Apache Vhosts'
