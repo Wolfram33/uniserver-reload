@@ -37,21 +37,38 @@ if (-not (Test-Path "$root\UniController.exe")) { throw "Unexpected base package
 # download page for the newest 2.4.x VS17 win64 build and swap the binary
 # directories while keeping the Uniform Server configuration.
 Write-Host '==> Checking for latest Apache Lounge build'
-$dlHtml = (& curl.exe -fsSL -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' 'https://www.apachelounge.com/download/') -join "`n"
+$UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+function Find-HttpdZip([string]$html) {
+  # Accept anything between the patch level and -win64 (build dates, openssl
+  # tags, ...) and any compiler tag: newest patch, then newest VS wins
+  [regex]::Matches($html, 'httpd-2\.4\.(\d+)[\w.-]*?-win64-VS(\d+)\.zip') |
+    ForEach-Object { [pscustomobject]@{ Patch = [int]$_.Groups[1].Value; VS = [int]$_.Groups[2].Value; Name = $_.Value } } |
+    Sort-Object Patch, VS -Descending | Select-Object -First 1
+}
+$dlHtml = (& curl.exe -fsSL -A $UA 'https://www.apachelounge.com/download/') -join "`n"
 if ($LASTEXITCODE -ne 0) { throw 'Could not fetch Apache Lounge download page' }
-# Accept any compiler tag (VS17, VS18, ...) and the optional -YYMMDD build
-# date in the file name: pick the newest patch, then newest VS
-$found = [regex]::Matches($dlHtml, 'httpd-2\.4\.(\d+)(?:-\d+)?-win64-VS(\d+)\.zip') |
-  ForEach-Object { [pscustomobject]@{ Patch = [int]$_.Groups[1].Value; VS = [int]$_.Groups[2].Value; Name = $_.Value } } |
-  Sort-Object Patch, VS -Descending | Select-Object -First 1
+$found = Find-HttpdZip $dlHtml
 if (-not $found) {
-  Write-Host "--- Page length: $($dlHtml.Length); excerpt: ---"
-  Write-Host ($dlHtml.Substring(0, [Math]::Min(1500, $dlHtml.Length)))
+  # Zips may live on per-compiler subpages (e.g. /download/VS18/): follow the
+  # newest one referenced on the main page
+  $vsPages = [regex]::Matches($dlHtml, 'download/VS(\d+)') | ForEach-Object { [int]$_.Groups[1].Value } | Sort-Object -Unique -Descending
+  foreach ($vs in $vsPages) {
+    Write-Host "==> Scanning subpage /download/VS$vs/"
+    $subHtml = (& curl.exe -fsSL -A $UA "https://www.apachelounge.com/download/VS$vs/") -join "`n"
+    if ($LASTEXITCODE -eq 0) { $found = Find-HttpdZip $subHtml }
+    if ($found) { break }
+  }
+}
+if (-not $found) {
+  Write-Host '--- No match. All .zip references on the main page: ---'
+  [regex]::Matches($dlHtml, '[\w/.-]*\.zip') | ForEach-Object { $_.Value } | Sort-Object -Unique | Select-Object -First 40 | ForEach-Object { Write-Host $_ }
+  Write-Host '--- All href values: ---'
+  [regex]::Matches($dlHtml, 'href="([^"]+)"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique | Select-Object -First 60 | ForEach-Object { Write-Host $_ }
   throw 'No httpd win64 zip found on Apache Lounge page'
 }
 $apVer = "2.4.$($found.Patch)"
 Write-Host "==> Downloading Apache $apVer ($($found.Name))"
-& curl.exe -fsSL -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' -e 'https://www.apachelounge.com/download/' -o apache.zip "https://www.apachelounge.com/download/VS$($found.VS)/binaries/$($found.Name)"
+& curl.exe -fsSL -A $UA -e 'https://www.apachelounge.com/download/' -o apache.zip "https://www.apachelounge.com/download/VS$($found.VS)/binaries/$($found.Name)"
 if ($LASTEXITCODE -ne 0) { throw 'Apache download failed' }
 if ((Get-Item apache.zip).Length -lt 8MB) { throw 'Apache download suspiciously small - HTML page instead of ZIP?' }
 Expand-Archive apache.zip -DestinationPath apachedist
