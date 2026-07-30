@@ -81,6 +81,8 @@ patch_ini() { # $1=source $2=dest-name $3=variant label
     -e 's|^;extension=mysqli|extension=mysqli|' \
     -e 's|^;extension=openssl|extension=openssl|' \
     -e 's|^;extension=pdo_mysql|extension=pdo_mysql|' \
+    -e 's|^;extension=pdo_sqlite|extension=pdo_sqlite|' \
+    -e 's|^;extension=sqlite3|extension=sqlite3|' \
     "$dest"
   sed -i "1s|^\[PHP\]|[PHP]\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;\n; PHP $VERSION $2\n; Uniform Server $3 php.ini\n; PHP Installed as Apache module\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;|" "$dest"
 }
