@@ -96,13 +96,31 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: uniserver-allinone
-          path: dist/UniServer-Reload.exe
+          path: dist/
+          if-no-files-found: error
+
+  package-mariadb-module:
+    name: Package MariaDB module
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build module
+        shell: pwsh
+        run: ./scripts/package-mariadb-module.ps1 -OutDir dist
+
+      - name: Upload module
+        uses: actions/upload-artifact@v4
+        with:
+          name: mariadb-module
+          path: dist/
           if-no-files-found: error
 
   release:
     name: Update rolling release
     if: github.event_name == 'push'
-    needs: [build, package-php-modules, bundle]
+    needs: [build, package-php-modules, bundle, package-mariadb-module]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -130,15 +148,19 @@ jobs:
             echo
             echo "| File | Description |"
             echo "|---|---|"
-            echo "| **UniServer-Reload.exe** | **All-in-one package: complete server with PHP 8.3/8.4/8.5 - just run it, no further setup** |"
+            echo "| **UniServer-Reload.exe** | **All-in-one package: complete server with current Apache, MySQL and PHP 8.3/8.4/8.5 - just run it, no further setup** |"
             echo "| UniController.exe | Controller only (replaces the one in an existing UniServerZ folder) |"
             echo "| UniService.exe | Windows service module |"
             echo "| ZeroXV_php84_module.zip | PHP 8.4 module - unzip into an existing UniServerZ root folder |"
             echo "| ZeroXV_php85_module.zip | PHP 8.5 module - unzip into an existing UniServerZ root folder |"
+            echo "| ZeroXV_mariadb_module.zip | Latest MariaDB LTS as database engine - fresh installs only: delete \`core\\mysql\` first, then unzip into the UniServerZ root |"
             echo
-            echo "## Packaged PHP versions"
+            echo "## Packaged component versions"
             echo
             sed 's/^/- /' release-versions.txt
+            echo
+            echo "The bundle is smoke-tested on every build: Apache is started on the CI"
+            echo "runner and must serve a PHP-rendered page before the release is updated."
             echo
             echo "## Installation (all-in-one)"
             echo

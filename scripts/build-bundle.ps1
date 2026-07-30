@@ -32,6 +32,30 @@ if ($LASTEXITCODE -ne 0) { throw "7z extraction failed ($LASTEXITCODE)" }
 $root = 'base\UniServerZ'
 if (-not (Test-Path "$root\UniController.exe")) { throw "Unexpected base package layout - UniServerZ\UniController.exe not found" }
 
+# --- Upgrade Apache to the latest Apache Lounge build ------------------------
+# The base package ships Apache 2.4.58 (Oct 2023). Scrape the Apache Lounge
+# download page for the newest 2.4.x VS17 win64 build and swap the binary
+# directories while keeping the Uniform Server configuration.
+Write-Host '==> Checking for latest Apache Lounge build'
+$dlHtml = & curl.exe -fsSL -A 'Mozilla/5.0' 'https://www.apachelounge.com/download/'
+if ($LASTEXITCODE -ne 0) { throw 'Could not fetch Apache Lounge download page' }
+$patches = [regex]::Matches($dlHtml, 'httpd-2\.4\.(\d+)-win64-VS17\.zip') | ForEach-Object { [int]$_.Groups[1].Value }
+if ($patches.Count -eq 0) { throw 'No httpd VS17 win64 zip found on Apache Lounge page' }
+$patch = ($patches | Measure-Object -Maximum).Maximum
+$apVer = "2.4.$patch"
+Write-Host "==> Downloading Apache $apVer"
+& curl.exe -fsSL -A 'Mozilla/5.0' -e 'https://www.apachelounge.com/download/' -o apache.zip "https://www.apachelounge.com/download/VS17/binaries/httpd-$apVer-win64-VS17.zip"
+if ($LASTEXITCODE -ne 0) { throw 'Apache download failed' }
+if ((Get-Item apache.zip).Length -lt 8MB) { throw 'Apache download suspiciously small - HTML page instead of ZIP?' }
+Expand-Archive apache.zip -DestinationPath apachedist
+if (-not (Test-Path 'apachedist\Apache24\bin\httpd.exe')) { throw 'Unexpected Apache archive layout' }
+foreach ($d in 'bin', 'modules', 'error', 'icons', 'include', 'lib') {
+  if (Test-Path "$root\core\apache2\$d") { Remove-Item "$root\core\apache2\$d" -Recurse -Force }
+  if (Test-Path "apachedist\Apache24\$d") { Copy-Item "apachedist\Apache24\$d" "$root\core\apache2\$d" -Recurse }
+}
+Move-Item "$root\core\apache2\bin\httpd.exe" "$root\core\apache2\bin\httpd_z.exe" -Force
+Write-Host "==> Apache upgraded to $apVer"
+
 # --- Replace controllers with the fork builds --------------------------------
 Write-Host '==> Installing fork UniController/UniService'
 Copy-Item 'artifacts\uniserver-binaries\UniController\UniController.exe' "$root\UniController.exe" -Force
@@ -99,10 +123,36 @@ Copy-Item 'bundle\us_docs\header.js' "$root\docs\manual\common\header.js" -Force
 Copy-Item 'bundle\us_docs\footer.js' "$root\docs\manual\common\footer.js" -Force
 Copy-Item 'bundle\us_docs\index.html' "$root\docs\manual\index.html" -Force
 
+# --- Smoke test: start Apache with PHP 8.4 and verify PHP executes -----------
+Write-Host '==> Smoke test: starting Apache'
+$rootAbs = (Resolve-Path $root).Path
+$env:US_ROOTF        = $rootAbs -replace '\\', '/'
+$env:US_ROOTF_WWW    = "$env:US_ROOTF/www"
+$env:US_SERVERNAME   = 'localhost'
+$env:AP_PORT         = '8088'
+$env:PHP_SELECT      = 'php84'
+$env:PHP_INI_SELECT  = 'php_test.ini'
+& "$rootAbs\core\apache2\bin\httpd_z.exe" -t -f "$rootAbs\core\apache2\conf\httpd.conf" -d "$rootAbs\core\apache2"
+if ($LASTEXITCODE -ne 0) { throw 'Apache configuration syntax check failed' }
+Start-Process -FilePath "$rootAbs\core\apache2\bin\httpd_z.exe" `
+  -ArgumentList '-f', "$rootAbs\core\apache2\conf\httpd.conf", '-d', "$rootAbs\core\apache2" | Out-Null
+$resp = $null
+foreach ($i in 1..30) {
+  Start-Sleep -Seconds 1
+  $resp = & curl.exe -fsS 'http://localhost:8088/us_splash/index.php' 2>$null
+  if ($LASTEXITCODE -eq 0 -and $resp) { break }
+}
+& taskkill /F /IM httpd_z.exe 2>$null | Out-Null
+if (-not $resp) { throw 'Smoke test failed: Apache did not serve the splash page' }
+if ($resp -match '<\?php') { throw 'Smoke test failed: PHP source served instead of being executed' }
+if ($resp -notmatch 'Uniform Server Reload') { throw 'Smoke test failed: unexpected splash page content' }
+Write-Host "==> Smoke test passed: Apache $apVer serves PHP-rendered pages"
+
 # --- Pack as self-extracting exe ---------------------------------------------
 Write-Host '==> Packing self-extracting bundle'
 New-Item -ItemType Directory -Force dist | Out-Null
 & $sevenZip a -sfx"$sfxModule" -mx=7 'dist\UniServer-Reload.exe' '.\base\UniServerZ'
 if ($LASTEXITCODE -ne 0) { throw "7z sfx packing failed ($LASTEXITCODE)" }
+Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"
 
 Get-Item 'dist\UniServer-Reload.exe' | Format-List Name, Length

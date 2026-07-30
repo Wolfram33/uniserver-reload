@@ -36,6 +36,7 @@ Every push triggers a build that updates the rolling release with fixed download
 | `UniService.exe` | Windows service module — for updating an existing installation |
 | `ZeroXV_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
 | `ZeroXV_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
+| `ZeroXV_mariadb_module.zip` | Latest MariaDB LTS as database engine — fresh installs only: delete `core\mysql` first, then unzip into the `UniServerZ` root |
 
 The single-file downloads exist only for users who want to upgrade an existing Uniform Server installation piece by piece; with `UniServer-Reload.exe` none of them are needed.
 
@@ -48,7 +49,7 @@ Quick start: run `UniServer-Reload.exe`, pick a target folder, then start `UniSe
 * [x] Automated builds via CI (Lazarus build on Windows runners)
 * [x] Package current PHP versions as ready-to-use modules (built by CI, see Downloads)
 * [x] Automatic rolling GitHub release with fixed download links
-* [ ] Package current Apache / MariaDB / OpenSSL versions
+* [x] Package current Apache / MariaDB versions (bundle ships the latest Apache Lounge 2.4.x build; MariaDB LTS available as a module) — every bundle is smoke-tested in CI: Apache is started on the runner and must serve a PHP-rendered page
 * [ ] Work through the open issues of the upstream repository (see below)
 
 ## Upstream issue triage
