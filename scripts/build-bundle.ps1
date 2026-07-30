@@ -167,9 +167,16 @@ foreach ($i in 1..30) {
   if ($LASTEXITCODE -eq 0 -and $resp) { break }
 }
 & taskkill /F /IM httpd_z.exe 2>$null | Out-Null
-if (-not $resp) { throw 'Smoke test failed: Apache did not serve the splash page' }
-if ($resp -match '<\?php') { throw 'Smoke test failed: PHP source served instead of being executed' }
-if ($resp -notmatch 'Uniform Server Reload') { throw 'Smoke test failed: unexpected splash page content' }
+# curl output is an array of lines; join before matching (-notmatch on an
+# array filters lines instead of testing the whole text)
+$respText = ($resp -join "`n")
+if (-not $respText) { throw 'Smoke test failed: Apache did not serve the splash page' }
+if ($respText -match '<\?php') { throw 'Smoke test failed: PHP source served instead of being executed' }
+if ($respText -notmatch 'Uniform Server Reload') {
+  Write-Host '--- Response excerpt: ---'
+  Write-Host ($respText.Substring(0, [Math]::Min(1200, $respText.Length)))
+  throw 'Smoke test failed: unexpected splash page content'
+}
 Write-Host "==> Smoke test passed: Apache $apVer serves PHP-rendered pages"
 
 # --- Pack as self-extracting exe ---------------------------------------------
