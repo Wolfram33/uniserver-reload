@@ -811,7 +811,7 @@ begin
    UENV_AP_SSL_PORT   := Ini2.ReadString('USER','AP_SSL_PORT','443');
    UENV_US_SERVERNAME := Ini2.ReadString('USER','US_SERVERNAME','localhost');
    UENV_US_ROOTF_WWW  := Ini2.ReadString('USER','US_ROOTF_WWW','./www');
-   UENV_US_ROOTF_SSL  := Ini2.ReadString('USER','US_ROOTF_SSL','./ssl');
+   UENV_US_ROOTF_SSL  := Ini2.ReadString('USER','US_ROOTF_SSL','./www'); // Reload default: serve https from the same www folder as http
 
    //Convert absolute/relative root paths to absolute paths.
    UENV_US_ROOTF_WWW := RelToAbsDir(UniConPath_F,UENV_US_ROOTF_WWW); //Convert to absolute
