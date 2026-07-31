@@ -1,3 +1,5 @@
+<p align="center"><img src="bundle/branding/logo-256.png" alt="Uniform Server Reload" width="200"></p>
+
 # Uniform Server Reload
 
 [![Build](https://github.com/Wolfram33/uniserver-reload/actions/workflows/build.yml/badge.svg)](https://github.com/Wolfram33/uniserver-reload/actions/workflows/build.yml)

@@ -196,6 +196,12 @@ Copy-Item 'bundle\us_docs\header.js' "$root\docs\manual\common\header.js" -Force
 Copy-Item 'bundle\us_docs\footer.js' "$root\docs\manual\common\footer.js" -Force
 Copy-Item 'bundle\us_docs\index.html' "$root\docs\manual\index.html" -Force
 
+# --- Reload branding: banner, favicon ----------------------------------------
+Copy-Item 'bundle\branding\banner.png' "$root\home\us_splash\images\logo.png" -Force
+Copy-Item 'bundle\branding\banner.png' "$root\docs\manual\common\images\us_zero_logo.png" -Force
+Copy-Item 'bundle\branding\favicon.ico' "$root\home\us_splash\favicon.ico" -Force
+if (Test-Path "$root\www\favicon.ico") { Copy-Item 'bundle\branding\favicon.ico' "$root\www\favicon.ico" -Force }
+
 # --- Smoke test: start Apache with PHP 8.4 and verify PHP executes -----------
 Write-Host '==> Smoke test: starting Apache'
 $rootAbs = (Resolve-Path $root).Path
