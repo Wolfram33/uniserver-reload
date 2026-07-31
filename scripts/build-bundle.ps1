@@ -146,12 +146,17 @@ Copy-Item 'bundle\msmtp\msmtprc.ini' "$root\core\msmtp\msmtprc.ini" -Force
 Copy-Item 'bundle\msmtp\mail_wrapper.php' "$root\core\msmtp\mail_wrapper.php" -Force
 # Normalize the bat to CRLF while copying
 Get-Content 'bundle\msmtp\sendmail.bat' | Set-Content "$root\core\msmtp\sendmail.bat"
-# Point the base php83 inis at the header wrapper too (the php84/85 module
-# inis are generated with the wrapper path already)
+# Point the base php83 inis at the header wrapper AND enable the extensions
+# every version should ship with (the php84/85 module inis are generated with
+# these already). SQLite is the most common DB for small PHP apps; fileinfo
+# and curl are near-universally expected. DLLs are present in extensions\.
 foreach ($ini in Get-ChildItem "$root\core\php83" -Filter 'php*.ini' -ErrorAction SilentlyContinue) {
   $c = Get-Content $ini.FullName -Raw
-  $patched = $c -replace '(?m)^sendmail_path = ".*msmtp\.exe.*"', 'sendmail_path = "${US_ROOTF}/core/msmtp/sendmail.bat"'
-  if ($patched -ne $c) { Set-Content $ini.FullName -Value $patched -NoNewline }
+  $c = $c -replace '(?m)^sendmail_path = ".*msmtp\.exe.*"', 'sendmail_path = "${US_ROOTF}/core/msmtp/sendmail.bat"'
+  foreach ($ext in 'pdo_sqlite', 'sqlite3', 'fileinfo', 'curl') {
+    $c = $c -replace ('(?m)^;extension=' + $ext + '\s*$'), ('extension=' + $ext)
+  }
+  Set-Content $ini.FullName -Value $c -NoNewline
 }
 
 # --- Development-friendly MySQL configuration --------------------------------

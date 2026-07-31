@@ -83,6 +83,8 @@ patch_ini() { # $1=source $2=dest-name $3=variant label
     -e 's|^;extension=pdo_mysql|extension=pdo_mysql|' \
     -e 's|^;extension=pdo_sqlite|extension=pdo_sqlite|' \
     -e 's|^;extension=sqlite3|extension=sqlite3|' \
+    -e 's|^;extension=fileinfo|extension=fileinfo|' \
+    -e 's|^;extension=curl|extension=curl|' \
     -e 's|^memory_limit = .*|memory_limit = 512M|' \
     -e 's|^upload_max_filesize = .*|upload_max_filesize = 256M|' \
     -e 's|^post_max_size = .*|post_max_size = 256M|' \

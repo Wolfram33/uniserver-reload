@@ -79,6 +79,8 @@ The stock configuration is extremely conservative (2 MB PHP uploads, 1 MB MySQL 
 
 All values remain editable: PHP via *PHP > Edit selected configuration file*, MySQL/MariaDB via `core\mysql\my.ini`.
 
+**Extensions enabled by default in every PHP version** (all ini variants): on top of the stock set (`gd`, `mbstring`, `exif`, `mysqli`, `openssl`, `pdo_mysql`) this fork also enables `pdo_sqlite`, `sqlite3`, `fileinfo` and `curl` — the ones small PHP apps most often need but that upstream ships commented out. Switching PHP version in UniController therefore keeps SQLite/cURL apps working.
+
 ## Development goals
 
 * [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching
