@@ -85,6 +85,7 @@ All values remain editable: PHP via *PHP > Edit selected configuration file*, My
 
 * [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching
 * [x] HTTPS out of the box: the controller auto-generates a `localhost` certificate on first start and enables SSL; *Apache > Apache SSL > Trust certificate* adds it to the Windows store to remove the browser warning
+* [x] Vhosts with a folder picker: *Apache > Apache Vhosts > Create Apache Vhost* now takes either a portable name (created under `vhosts\`) **or a full path via Browse…** — point a host straight at `D:\projects\app` with no copying into `www`, no duplicated project folders
 * [x] Automated builds via CI (Lazarus build on Windows runners)
 * [x] Package current PHP versions as ready-to-use modules (built by CI, see Downloads)
 * [x] Automatic rolling GitHub release with fixed download links
