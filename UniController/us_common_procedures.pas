@@ -2298,6 +2298,26 @@ us_regenerate_cert_for_all_vhosts
  https for localhost and all vhosts. Overwrites the existing certificate,
  so the user must re-run 'Trust certificate' afterwards.
 =============================================================================}
+// A real hostname: letters/digits/dot/hyphen only, contains at least one
+// letter, no template tokens. Rejects the default vhost's ${US_SERVERNAME},
+// which would otherwise poison the SAN and make openssl refuse the whole
+// extension (leaving the old localhost-only certificate in place).
+function us_is_valid_hostname(const h:string): boolean;
+var i:integer; hasAlpha:boolean;
+begin
+  Result := False;
+  If (h = '') or (Length(h) > 253) Then Exit;
+  hasAlpha := False;
+  for i:=1 to Length(h) do
+    case h[i] of
+      'A'..'Z','a'..'z': hasAlpha := True;
+      '0'..'9','.','-':  ;               // allowed
+    else
+      Exit;                              // any other char (incl. $ { }) -> invalid
+    end;
+  Result := hasAlpha;
+end;
+
 procedure us_regenerate_cert_for_all_vhosts;
 Var
  sList : TStringList;
@@ -2322,7 +2342,7 @@ begin
            dom := Trim(Copy(line, 12, Length(line)));
            sp  := Pos(' ', dom);                       // Keep only the first token
            If sp > 0 Then dom := Copy(dom, 1, sp-1);
-           If (dom <> '') and (seen.IndexOf(dom) < 0) Then
+           If us_is_valid_hostname(dom) and (seen.IndexOf(dom) < 0) Then
              begin
                seen.Add(dom);
                san := san + ',DNS:' + dom + ',DNS:*.' + dom;
