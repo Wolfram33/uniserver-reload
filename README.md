@@ -55,6 +55,12 @@ The certificate covers `localhost`, `127.0.0.1` and `::1`, is valid for 10 years
 
 **Note:** In this fork HTTP and HTTPS serve the **same** `www` folder — apps placed in `www` work on both `http://localhost/...` and `https://localhost/...`. (Upstream serves HTTPS from a separate `ssl` folder, which makes apps 404 over HTTPS.) To restore the classic split set `US_ROOTF_SSL=./ssl` in `home\us_config\us_user.ini`.
 
+## E-mail: PHP `mail()` with a real SMTP account
+
+PHP's `mail()` is wired to the bundled **msmtp** SMTP client. Enter your real SMTP access in `core\msmtp\msmtprc.ini` (ready-made blocks for port 587/465 and Gmail are included), set `account default : <name>` at the bottom, and your apps send real mail. Test with `core\msmtp\Send_test_email.bat`; errors are logged to `core\msmtp\msmtp.log`.
+
+Spam-filter friendliness built in: outgoing mails automatically get the standard headers spam filters check for (`Date`, `Message-ID`, `MIME-Version`, `Content-Type`) via a small wrapper, and TLS certificate verification is on by default (Mozilla CA bundle included). What remains on your side: send through an authenticated provider account (it DKIM-signs your mail), keep the `From:` address aligned with that account, and for your own domain set up SPF/DMARC DNS records. Gmail/Outlook need an app password.
+
 ## Development-friendly defaults
 
 The stock configuration is extremely conservative (2 MB PHP uploads, 1 MB MySQL packets, 32 MB InnoDB pool). This fork ships with limits sized for development machines:

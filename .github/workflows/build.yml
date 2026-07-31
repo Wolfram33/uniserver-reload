@@ -166,6 +166,11 @@ jobs:
             echo "uploads / 120s execution time; MySQL/MariaDB 512M InnoDB pool / 256M"
             echo "max_allowed_packet and raised buffers."
             echo
+            echo "Real e-mail from PHP mail(): enter your SMTP account in"
+            echo "\`core\\msmtp\\msmtprc.ini\` (templates included). TLS certificate checks are"
+            echo "on (CA bundle included) and outgoing mails automatically get the"
+            echo "Date/Message-ID/MIME headers spam filters expect."
+            echo
             echo "## Installation (all-in-one)"
             echo
             echo "1. Run \`UniServer-Reload.exe\` and pick a target folder - it extracts a ready-to-use \`UniServerZ\` folder"

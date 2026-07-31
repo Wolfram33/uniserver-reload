@@ -72,7 +72,7 @@ patch_ini() { # $1=source $2=dest-name $3=variant label
     -e 's|^;extension_dir = "ext"|extension_dir = "${US_ROOTF}/core/'"$SHORT"'/extensions"|' \
     -e 's|^;upload_tmp_dir *=.*$|upload_tmp_dir = ${US_ROOTF}/tmp|' \
     -e 's|^;date.timezone *=.*$|date.timezone = "Europe/London"|' \
-    -e 's|^;sendmail_path *=.*$|sendmail_path = "${US_ROOTF}/core/msmtp/msmtp.exe --file=${US_ROOTF}/core/msmtp/msmtprc.ini  -t"|' \
+    -e 's|^;sendmail_path *=.*$|sendmail_path = "${US_ROOTF}/core/msmtp/sendmail.bat"|' \
     -e 's|^;session.save_path = "/tmp"|session.save_path = "${US_ROOTF}/tmp"|' \
     -e 's|^;soap.wsdl_cache_dir="/tmp"|soap.wsdl_cache_dir="${US_ROOTF}/tmp"|' \
     -e 's|^;extension=gd|extension=gd|' \
@@ -118,7 +118,7 @@ error_reporting = E_ALL
 memory_limit = 512M
 date.timezone = "Europe/London"
 
-sendmail_path = "\${US_ROOTF}/core/msmtp/msmtp.exe --file=\${US_ROOTF}/core/msmtp/msmtprc.ini  -t"
+sendmail_path = "\${US_ROOTF}/core/msmtp/sendmail.bat"
 
 [COM_DOT_NET]
 extension=com_dotnet

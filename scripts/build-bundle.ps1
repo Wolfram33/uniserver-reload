@@ -134,6 +134,26 @@ if ($patched -ne $text) {
 }
 if ((Get-Content $conf -Raw) -notmatch 'Options Indexes Includes FollowSymLinks') { throw 'FollowSymLinks patch failed' }
 
+# --- Modern mail setup: CA bundle, secure msmtp template, header wrapper -----
+# The stock msmtprc disables certificate checks and PHP mail() via msmtp
+# lacks Date/Message-ID headers (spam-filter penalties). Ship the Mozilla
+# CA bundle, a certcheck-on template and the header-adding sendmail shim.
+Write-Host '==> Installing mail setup (CA bundle, msmtp template, header wrapper)'
+& curl.exe -fsSL -o "$root\core\msmtp\cacert.pem" 'https://curl.se/ca/cacert.pem'
+if ($LASTEXITCODE -ne 0) { throw 'cacert.pem download failed' }
+if ((Get-Item "$root\core\msmtp\cacert.pem").Length -lt 100KB) { throw 'cacert.pem suspiciously small' }
+Copy-Item 'bundle\msmtp\msmtprc.ini' "$root\core\msmtp\msmtprc.ini" -Force
+Copy-Item 'bundle\msmtp\mail_wrapper.php' "$root\core\msmtp\mail_wrapper.php" -Force
+# Normalize the bat to CRLF while copying
+Get-Content 'bundle\msmtp\sendmail.bat' | Set-Content "$root\core\msmtp\sendmail.bat"
+# Point the base php83 inis at the header wrapper too (the php84/85 module
+# inis are generated with the wrapper path already)
+foreach ($ini in Get-ChildItem "$root\core\php83" -Filter 'php*.ini' -ErrorAction SilentlyContinue) {
+  $c = Get-Content $ini.FullName -Raw
+  $patched = $c -replace '(?m)^sendmail_path = ".*msmtp\.exe.*"', 'sendmail_path = "${US_ROOTF}/core/msmtp/sendmail.bat"'
+  if ($patched -ne $c) { Set-Content $ini.FullName -Value $patched -NoNewline }
+}
+
 # --- Development-friendly MySQL configuration --------------------------------
 # The stock my.ini uses minimal 1990s-style buffers (key_buffer 16K,
 # max_allowed_packet 1M, innodb pool 32M). Raise them to sensible values
