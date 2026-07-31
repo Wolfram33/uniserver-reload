@@ -37,6 +37,8 @@ procedure apache_indicator(state:String); // Apache Bi-state indicator
 procedure us_enable_apache_ssl;           // Enable Apache ssl in configuration file httpd.conf
 procedure us_disable_apache_ssl;          // Disable Apache ssl in configuration file httpd.conf
 procedure us_auto_generate_ssl_cert;      // First start: generate localhost certificate and enable SSL
+procedure us_generate_ssl_cert(san_ext:string; overwrite:boolean); // Generate self-signed cert with given subjectAltName
+procedure us_regenerate_cert_for_all_vhosts; // Rebuild cert covering localhost + all vhost domains
 procedure us_trust_ssl_cert;              // Add server certificate to the Windows user certificate store
 
 //=== MySQL ===
@@ -2205,11 +2207,11 @@ us_auto_generate_ssl_cert
  https://localhost then works out of the box.
  Does nothing when a certificate already exists or openssl is missing.
 =============================================================================}
-procedure us_auto_generate_ssl_cert;
+procedure us_generate_ssl_cert(san_ext:string; overwrite:boolean);
 Var
  AProcess: TProcess;
 begin
- If FileExists(USF_CERT) Then Exit;                            // Certificate already exists
+ If FileExists(USF_CERT) and (not overwrite) Then Exit;        // Certificate already exists
  If Not FileExists(US_APACHE_BIN + '\openssl.exe') Then Exit;  // OpenSSL not available
 
  AProcess := TProcess.Create(nil);        // Create process
@@ -2244,8 +2246,8 @@ begin
  AProcess.Parameters.Add('3650');         // 10 years
  AProcess.Parameters.Add('-subj');        // Subject
  AProcess.Parameters.Add('"/O=UniformServerReload/CN=localhost"');
- AProcess.Parameters.Add('-addext');      // subjectAltName so browsers accept the name
- AProcess.Parameters.Add('"subjectAltName=DNS:localhost,IP:127.0.0.1,IP:::1"');
+ AProcess.Parameters.Add('-addext');      // subjectAltName so browsers accept the names
+ AProcess.Parameters.Add('"subjectAltName='+san_ext+'"');
 
  AProcess.Parameters.Add('&&');           // Start a new command line
  AProcess.Parameters.Add('set');          // Set environment variable command
@@ -2259,17 +2261,79 @@ begin
  //--Create server certificates folder if not exist
  ForceDirectories(US_APACHE_CERTS);
 
- //-- Move Certificate and Key to server
+ //-- Move Certificate and Key to server (overwrite existing)
  If FileExists(US_APACHE_BIN + '\server.crt')  Then
-    RenameFile(US_APACHE_BIN + '\server.crt',US_APACHE_CERTS+ '\server.crt');  // Move file
+   begin
+     If FileExists(US_APACHE_CERTS+ '\server.crt') Then DeleteFile(US_APACHE_CERTS+ '\server.crt');
+     RenameFile(US_APACHE_BIN + '\server.crt',US_APACHE_CERTS+ '\server.crt');
+   end;
  If FileExists(US_APACHE_BIN + '\server.key')  Then
-    RenameFile(US_APACHE_BIN + '\server.key',US_APACHE_CERTS+ '\server.key');  // Move file
+   begin
+     If FileExists(US_APACHE_CERTS+ '\server.key') Then DeleteFile(US_APACHE_CERTS+ '\server.key');
+     RenameFile(US_APACHE_BIN + '\server.key',US_APACHE_CERTS+ '\server.key');
+   end;
 
- //--Certificate created: enable SSL so https://localhost works out of the box
+ //--Certificate created: enable SSL so https works out of the box
  If FileExists(USF_CERT) Then
     us_enable_apache_ssl;
 end;
+{--- End us_generate_ssl_cert ------------------------------------------------}
+
+
+procedure us_auto_generate_ssl_cert;
+begin
+ // First start comfort: only when no certificate exists yet
+ us_generate_ssl_cert('DNS:localhost,IP:127.0.0.1,IP:::1', False);
+end;
 {--- End us_auto_generate_ssl_cert -------------------------------------------}
+
+
+{****************************************************************************
+us_regenerate_cert_for_all_vhosts
+ Rebuild the single server certificate so its subjectAltName covers
+ localhost plus every ServerName found in httpd-vhosts.conf (each domain
+ with a matching *.domain wildcard). One trusted certificate then serves
+ https for localhost and all vhosts. Overwrites the existing certificate,
+ so the user must re-run 'Trust certificate' afterwards.
+=============================================================================}
+procedure us_regenerate_cert_for_all_vhosts;
+Var
+ sList : TStringList;
+ san   : string;
+ line, dom : string;
+ i, sp : integer;
+ seen  : TStringList;
+begin
+ san  := 'DNS:localhost,IP:127.0.0.1,IP:::1';
+ seen := TStringList.Create;
+ seen.Add('localhost');
+
+ If FileExists(USF_APACHE_VHOST_CNF) Then
+  begin
+   sList := TStringList.Create;
+   sList.LoadFromFile(USF_APACHE_VHOST_CNF);
+   for i:=0 to sList.Count-1 do
+     begin
+       line := Trim(sList[i]);
+       If (LowerCase(Copy(line,1,11)) = 'servername ') Then
+         begin
+           dom := Trim(Copy(line, 12, Length(line)));
+           sp  := Pos(' ', dom);                       // Keep only the first token
+           If sp > 0 Then dom := Copy(dom, 1, sp-1);
+           If (dom <> '') and (seen.IndexOf(dom) < 0) Then
+             begin
+               seen.Add(dom);
+               san := san + ',DNS:' + dom + ',DNS:*.' + dom;
+             end;
+         end;
+     end;
+   sList.Free;
+  end;
+ seen.Free;
+
+ us_generate_ssl_cert(san, True);   // Overwrite with the expanded SAN list
+end;
+{--- End us_regenerate_cert_for_all_vhosts -----------------------------------}
 
 
 {****************************************************************************

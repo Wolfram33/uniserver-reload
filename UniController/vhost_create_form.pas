@@ -109,6 +109,29 @@ begin
        sList.Add(' </Directory> ');
        sList.Add('</VirtualHost> ');
        sList.Add('');
+       //-- Matching SSL vhost on the SSL port (https://<domain>).
+       //   Wrapped in IfModule so the file also parses when SSL is disabled.
+       //   Uses the shared server certificate, which the controller rebuilds
+       //   to cover every vhost domain (subjectAltName).
+       sList.Add('<IfModule ssl_module>');
+       sList.Add('<VirtualHost *:${AP_SSL_PORT}>');
+       sList.Add(' ServerAdmin webmaster@'+In_ServerName);
+       sList.Add(' DocumentRoot '+In_DocRoot);
+       sList.Add(' ServerName '+ In_ServerName);
+       sList.Add(' ServerAlias www.'+IN_ServerName+ ' *.'+In_ServerName);
+       sList.Add(' ErrorLog logs/'+In_ServerName+'-ssl-error.log');
+       sList.Add(' CustomLog logs/'+In_ServerName+'-ssl-access.log common');
+       sList.Add(' SSLEngine on');
+       sList.Add(' SSLCertificateFile "${US_ROOTF}/core/apache2/server_certs/server.crt"');
+       sList.Add(' SSLCertificateKeyFile "${US_ROOTF}/core/apache2/server_certs/server.key"');
+       sList.Add(' <Directory "'+In_DirPath+'">');
+       sList.Add('   Options Indexes Includes FollowSymLinks');
+       sList.Add('   AllowOverride All   ');
+       sList.Add('   Require all granted ');
+       sList.Add(' </Directory> ');
+       sList.Add('</VirtualHost>');
+       sList.Add('</IfModule>');
+       sList.Add('');
 
        //==Clean file list
 
@@ -258,8 +281,19 @@ begin
      //===Add to Windows hosts  file
      us_add_to_hosts_file(new_ServerName);                   // Add new host to hosts file
 
+     //===Rebuild the server certificate so its subjectAltName covers this
+     //   (and every other) vhost domain -> https://<domain> works too.
+     us_regenerate_cert_for_all_vhosts;
+
      //Inform user
-     us_MessageDlg('Apache Info','New Vhost created', mtcustom,[mbOk],0) ; //Display information message
+     us_MessageDlg('Apache Info',
+       'New Vhost created for ' + new_ServerName + '.' + sLineBreak + sLineBreak +
+       'HTTPS is set up: the server certificate now covers this domain.' + sLineBreak +
+       'Because the certificate was rebuilt, re-run' + sLineBreak +
+       '  Apache > Apache SSL > Trust certificate in Windows' + sLineBreak +
+       'and restart your browser to get the padlock without a warning.' + sLineBreak + sLineBreak +
+       'Restart Apache for the new Vhost to take effect.',
+       mtInformation,[mbOk],0) ; //Display information message
   end;//End valid_input
 
   If valid_input Then vhost_create.Close;
