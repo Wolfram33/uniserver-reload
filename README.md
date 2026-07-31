@@ -55,6 +55,22 @@ The certificate covers `localhost`, `127.0.0.1` and `::1`, is valid for 10 years
 
 **Note:** In this fork HTTP and HTTPS serve the **same** `www` folder — apps placed in `www` work on both `http://localhost/...` and `https://localhost/...`. (Upstream serves HTTPS from a separate `ssl` folder, which makes apps 404 over HTTPS.) To restore the classic split set `US_ROOTF_SSL=./ssl` in `home\us_config\us_user.ini`.
 
+## Development-friendly defaults
+
+The stock configuration is extremely conservative (2 MB PHP uploads, 1 MB MySQL packets, 32 MB InnoDB pool). This fork ships with limits sized for development machines:
+
+| Setting | Upstream | Reload |
+|---|---|---|
+| PHP `memory_limit` | 128M | **512M** |
+| PHP `upload_max_filesize` / `post_max_size` | 2M / 8M | **256M / 256M** |
+| PHP `max_execution_time` / `max_input_time` | 30s / 60s | **120s / 120s** |
+| PHP `max_input_vars` / `max_file_uploads` | 1000 / 20 | **5000 / 50** |
+| MySQL/MariaDB `max_allowed_packet` | 1M | **256M** |
+| MySQL/MariaDB `innodb_buffer_pool_size` | 32M | **512M** |
+| MySQL/MariaDB `table_open_cache`, buffers, `tmp_table_size` | minimal | **raised accordingly** |
+
+All values remain editable: PHP via *PHP > Edit selected configuration file*, MySQL/MariaDB via `core\mysql\my.ini`.
+
 ## Development goals
 
 * [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching

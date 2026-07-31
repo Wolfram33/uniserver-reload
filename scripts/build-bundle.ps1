@@ -134,6 +134,27 @@ if ($patched -ne $text) {
 }
 if ((Get-Content $conf -Raw) -notmatch 'Options Indexes Includes FollowSymLinks') { throw 'FollowSymLinks patch failed' }
 
+# --- Development-friendly MySQL configuration --------------------------------
+# The stock my.ini uses minimal 1990s-style buffers (key_buffer 16K,
+# max_allowed_packet 1M, innodb pool 32M). Raise them to sensible values
+# for development machines.
+$myIni = "$root\core\mysql\my.ini"
+$my = Get-Content $myIni -Raw
+$my = $my -replace '(?m)^key_buffer_size = .*?(\r?)$',        'key_buffer_size = 32M$1'
+$my = $my -replace '(?m)^max_allowed_packet = 1M(\r?)$',      'max_allowed_packet = 256M$1'
+$my = $my -replace '(?m)^max_allowed_packet = 16M(\r?)$',     'max_allowed_packet = 256M$1'
+$my = $my -replace '(?m)^table_open_cache = .*?(\r?)$',       'table_open_cache = 2000$1'
+$my = $my -replace '(?m)^sort_buffer_size = .*?(\r?)$',       'sort_buffer_size = 2M$1'
+$my = $my -replace '(?m)^read_buffer_size = .*?(\r?)$',       'read_buffer_size = 1M$1'
+$my = $my -replace '(?m)^read_rnd_buffer_size = .*?(\r?)$',   'read_rnd_buffer_size = 1M$1'
+$my = $my -replace '(?m)^net_buffer_length = .*?(\r?)$',      'net_buffer_length = 16K$1'
+$my = $my -replace '(?m)^thread_stack = 256K',                "thread_stack = 256K`ntmp_table_size = 64M`nmax_heap_table_size = 64M"
+$my = $my -replace '(?m)^innodb_buffer_pool_size = .*?(\r?)$','innodb_buffer_pool_size = 512M$1'
+$my = $my -replace '(?m)^innodb_log_buffer_size = .*?(\r?)$', 'innodb_log_buffer_size = 32M$1'
+Set-Content $myIni -Value $my -NoNewline
+if ((Get-Content $myIni -Raw) -notmatch 'innodb_buffer_pool_size = 512M') { throw 'my.ini tuning patch failed' }
+Write-Host '==> MySQL my.ini tuned for development'
+
 # --- Serve the same document root over HTTP and HTTPS ------------------------
 # Upstream serves https from a separate ssl folder, which surprises users
 # whose apps live in www ('works on http, 404 on https'). Point the SSL root

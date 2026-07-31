@@ -162,6 +162,10 @@ jobs:
             echo "The bundle is smoke-tested on every build: Apache is started on the CI"
             echo "runner and must serve a PHP-rendered page before the release is updated."
             echo
+            echo "Development-friendly limits are preconfigured: PHP 512M memory / 256M"
+            echo "uploads / 120s execution time; MySQL/MariaDB 512M InnoDB pool / 256M"
+            echo "max_allowed_packet and raised buffers."
+            echo
             echo "## Installation (all-in-one)"
             echo
             echo "1. Run \`UniServer-Reload.exe\` and pick a target folder - it extracts a ready-to-use \`UniServerZ\` folder"

@@ -83,6 +83,13 @@ patch_ini() { # $1=source $2=dest-name $3=variant label
     -e 's|^;extension=pdo_mysql|extension=pdo_mysql|' \
     -e 's|^;extension=pdo_sqlite|extension=pdo_sqlite|' \
     -e 's|^;extension=sqlite3|extension=sqlite3|' \
+    -e 's|^memory_limit = .*|memory_limit = 512M|' \
+    -e 's|^upload_max_filesize = .*|upload_max_filesize = 256M|' \
+    -e 's|^post_max_size = .*|post_max_size = 256M|' \
+    -e 's|^max_execution_time = .*|max_execution_time = 120|' \
+    -e 's|^max_input_time = .*|max_input_time = 120|' \
+    -e 's|^;max_input_vars = 1000|max_input_vars = 5000|' \
+    -e 's|^max_file_uploads = .*|max_file_uploads = 50|' \
     "$dest"
   sed -i "1s|^\[PHP\]|[PHP]\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;\n; PHP $VERSION $2\n; Uniform Server $3 php.ini\n; PHP Installed as Apache module\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;|" "$dest"
 }
@@ -108,6 +115,7 @@ extension=mbstring
 
 extension_dir = "extensions"
 error_reporting = E_ALL
+memory_limit = 512M
 date.timezone = "Europe/London"
 
 sendmail_path = "\${US_ROOTF}/core/msmtp/msmtp.exe --file=\${US_ROOTF}/core/msmtp/msmtprc.ini  -t"
