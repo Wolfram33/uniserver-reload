@@ -1627,6 +1627,10 @@ object Main: TMain
           Caption = 'Trust certificate in Windows (remove browser warning)'
           OnClick = MMSS_trust_certClick
         end
+        object MMSS_regen_cert_vhosts: TMenuItem
+          Caption = 'Regenerate certificate for all Vhosts'
+          OnClick = MMSS_regen_cert_vhostsClick
+        end
       end
       object MMS_apache_vhosts: TMenuItem
         Caption = 'Apache Vhosts'

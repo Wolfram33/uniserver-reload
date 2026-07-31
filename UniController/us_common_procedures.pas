@@ -2373,8 +2373,12 @@ begin
   begin
     str := 'The server certificate has been added to the'   + sLineBreak;
     str := str + 'Windows certificate store of the current user.' + sLineBreak + sLineBreak;
-    str := str + 'Restart your browser; https://localhost will'   + sLineBreak;
-    str := str + 'now be shown as secure without a warning.';
+    str := str + 'Restart your browser; https://localhost and every'  + sLineBreak;
+    str := str + 'Vhost covered by this certificate will now be shown' + sLineBreak;
+    str := str + 'as secure without a warning.' + sLineBreak + sLineBreak;
+    str := str + 'Note: one certificate covers all domains. If you add'  + sLineBreak;
+    str := str + 'a new Vhost later, run "Regenerate certificate for all' + sLineBreak;
+    str := str + 'Vhosts", then trust and restart the browser again.';
     us_MessageDlg('Trust Certificate', str, mtInformation,[mbOk],0);
   end
  Else

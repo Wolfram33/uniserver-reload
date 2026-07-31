@@ -139,6 +139,7 @@ type
     MMS_apache_ssl: TMenuItem;
     MMSS_server_cert_key: TMenuItem;
     MMSS_trust_cert: TMenuItem;
+    MMSS_regen_cert_vhosts: TMenuItem;
     MMSS_apache_server_information: TMenuItem;
     MMSS_apache_server_status: TMenuItem;
     MMS_apache_server_info_status: TMenuItem;
@@ -219,6 +220,7 @@ type
     procedure MMSS_php_edit_modulesClick(Sender: TObject);
     procedure MMSS_server_cert_keyClick(Sender: TObject);
     procedure MMSS_trust_certClick(Sender: TObject);
+    procedure MMSS_regen_cert_vhostsClick(Sender: TObject);
     procedure MMSS_apache_change_portClick(Sender: TObject);
     procedure MMSS_apache_change_ssl_portClick(Sender: TObject);
     procedure MMSS_apache_select_root_folder_sslClick(Sender: TObject);
@@ -784,6 +786,19 @@ end;
 procedure TMain.MMSS_trust_certClick(Sender: TObject);
 begin
     us_trust_ssl_cert;  // Add server certificate to the Windows user certificate store
+end;
+
+procedure TMain.MMSS_regen_cert_vhostsClick(Sender: TObject);
+begin
+    us_regenerate_cert_for_all_vhosts;  // Rebuild cert covering localhost + all vhost domains
+    us_MessageDlg('Apache SSL',
+      'The server certificate was rebuilt to cover localhost'  + sLineBreak +
+      'and every Vhost domain in httpd-vhosts.conf.'           + sLineBreak + sLineBreak +
+      'Next steps:'                                            + sLineBreak +
+      '1. Apache SSL > Trust certificate in Windows (confirm with Yes)' + sLineBreak +
+      '2. Restart your browser completely'                     + sLineBreak +
+      '3. Restart Apache',
+      mtInformation,[mbOk],0);
 end;
 
 
