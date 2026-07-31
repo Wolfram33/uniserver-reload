@@ -1,6 +1,8 @@
 name: Fetch logo
 
-on: workflow_dispatch
+on:
+  push:
+    paths: ['.github/workflows/fetch-logo.yml']
 
 permissions:
   contents: write
