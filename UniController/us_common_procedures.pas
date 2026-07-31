@@ -2262,14 +2262,16 @@ begin
  ForceDirectories(US_APACHE_CERTS);
 
  //-- Move Certificate and Key to server (overwrite existing)
+ // SysUtils. qualifier: the windows unit is in scope and its DeleteFile
+ // takes a PChar; we want the string overload.
  If FileExists(US_APACHE_BIN + '\server.crt')  Then
    begin
-     If FileExists(US_APACHE_CERTS+ '\server.crt') Then DeleteFile(US_APACHE_CERTS+ '\server.crt');
+     If FileExists(US_APACHE_CERTS+ '\server.crt') Then SysUtils.DeleteFile(US_APACHE_CERTS+ '\server.crt');
      RenameFile(US_APACHE_BIN + '\server.crt',US_APACHE_CERTS+ '\server.crt');
    end;
  If FileExists(US_APACHE_BIN + '\server.key')  Then
    begin
-     If FileExists(US_APACHE_CERTS+ '\server.key') Then DeleteFile(US_APACHE_CERTS+ '\server.key');
+     If FileExists(US_APACHE_CERTS+ '\server.key') Then SysUtils.DeleteFile(US_APACHE_CERTS+ '\server.key');
      RenameFile(US_APACHE_BIN + '\server.key',US_APACHE_CERTS+ '\server.key');
    end;
 
