@@ -1,0 +1,25 @@
+name: Fetch logo
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download and commit logo
+        run: |
+          mkdir -p branding
+          curl -fsSL -o branding/logo.png 'https://boomplace.com/logo-uniform-server-reload.png'
+          file branding/logo.png | grep -qi 'PNG image' || { echo 'Downloaded file is not a PNG'; file branding/logo.png; exit 1; }
+          ls -la branding/logo.png
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add branding/logo.png
+          git commit -m 'Add Uniform Server Reload logo (fetched from boomplace.com)'
+          git push
