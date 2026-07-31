@@ -150,13 +150,27 @@ Get-Content 'bundle\msmtp\sendmail.bat' | Set-Content "$root\core\msmtp\sendmail
 # every version should ship with (the php84/85 module inis are generated with
 # these already). SQLite is the most common DB for small PHP apps; fileinfo
 # and curl are near-universally expected. DLLs are present in extensions\.
+# Covers php_production/development/test.ini (Apache-style, ;extension= lines)
+# and php-cli.ini (bare extension= lines, some extensions absent entirely).
 foreach ($ini in Get-ChildItem "$root\core\php83" -Filter 'php*.ini' -ErrorAction SilentlyContinue) {
   $c = Get-Content $ini.FullName -Raw
   $c = $c -replace '(?m)^sendmail_path = ".*msmtp\.exe.*"', 'sendmail_path = "${US_ROOTF}/core/msmtp/sendmail.bat"'
+  $append = ''
   foreach ($ext in 'pdo_sqlite', 'sqlite3', 'fileinfo', 'curl') {
-    $c = $c -replace ('(?m)^;extension=' + $ext + '\s*$'), ('extension=' + $ext)
+    if ($c -match ('(?m)^extension=' + $ext + '\s*$')) { continue }       # already active
+    elseif ($c -match ('(?m)^;extension=' + $ext + '\s*$')) {
+      $c = $c -replace ('(?m)^;extension=' + $ext + '\s*$'), ('extension=' + $ext)
+    }
+    else { $append += "`nextension=$ext" }                                 # absent (e.g. cli ini)
   }
+  if ($append) { $c = $c.TrimEnd() + "`n; Uniform Server Reload - default extensions" + $append + "`n" }
   Set-Content $ini.FullName -Value $c -NoNewline
+  # Verify each extension is now active
+  foreach ($ext in 'pdo_sqlite', 'sqlite3', 'fileinfo', 'curl') {
+    if ((Get-Content $ini.FullName -Raw) -notmatch ('(?m)^extension=' + $ext + '\s*$')) {
+      throw "php83 $($ini.Name): failed to enable $ext"
+    }
+  }
 }
 
 # --- Development-friendly MySQL configuration --------------------------------
@@ -207,37 +221,59 @@ Copy-Item 'bundle\branding\banner.png' "$root\docs\manual\common\images\us_zero_
 Copy-Item 'bundle\branding\favicon.ico' "$root\home\us_splash\favicon.ico" -Force
 if (Test-Path "$root\www\favicon.ico") { Copy-Item 'bundle\branding\favicon.ico' "$root\www\favicon.ico" -Force }
 
-# --- Smoke test: start Apache with PHP 8.4 and verify PHP executes -----------
-Write-Host '==> Smoke test: starting Apache'
+# --- Smoke test: every PHP version must execute and load the default exts ----
+# Starts Apache once per installed PHP version and verifies PHP is executed
+# (not served as source) and that the extensions the fork guarantees are
+# actually loaded. Catches ini regressions per version for good.
+Write-Host '==> Smoke test: verifying every PHP version'
 $rootAbs = (Resolve-Path $root).Path
 $env:US_ROOTF        = $rootAbs -replace '\\', '/'
 $env:US_ROOTF_WWW    = "$env:US_ROOTF/www"
 $env:US_SERVERNAME   = 'localhost'
 $env:AP_PORT         = '8088'
-$env:PHP_SELECT      = 'php84'
 $env:PHP_INI_SELECT  = 'php_test.ini'
-& "$rootAbs\core\apache2\bin\httpd_z.exe" -t -f "$rootAbs\core\apache2\conf\httpd.conf" -d "$rootAbs\core\apache2"
+$REQUIRED_EXT = @('pdo_sqlite', 'sqlite3', 'fileinfo', 'curl', 'mbstring', 'gd', 'openssl')
+
+# Probe page: prints a marker plus the loaded extensions
+@'
+<?php echo "USR-PROBE ", PHP_VERSION, " EXT:", implode(",", get_loaded_extensions());
+'@ | Set-Content "$root\www\_ci_probe.php" -NoNewline
+
+$httpd = "$rootAbs\core\apache2\bin\httpd_z.exe"
+& $httpd -t -f "$rootAbs\core\apache2\conf\httpd.conf" -d "$rootAbs\core\apache2"
 if ($LASTEXITCODE -ne 0) { throw 'Apache configuration syntax check failed' }
-Start-Process -FilePath "$rootAbs\core\apache2\bin\httpd_z.exe" `
-  -ArgumentList '-f', "$rootAbs\core\apache2\conf\httpd.conf", '-d', "$rootAbs\core\apache2" | Out-Null
+
+$versions = Get-ChildItem "$root\core" -Directory -Filter 'php8*' | ForEach-Object { $_.Name } | Sort-Object
+foreach ($ver in $versions) {
+  $env:PHP_SELECT = $ver
+  Start-Process -FilePath $httpd -ArgumentList '-f', "$rootAbs\core\apache2\conf\httpd.conf", '-d', "$rootAbs\core\apache2" | Out-Null
+  $resp = $null
+  foreach ($i in 1..30) {
+    Start-Sleep -Seconds 1
+    $resp = & curl.exe -fsS 'http://localhost:8088/_ci_probe.php' 2>$null
+    if ($LASTEXITCODE -eq 0 -and $resp) { break }
+  }
+  & taskkill /F /IM httpd_z.exe 2>$null | Out-Null
+  Start-Sleep -Milliseconds 500
+  $text = ($resp -join "`n")
+  if ($text -match '<\?php') { throw "Smoke test ($ver): PHP served as source instead of executing" }
+  if ($text -notmatch 'USR-PROBE') { throw "Smoke test ($ver): Apache did not serve the PHP probe" }
+  $loaded = @()
+  if ($text -match 'EXT:(.*)$') { $loaded = $Matches[1] -split ',' }
+  $missing = $REQUIRED_EXT | Where-Object { $_ -notin $loaded }
+  if ($missing) { throw "Smoke test ($ver): required extensions not loaded: $($missing -join ', ')" }
+  Write-Host "   $ver OK - PHP executes, extensions loaded"
+}
+Remove-Item "$root\www\_ci_probe.php" -Force
+
+# Splash page renders (fork content) under the default version
+$env:PHP_SELECT = ($versions | Select-Object -First 1)
+Start-Process -FilePath $httpd -ArgumentList '-f', "$rootAbs\core\apache2\conf\httpd.conf", '-d', "$rootAbs\core\apache2" | Out-Null
 $resp = $null
-foreach ($i in 1..30) {
-  Start-Sleep -Seconds 1
-  $resp = & curl.exe -fsS 'http://localhost:8088/us_splash/index.php' 2>$null
-  if ($LASTEXITCODE -eq 0 -and $resp) { break }
-}
+foreach ($i in 1..30) { Start-Sleep -Seconds 1; $resp = & curl.exe -fsS 'http://localhost:8088/us_splash/index.php' 2>$null; if ($LASTEXITCODE -eq 0 -and $resp) { break } }
 & taskkill /F /IM httpd_z.exe 2>$null | Out-Null
-# curl output is an array of lines; join before matching (-notmatch on an
-# array filters lines instead of testing the whole text)
-$respText = ($resp -join "`n")
-if (-not $respText) { throw 'Smoke test failed: Apache did not serve the splash page' }
-if ($respText -match '<\?php') { throw 'Smoke test failed: PHP source served instead of being executed' }
-if ($respText -notmatch 'Uniform Server Reload') {
-  Write-Host '--- Response excerpt: ---'
-  Write-Host ($respText.Substring(0, [Math]::Min(1200, $respText.Length)))
-  throw 'Smoke test failed: unexpected splash page content'
-}
-Write-Host "==> Smoke test passed: Apache $apVer serves PHP-rendered pages"
+if (($resp -join "`n") -notmatch 'Uniform Server Reload') { throw 'Smoke test: splash page did not render fork content' }
+Write-Host "==> Smoke test passed: Apache $apVer, all PHP versions execute with required extensions"
 
 # --- Pack as self-extracting exe ---------------------------------------------
 Write-Host '==> Packing self-extracting bundle'

@@ -114,6 +114,9 @@ extension=openssl
 extension=gd
 extension=pdo_mysql
 extension=mbstring
+extension=pdo_sqlite
+extension=sqlite3
+extension=fileinfo
 
 extension_dir = "extensions"
 error_reporting = E_ALL
