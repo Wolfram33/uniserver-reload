@@ -289,7 +289,8 @@ implementation
 
 procedure TMain.Btn_start_apacheClick(Sender: TObject);
 var
-  url:string; // Page url displayed in default browser
+  url:string;      // Page url displayed in default browser
+  url_base:string; // Scheme://server:port prefix (https when SSL is on)
 begin
    If (Main.Btn_start_apache.Caption  = START_AP) Then
     begin
@@ -297,10 +298,17 @@ begin
      us_start_apache_program;           // Start Apache server
      us_update_server_state;            // Update server state. Set button and indicator state
 
-     //--Display user configured pages at start-up
+     //--Display user configured pages at start-up.
+     //  Prefer https when SSL is enabled and a certificate exists, so the
+     //  start page opens as https://<server> instead of plain http.
+     If AP_SSL_ENABLED and FileExists(USF_CERT) Then
+        url_base := 'https://' + UENV_US_SERVERNAME + ':' + UENV_AP_SSL_PORT
+     Else
+        url_base := 'http://'  + UENV_US_SERVERNAME + ':' + UENV_AP_PORT;
+
      If USUC_DISPLAY_PAGE_1 = 'yes' Then
       begin
-        url := 'http://' + UENV_US_SERVERNAME +':' + UENV_AP_PORT + USUC_PAGE_1;
+        url := url_base + USUC_PAGE_1;
 
         //Change url if PHP not enabled. Replace file index.php with ""
         If UENV_PHP_SELECT = 'None' Then
@@ -313,7 +321,7 @@ begin
 
       If USUC_DISPLAY_PAGE_2 = 'yes' Then
       begin
-       url := 'http://' + UENV_US_SERVERNAME +':' + UENV_AP_PORT + USUC_PAGE_2;
+       url := url_base + USUC_PAGE_2;
 
        //Change url if PHP not enabled. Replace file index.php with ""
        If UENV_PHP_SELECT = 'None' Then
