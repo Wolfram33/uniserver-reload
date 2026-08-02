@@ -1,279 +1,207 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-  <title>Home - Uniform Server Reload</title>
-  <meta name="Description" content="Welcome to The Uniform Server and this documentation, which is for the Zero XV series. The Uniform Server is a free and open source Windows Apache-MySQL-PHP-Perl server suite.">
-  <meta name="Keywords" content="Uniform,Server,Zero,XV,Background,Installation,Controller,Plugins,The Uniform Server,MPG,Mike Gleaves,Ric,UniServer,Olajide,BobS,SudeepJD,BrainStorm,sbourdon">
-  <link href="common/css/main.css" rel="stylesheet" type="text/css">
-  <link href="common/css/menu.css" rel="stylesheet" type="text/css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uniform Server Reload — Documentation</title>
+<style>
+  :root{
+    --navy:#1b2c45; --navy2:#28466a; --blue:#2b8fe0; --blue2:#50b9ff;
+    --ink:#1f2937; --muted:#5b6b7f; --line:#e4e9f0; --bg:#f6f8fb;
+    --card:#ffffff; --code:#0f172a; --codebg:#f1f5f9; --ok:#1a8a4a; --warn:#b4690e;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --ink:#e6edf5; --muted:#9fb0c3; --line:#26313f; --bg:#0f151d;
+           --card:#161d27; --codebg:#0d1520; --navy:#0f1a2b; }
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+        font:16px/1.65 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  a{ color:var(--blue); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+  header.hero{ background:linear-gradient(135deg,var(--navy),var(--navy2));
+        color:#fff; padding:34px 24px; }
+  .hero-inner{ max-width:1080px; margin:0 auto; display:flex; align-items:center;
+        gap:22px; flex-wrap:wrap; }
+  .hero img{ height:64px; width:auto; }
+  .hero h1{ font-size:26px; margin:0; font-weight:700; letter-spacing:.2px; }
+  .hero p{ margin:4px 0 0; color:#c8d6e6; font-size:15px; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:28px 24px 60px;
+        display:grid; grid-template-columns:220px 1fr; gap:34px; }
+  nav.toc{ position:sticky; top:20px; align-self:start; font-size:14.5px; }
+  nav.toc h4{ margin:0 0 8px; color:var(--muted); font-size:12px;
+        text-transform:uppercase; letter-spacing:.08em; }
+  nav.toc a{ display:block; padding:5px 0; color:var(--ink); }
+  nav.toc a:hover{ color:var(--blue); text-decoration:none; }
+  main{ min-width:0; }
+  section{ background:var(--card); border:1px solid var(--line); border-radius:12px;
+        padding:22px 26px; margin:0 0 20px; }
+  section h2{ margin:0 0 6px; font-size:20px; display:flex; align-items:center; gap:10px; }
+  section h2 .ico{ font-size:20px; }
+  section h3{ margin:20px 0 6px; font-size:16px; }
+  section p:first-of-type{ margin-top:8px; }
+  .lead{ color:var(--muted); }
+  ol,ul{ padding-left:22px; }
+  li{ margin:4px 0; }
+  code{ background:var(--codebg); padding:2px 6px; border-radius:5px;
+        font:13.5px/1.5 "Cascadia Code",Consolas,Menlo,monospace; }
+  pre{ background:var(--code); color:#e6edf5; padding:14px 16px; border-radius:9px;
+        overflow:auto; font:13px/1.55 "Cascadia Code",Consolas,Menlo,monospace; }
+  pre code{ background:none; padding:0; color:inherit; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; }
+  .card{ border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:var(--bg); }
+  .card b{ display:block; margin-bottom:3px; }
+  .note{ border-left:4px solid var(--blue); background:var(--codebg);
+        padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; }
+  .warn{ border-left-color:var(--warn); }
+  .steps{ counter-reset:s; list-style:none; padding:0; }
+  .steps li{ counter-increment:s; position:relative; padding:2px 0 2px 34px; margin:8px 0; }
+  .steps li::before{ content:counter(s); position:absolute; left:0; top:0;
+        width:24px; height:24px; border-radius:50%; background:var(--blue); color:#fff;
+        font-size:13px; font-weight:700; display:grid; place-items:center; }
+  table{ border-collapse:collapse; width:100%; font-size:14.5px; margin:8px 0; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; }
+  footer{ max-width:1080px; margin:0 auto; padding:24px; color:var(--muted);
+        font-size:13.5px; border-top:1px solid var(--line); }
+  .pill{ display:inline-block; font-size:12px; background:var(--codebg); color:var(--muted);
+        padding:2px 9px; border-radius:20px; margin-left:6px; vertical-align:middle; }
+  @media (max-width:820px){ .wrap{ grid-template-columns:1fr; } nav.toc{ position:static; } }
+</style>
 </head>
+<body>
 
-<body id="p100">
-<!-- Start header -->
-  <script language="javascript" type="text/javascript" src="common/header.js"></script>
-<!-- End header -->
+<header class="hero">
+  <div class="hero-inner">
+    <img src="common/images/us_zero_logo.png" alt="Uniform Server Reload">
+    <div>
+      <h1>Uniform Server Reload — Documentation</h1>
+      <p>A maintained fork of The Uniform Server. Portable WAMP for Windows: Apache · MySQL/MariaDB · PHP 8.3 / 8.4 / 8.5.</p>
+    </div>
+  </div>
+</header>
 
-<table id="main" >
-<tr valign="top">
+<div class="wrap">
+  <nav class="toc">
+    <h4>On this page</h4>
+    <a href="#start">Quick start</a>
+    <a href="#php">PHP versions</a>
+    <a href="#https">HTTPS &amp; certificates</a>
+    <a href="#vhosts">Virtual hosts</a>
+    <a href="#db">Databases</a>
+    <a href="#mail">E-mail</a>
+    <a href="#tuning">Limits &amp; extensions</a>
+    <a href="#trouble">Troubleshooting</a>
+    <a href="#reference">Reference manual</a>
+  </nav>
 
-<td id="td_menu">
-<script language="javascript" type="text/javascript" src="common/top_menu.js"></script>
-<script language="javascript" type="text/javascript" src="common/home_additional_menu.js"></script>
-</td>
+  <main>
+    <section id="start">
+      <h2><span class="ico">🚀</span> Quick start</h2>
+      <p class="lead">The all-in-one package ships the complete server in one self-extracting archive — no installation, no dependencies, no configuration.</p>
+      <ol class="steps">
+        <li>Download <b>UniServer-Reload.exe</b> from the <a href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">releases page</a> and run it.</li>
+        <li>Choose a target folder (no spaces in the path, not under <code>C:\Program Files</code>). A ready-to-use <b>UniServerZ</b> folder is extracted.</li>
+        <li>Start <code>UniServerZ\UniController.exe</code>, then click <b>Start Apache</b> and <b>Start MySQL</b>.</li>
+        <li>Put your site into <code>UniServerZ\www</code> — or point a Vhost straight at your project folder (see <a href="#vhosts">Virtual hosts</a>).</li>
+      </ol>
+      <div class="note">Everything below is preconfigured. This page describes the fork; the original ZeroXV reference manual is linked at the bottom.</div>
+    </section>
 
-<td id="td_spacer" >
-</td >
+    <section id="php">
+      <h2><span class="ico">🐘</span> PHP versions <span class="pill">8.3 · 8.4 · 8.5</span></h2>
+      <p>Switch the active PHP version from the controller — Apache loads it as a module.</p>
+      <ol class="steps">
+        <li>Stop Apache.</li>
+        <li><b>PHP &gt; Select PHP version</b> → pick 8.3, 8.4 or 8.5.</li>
+        <li>Start Apache again.</li>
+      </ol>
+      <p>Every version ships with these extensions enabled by default (in all ini variants, including <code>php-cli.ini</code> for scripts and cron):
+      <code>pdo_mysql</code>, <code>pdo_sqlite</code>, <code>sqlite3</code>, <code>mysqli</code>, <code>gd</code>, <code>mbstring</code>, <code>exif</code>, <code>openssl</code>, <code>fileinfo</code>, <code>curl</code>. Enable more via <b>PHP &gt; Edit Basic and Modules</b>.</p>
+    </section>
 
-<td id="td_content" >
-<!-- ============ Start Content ========== -->
+    <section id="https">
+      <h2><span class="ico">🔒</span> HTTPS &amp; certificates</h2>
+      <p><code>https://localhost</code> works out of the box: on first start the controller generates a self-signed certificate (covering <code>localhost</code>, <code>127.0.0.1</code>, <code>::1</code>) and enables SSL. When SSL is on, the controller opens the start page as <code>https://</code>.</p>
+      <h3>Remove the browser warning</h3>
+      <ol class="steps">
+        <li><b>Apache &gt; Apache SSL &gt; Trust certificate in Windows</b> → confirm the Windows prompt with <b>Yes</b>.</li>
+        <li>Restart the browser completely (Chrome: <code>chrome://restart</code>).</li>
+      </ol>
+      <div class="note">One certificate covers localhost <i>and</i> all your Vhost domains. Both HTTP and HTTPS serve the same <code>www</code> folder.</div>
+    </section>
 
-<table >
-<tr>
- <td>
-  <img src="common/images/zero_logo4.png" alt="Zero logo">
- </td>
- <td>
-<h1>The Uniform Server Zero XV &mdash; Reload</h1>
-</tr>
-</table>
+    <section id="vhosts">
+      <h2><span class="ico">🌐</span> Virtual hosts</h2>
+      <p>Give each project its own hostname — pointing directly at your project folder, no copying into <code>www</code>.</p>
+      <ol class="steps">
+        <li><b>Apache &gt; Apache Vhosts &gt; Create Apache Vhost</b>.</li>
+        <li>Document root: a plain name (portable, created under <code>vhosts\</code>) <b>or</b> click <b>Browse…</b> and choose any folder, e.g. <code>D:\projects\app</code>.</li>
+        <li>Server name, e.g. <code>app.test</code> — the controller adds it to the Windows hosts file automatically.</li>
+        <li><b>Create Vhost</b> → <b>Apache SSL &gt; Regenerate certificate for all Vhosts</b> → <b>Trust certificate</b> → restart browser → restart Apache.</li>
+      </ol>
+      <p><code>http://app.test</code> and <code>https://app.test</code> both serve your project. <code>mod_rewrite</code>, <code>AllowOverride All</code> and <code>FollowSymLinks</code> are set, so <code>.htaccess</code> rewrites work immediately.</p>
+      <div class="note warn">Deleting a Vhost only offers to remove folders created under <code>vhosts\</code>. An external project folder you pointed to is never deleted.</div>
+    </section>
 
-<p>Welcome to Uniform Server Reload, a maintained community fork of The Uniform Server, and to this documentation for the Zero series. The Uniform Server is a free and open source Windows Apache-MySQL-PHP server suite. It is an excellent system for both beginning webmasters and experienced developers: a full-power web-server suitable for production use, but small enough to carry on a USB memory stick. The Reload package you are running ships everything preinstalled in a single self-extracting archive &mdash; Apache, MySQL, phpMyAdmin and PHP 8.3/8.4/8.5 with version switching &mdash; so the module download steps described in parts of this manual are not needed. Current downloads and sources: <a href="https://github.com/Wolfram33/uniserver-reload">github.com/Wolfram33/uniserver-reload</a>.</p>
+    <section id="db">
+      <h2><span class="ico">🗄️</span> Databases</h2>
+      <p>MySQL 8.2 ships by default; a current MariaDB LTS is available as a module (<code>ZeroXV_mariadb_module.zip</code>).</p>
+      <div class="grid">
+        <div class="card"><b>Admin</b>phpMyAdmin via the <b>phpMyAdmin</b> button. Default login <code>root</code> / <code>root</code>.</div>
+        <div class="card"><b>Host</b>Use <code>127.0.0.1</code> as the DB host in your apps (not <code>localhost</code>) for a reliable IPv4 connection.</div>
+        <div class="card"><b>Switch to MariaDB</b>Stop MySQL, export your data, delete <code>core\mysql</code>, unzip the MariaDB module into the UniServerZ root. Fresh installs only.</div>
+      </div>
+    </section>
 
-<table width="100%">
-<tr>
-<td>
-<div id="page_links_menu_shadow" >
- <div id="page_links_menu" >
-  <ul>
-   <li><a href="#Background" >Background</a></li>
-   <li><a href="#Installation - pre-configured server" >Installation - pre-configured server</a></li>
+    <section id="mail">
+      <h2><span class="ico">✉️</span> E-mail</h2>
+      <p>PHP <code>mail()</code> is wired to the bundled <b>msmtp</b> client. Enter a real SMTP account in <code>core\msmtp\msmtprc.ini</code> (ready-made blocks for port 587/465 and Gmail are included), then set <code>account default : &lt;name&gt;</code>. Test with <code>core\msmtp\Send_test_email.bat</code>.</p>
+      <p>Outgoing mail automatically gets the <code>Date</code>, <code>Message-ID</code>, <code>MIME-Version</code> and <code>Content-Type</code> headers spam filters expect, and TLS certificate checking is on (CA bundle included). For good deliverability: send through an authenticated provider (DKIM), keep <code>From:</code> aligned with that account, and set up SPF/DMARC for your domain.</p>
+    </section>
 
-   <li><a href="#Installation - bespoke server" >Installation - bespoke server</a></li>
-   <li><a href="#Controller" >&nbsp;&nbsp;Controller</a></li>
-   <li><a href="#Plugins" >&nbsp;&nbsp;Plugins</a></li>
+    <section id="tuning">
+      <h2><span class="ico">⚙️</span> Development limits</h2>
+      <p>Sensible defaults for development machines — all editable via <b>PHP &gt; Edit selected configuration file</b> and <code>core\mysql\my.ini</code>.</p>
+      <table>
+        <tr><th>Setting</th><th>Value</th></tr>
+        <tr><td>PHP <code>memory_limit</code></td><td>512M</td></tr>
+        <tr><td>PHP <code>upload_max_filesize</code> / <code>post_max_size</code></td><td>256M / 256M</td></tr>
+        <tr><td>PHP <code>max_execution_time</code></td><td>120s</td></tr>
+        <tr><td>MySQL/MariaDB <code>max_allowed_packet</code></td><td>256M</td></tr>
+        <tr><td>MySQL/MariaDB <code>innodb_buffer_pool_size</code></td><td>512M</td></tr>
+      </table>
+    </section>
 
-   <li><a href="#Installation Restriction" >Installation Restriction</a></li>
-   <li><a href="#Server Paths" >&nbsp;&nbsp;Server Paths</a></li>
-   <li><a href="#Help" >Help</a></li>
-   <li><a href="#Security" >Security</a></li>
-   <li><a href="#Other Issues" >Other Issues</a></li>
-   <li><a href="#VS Libraries" >&nbsp;&nbsp;VS Libraries</a></li>
-   <li><a href="#MySQL Access" >&nbsp;&nbsp;MySQL Access</a></li>
-   <li><a href="#Windows and UAC" >&nbsp;&nbsp;Windows and UAC</a></li>
-   <li><a href="#Firewalls" >&nbsp;&nbsp;Firewalls</a></li>
-   <li><a href="#Skype" >&nbsp;&nbsp;Skype</a></li>
-   <li><a href="#Where to next" >Where to next</a></li>
-   </ul>
- </div>
+    <section id="trouble">
+      <h2><span class="ico">🧯</span> Troubleshooting</h2>
+      <h3>PHP source shown instead of running</h3>
+      <p>Restart Apache after switching PHP version, and open the page through the server (<code>http://localhost/…</code>), not as a <code>file://</code>. Check <code>core\apache2\logs\error.log</code>.</p>
+      <h3>“could not find driver” (PDO)</h3>
+      <p>Enable the DB extension for the active version: <b>PHP &gt; Edit Basic and Modules</b> → tick <code>pdo_sqlite</code>+<code>sqlite3</code> or <code>pdo_mysql</code> → restart Apache.</p>
+      <h3>HTTPS still warns after trusting</h3>
+      <p>Run <b>Regenerate certificate for all Vhosts</b>, trust again, and fully restart the browser. Verify the names:</p>
+      <pre><code>core\apache2\bin\openssl.exe x509 -in core\apache2\server_certs\server.crt -noout -ext subjectAltName</code></pre>
+      <p>If a domain sent HSTS before, clear it at <code>chrome://net-internals/#hsts</code>.</p>
+      <h3>Path rules</h3>
+      <p>No spaces in the install path; don’t use <code>C:\Program Files</code>. Absolute Vhost paths are not portable across machines.</p>
+    </section>
+
+    <section id="reference">
+      <h2><span class="ico">📚</span> Reference manual</h2>
+      <p>The detailed original ZeroXV manual (Apache, MySQL, cron, SSL internals, plugins) remains available. It was written for the upstream 15.0.2 release, so some download/version details are dated — but the controller reference is still accurate.</p>
+      <p><a href="index_main.html">Open the full reference manual (site map) →</a></p>
+      <p>Project home, current downloads and issues:
+      <a href="https://github.com/Wolfram33/uniserver-reload">github.com/Wolfram33/uniserver-reload</a></p>
+    </section>
+  </main>
 </div>
-</td>
-<td>&nbsp;</td>
-<td>
-<img src="images/C11_unisevrer_zero.gif" alt="UniServer Zero" align="right">
-</td>
-</tr>
-</table>
 
-<a name="Background"></a>
-<h2>Background</h2>
-<p>Uniform Zero takes a fresh look at Apache, MySQL, PHP and Perl portability. Uniform Server has been redesigned from the ground up; emphasis is given to reducing code size. This is achieved through a modular implementation using plugins. Install only the plugins you require; this avoids the dreaded bloat-ware scenario. Server control is provided by UniController, a Pascal application written and compiled using Lazarus.</p>
-
-<p>For new users, creating a bespoke server can be daunting. To address this, UniServer Zero releases 15_x_x_ZeroXV are versions with pre-installed Zero XV modules (plugins), producing a standard WAMP (Windows, Apache, MySQL and PHP) server package. This package is fully portable, allowing you to run servers from a USB memory stick.</p>
-
-
-<p>In the context of this documentation, portability is defined as an application that does not install data in the registry on a host PC. Generally, applications ported to Windows from a Unix environment are inherently portable; for example: Apache, MySQL, PHP and Perl. These require only a few minor tweaks to run in portable mode.</p>
-
-<p>Applications can be run either as a standard program or as a service; Uniform Server Zero supports both methods. Running an application as a standard program requires that application to be manually restarted after powering-up a PC and logging in. This disadvantage is resolved by optionally placing an entry in the <a href="extra.html#PC-Win start-up" >start-up menu</a> to provide automatic restarting after logging in. Although not portable, it is a small concession for users that require this functionality. In contrast, applications that <a href="run_as_service.html" >run as a service</a> automatically start after powering-up a PC; this is the preferred method when running a production server. Again, this is not portable; remember to uninstall services before moving servers.</p>
-
-<p>Similarly, editing the Windows hosts file is not a portable operation. That said, Uniform Server Zero provides support to <a href="extra.html#Edit Win hosts file" >manually</a> and automatically add and delete entries in this file.</p>
-
-
-<p>We strongly suggest that you check over the points on this page, as they provide important information that may help you avoid common problems. The following two sections (<a href="#Installation - pre-configured server" >Installation - pre-configured server</a> and <a href="#Installation - bespoke server" >Installation - bespoke server</a>) will have you up and running in seconds. A more detailed step-by-step guide is provided on the <a href="quick_start_guide.html" >Quick Start Guide</a> page.</p>
-
-<script language="javascript" type="text/javascript" src="common/top.js"></script>
-<a name="Installation - pre-configured server"></a>
-<h2>Installation - pre-configured server</h2>
-<p>Installing is a misnomer! Nothing is installed to your PCs registry. All files are extracted to their appropriate location within the <b>UniServer</b> folder structure. To install the pre-configured server, proceed as follows:</p> 
-
-<table width="100%">
-<tr valign="top">
-<td>
-<ul>
-  <li> Download <b>UniServer-Reload.exe</b> from the <a href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">releases page</a> and save it, for example, to drive C:</li>
-  <li> The file is a self-extracting archive; double-click to run the extractor.</li>
-  <li> A new folder <b>UniServerZ</b> is created containing <b>UniController.exe</b> and support folders and files &mdash; with Apache, MySQL, phpMyAdmin and PHP 8.3/8.4/8.5 already included.</li>
-  <li> Start controller by double-clicking on file <b>UniController.exe</b> </li>
-
-</ul>
-
-<ul>
-  <li> Click <b>Start Apache</b> button. Indicator changes from red to green when server is running.</li>
-  <li> Click <b>Start MySQL</b> button. Indicator changes from red to green when server is running.</li>
-  <li> Display test page by clicking button <b>View www</b> or type <b>http://localhost</b> into your browser.</li>
-</ul>
-
-  <p> <b>Note 1:</b> Button states toggle to <b>Stop Apache</b> and <b>Stop MySQL</b>; click to stop servers.</p>
-  <p> <b>Note 2:</b> Installing your website: except for file <b>.htaccess</b>, delete the contents of folder UniServerZ\<b>www</b> and then copy your site to this folder. If your site uses a database, use phpMyAdmin to create it.</p>
-</td>
-<td>&nbsp;</td>
-<td>
-<img src="images/C11_unisevrer_zero.gif" alt="UniServer Zero" align="right">
-
-</td>
-</tr>
-</table>
-
-
-<script language="javascript" type="text/javascript" src="common/top.js"></script>
-<a name="Installation - bespoke server"></a>
-<h2>Installation - bespoke server</h2>
-<p>Again, installing is a misnomer! Nothing is installed to your PCs registry. All files are extracted to their appropriate location within the <b>UniServer</b> folder structure. Unlike a pre-configured server, a bespoke server requires more work on your part. It is assembled from individual plugin modules as follows:</p> 
-
-<a name="Controller"></a>
-<h3>Controller</h3>
-
-<p>The Uniform Server Zero's <b>base component</b> is the controller application. Download and extract this base component first as follows:</p>
-
-<table width="100%">
-<tr valign="top">
-<td>
-<p><i>Install controller:</i></p>
-<ul>
-  <li> Download and save the latest controller file (<b>ZeroXV_unicontroller_x_x_x.exe</b>) to either a new folder or top-level of a drive, for example C: drive.</li>
-  <li> The file is a self-extracting archive; double-click to run the extractor.</li>
-  <li> A new folder <b>UniServerZ</b> is created containing the controller application <b>UniController.exe</b> and support folders and files.</li>
-  <li> Download and save any plugins (modules) to folder <b>UniServerZ</b>. Again, these are self-extracting archives; double-click to run extractor. If prompted, allow overwrite.</li>
-  <li> The controller automatically detects installed plugins.</li>
-</ul>
-
-<p>Utility option buttons (opt1-opt3) are initially unassigned. Although MySQL modules have been pre-assigned to these buttons, you can change their assignment and button text. However, it is recommended you keep the pre-assignments.</p>
-
-</td>
-<td>&nbsp;</td>
-<td>
-<img src="images/C11_unisevrer_zero_2.gif" alt="UniServer Zero" align="right">
-</td>
-</tr>
-</table>
-
-
-<a name="Plugins"></a>
-<h3>Plugins</h3>
-
-<p> The Uniform Server Zero design is modular. Install only the plugins (modules) that you require. Each server requires a controller (covered above), which automatically detects installed plugins.</p>
-
-<p>The extraction procedure is identical for all plugins and applies to both pre-configured and bespoke servers. Proceed as follows:</p>
-<p><i>Install plugins:</i></p>
-
-<ul>
-  <li> If running, <b>stop</b> Apache and MySQL servers. <b>Close</b> UniController.</li>
-  <li> Download required plugin installation file. For example, <b>ZeroXV_phpmyadmin_x_x_x.exe</b> installs phpMyAdmin. </li>
-  <li> Save the downloaded file to folder <b>UniServerZ</b>. </li>
-  <li> Double-click on the above installation file.  This runs the self extracting archive. </li>
-  <li> If prompted, allow overwriting of existing files. </li>
-  <li> If you wish, delete the installation file; it is no longer required. </li>
-</ul>
-
-<p><b>Note:</b> For full plugin details, refer to <a href="plugins_detail.html">Plugins - Modules</a> page.</p>
-
-
-
-<script language="javascript" type="text/javascript" src="common/top.js"></script>
-<a name="Installation Restriction"></a>
-<h2>Installation Restriction</h2>
-
-<p>There is one aspect that needs to be validated.  This is especially true if you have been unable to start the servers.</p>
-
-<a name="Server Paths"></a>
-<h3>Server Paths</h3>
-
-<p>The installation (extraction) defaults to creating "C:\UniServerZ". The documentation examples assume this default. You can install The Uniform Server Zero in nearly any location, with the exception that the path to folder <b>UniServerZ</b> must not contain spaces. Do not use "C:\Program Files", for example (which has other problems as well, such as restricted permissions and system restore inconsistencies). We recommend installing to the drive root, such as "C:\" or "D:\" for simplicity. Other locations, such as "C:\test1\appserver", work just as well. </p>
-
-<p><b>Note:</b> The space character restriction is generic and applies to other WAMP stacks as well. Many applications that will be hosted on the server do not tolerate spaces in paths.  The system restore issue applies mainly to individual component installations.</p>
-
-<p>If the current installation is on a faulty path, the situation can easily be resolved by just moving the <b>UniServerZ</b> directory to a proper location.  You do not have to delete the directory and reinstall.  For example, just move "D:\bad path\UniServerZ" to "D:\good_loc\UniServerZ".</p>  
-
-<script language="javascript" type="text/javascript" src="common/top.js"></script>
-<a name="Help"></a>
-<h2>Help</h2>
-<p>Two levels of help are provided: local help as instant pop-up message boxes and detailed help in this documentation, directly linked by the <b>Documentation</b> controller button.</p>
-
-<script language="javascript" type="text/javascript" src="common/top.js"></script>
-<a name="Security"></a>
-<h2>Security</h2>
-<p>The security of your server is one of our primary concerns, and for that reason the default settings are oriented for production. If you believe that a setting is not right for production, please <a href="https://github.com/Wolfram33/uniserver-reload/issues">open an issue on GitHub</a>. We will look into it and see if it should be changed.</p>
-
-<p>In this light, before you can run the servers, several nag screens are presented. Initially, you can click <b>No</b> to each of these. See the <a href="quick_start_guide.html" title="Quick start quide">Quick start</a> guide for further details.</p>
-
-<p>In order to allow access to your server by other users (Internet or Intranet), you must manually enable the required functions. See Apache dropdown menu option <a href="apache.html#Access and Passwords">Access and Passwords</a> for details.</p>
-
-<script language="javascript" type="text/javascript" src="common/top.js"></script>
-<a name="Other Issues"></a>
-<h2>Other Issues</h2>
-
-<p>This section covers the basics a new user should be aware of.</p>
-
-<p><b>Note:</b> Uniform Server 15_x_x_ZeroXV does not run on Windows XP or Windows Server 2003.</P>
-
-<a name="VS Libraries"></a>
-<h3>VS Libraries</h3>
-
-<p>Apache, PHP 7.*.* and PHP 8.*.* binaries are compiled with Visual Studio. Ensure you have installed the latest supported Microsoft Visual C++ Redistributable packages for Visual Studio.<br>
-This can be found at <a href="https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads">Microsoft Visual C++ Redistributable latest supported downloads</a>.<br>
-Be sure to select the package appropriate for your OS and hardware (select: <a href="https://aka.ms/vs/17/release/vc_redist.x64.exe">vc_redist.x64.exe</a>, or <a href="https://aka.ms/vs/17/release/vc_redist.x86.exe">vc_redist.x86.exe</a> if using UniServer Zero XIV or older).<br>
-If you do not have the Visual Studio libraries, when you attempt to start the servers, you will get a runtime error popup.</p>
-
-
-<a name="MySQL Access"></a>
-<h3>MySQL Access</h3>
-
-<p>The MySQL server supports <b>IPv4</b> and <b>IPv6</b>; localhost resolves to <b>127.0.0.1</b> and <b>::1</b> respectively.  
-You can bypass the resolver by using an IP address; for example, you can force an IPv4 address by replacing <b>localhost</b> with <b>127.0.0.1</b>. <br>
-During third party application installations (for example, MediaWiki and Wordpress), you are requested to enter a MySQL host name. Use IP address <b>127.0.0.1</b></p>
-
-<a name="Windows and UAC"></a>
-<h3>Windows and UAC</h3>
-
-The startup executables have been marked as requiring Administrator privilege.  When you start these programs, you must authorize this access in order to continue.
-
-<a name="Firewalls"></a>
-<h3>Firewalls</h3>
-
-<p>When you initially start the servers, your firewall will sense the programs' requests for IP access, and (typically) will require your authorization to change the security.  If you have a third-party firewall activated (Symantec, ZoneAlarm, etc.), be sure to set the port access as required since it may not display a message.</p> 
-
- <a name="Skype"></a>
-<h3>Skype</h3>
-<p>Apache and Skype both use standard port 80. If you have Skype running, it will clash with your local server. To prevent Apache and Skype clashing, you need to adjust the Skype settings as follows:</p>
-<ul>
-  <li>Log into your Skype</li>
-  <li>Go to <b>Tools&gt;Options&gt;Advanced&gt;Connect</b> </li>
-  <li>Uncheck the box which says <b>Use Port 80 and 443</b></li>
-  <li>Click <b>Save</b></li>
-</ul>
-
-
-<script language="javascript" type="text/javascript" src="common/top.js"></script>
-<a name="Where to next"></a>
-<h2>Where to next</h2>
-
-<p><a href="quick_start_guide.html">Quick Start</a> - This page provides a quick start guide <br>
-<a href="index_main.html">Site Map</a> - Main site index</p>
-
-
-<script language="javascript" type="text/javascript" src="common/top.js"></script>
-<hr>
-<div align="center">--oOo--</div>
-
-
-<!-- ============ End Content ============ -->
-</td>
-</tr>
-</table>
-
-<!-- Start footer -->
-  <script language="javascript" type="text/javascript" src="common/footer.js"></script>
-<!-- End footer -->
+<footer>
+  Uniform Server Reload — originally developed by
+  <a href="https://www.uniformserver.com/">The Uniform Server Development Team</a>;
+  <a href="https://github.com/Wolfram33/uniserver-reload">Reload fork</a> initiated by Rob de Roy.
+</footer>
 
 </body>
 </html>
