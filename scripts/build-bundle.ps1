@@ -237,6 +237,10 @@ if ((Get-Content $userIni -Raw) -notmatch [regex]::Escape('US_ROOTF_SSL=./www'))
 # fork page (with a stale version) for anyone browsing /us_splash/.
 Copy-Item 'bundle\us_splash\index.php' "$root\home\us_splash\index.php" -Force
 if (Test-Path "$root\home\us_splash\index.html") { Remove-Item "$root\home\us_splash\index.html" -Force }
+# Fork stylesheet: flex header keeps the status block below the banner instead
+# of the stock CSS absolutely positioning it over the banner text.
+Copy-Item 'bundle\us_splash\css\style.css' "$root\home\us_splash\css\style.css" -Force
+if (Test-Path "$root\home\us_splash\images\branding_bg.png") { Remove-Item "$root\home\us_splash\images\branding_bg.png" -Force }
 
 # --- Brand bundled documentation ---------------------------------------------
 # header.js/footer.js are included by every manual page: the fork header adds
