@@ -21,9 +21,9 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <MajorVersionNr Value="1"/>
-      <MinorVersionNr Value="0"/>
+      <MinorVersionNr Value="2"/>
       <RevisionNr Value="0"/>
-      <StringTable Comments="Run UniServer Reload servers as a Service" CompanyName="UniServer Reload project" FileDescription="UniService for UniServer Reload" ProductName="UniServer Reload" ProductVersion="1.0.0"/>
+      <StringTable Comments="Run UniServer Reload servers as a Service" CompanyName="UniServer Reload project" FileDescription="UniService for UniServer Reload" ProductName="UniServer Reload" ProductVersion="1.2.0"/>
     </VersionInfo>
     <BuildModes Count="3">
       <Item1 Name="Default" Default="True"/>

@@ -48,7 +48,7 @@ Quick start: run `UniServer-Reload.exe`, pick a target folder, then start `UniSe
 
 UniServer Reload follows its **own version line starting at 1.0.0** (`MAJOR.MINOR.PATCH`), independent of upstream's 15.x numbering — the origin stays credited, but the project evolves on its own.
 
-* **Stable releases** are built from git tags (`vX.Y.Z`) and published as versioned GitHub releases with versioned file names (e.g. `UniServer-Reload-1.0.0.exe`).
+* **Stable releases** are built from git tags (`vX.Y.Z`) and published as versioned GitHub releases with versioned file names (e.g. `UniServer-Reload-1.2.0.exe`).
 * The **rolling `latest` release** continues to be updated on every push with development builds.
 * The version is visible everywhere: the *About* dialog, `UniController.exe version` on the command line, the splash page, the exe file properties and `home\version.txt` in the bundle (which also records the ZeroXV base package the bundle was built from).
 * Single source of truth is [`UniController/reload_version.inc`](UniController/reload_version.inc): CI stamps it into the exe VersionInfo and the bundle, and refuses to build a release tag that does not match it.

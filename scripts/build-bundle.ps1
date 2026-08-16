@@ -232,8 +232,11 @@ if ((Get-Content $userIni -Raw) -notmatch [regex]::Escape('US_ROOTF_SSL=./www'))
 
 # --- Install fork splash page ------------------------------------------------
 # Replaces the stock splash page (stale version list, upstream download links)
-# with the fork's version-aware page.
+# with the fork's version-aware page. The stock static index.html must go:
+# DirectoryIndex prefers index.html over index.php, so it would shadow the
+# fork page (with a stale version) for anyone browsing /us_splash/.
 Copy-Item 'bundle\us_splash\index.php' "$root\home\us_splash\index.php" -Force
+if (Test-Path "$root\home\us_splash\index.html") { Remove-Item "$root\home\us_splash\index.html" -Force }
 
 # --- Brand bundled documentation ---------------------------------------------
 # header.js/footer.js are included by every manual page: the fork header adds
