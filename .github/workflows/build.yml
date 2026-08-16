@@ -120,6 +120,30 @@ jobs:
         shell: pwsh
         run: ./scripts/build-bundle.ps1
 
+      - name: Update base package mirror
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Self-healing mirror: archive the ZeroXV base package (downloaded by
+          # build-bundle.ps1 as base.exe) as an asset of the base-package
+          # release, so future builds no longer depend on SourceForge.
+          $assets = (& gh release view base-package --json assets --jq '.assets[].name' 2>$null) -join "`n"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host '==> Creating base-package mirror release'
+            & gh release create base-package --prerelease --title 'Base package mirror' --notes 'Mirror of the Uniform Server ZeroXV 15.0.2 base package, originally from SourceForge (https://sourceforge.net/projects/miniserver/). CI builds prefer this asset and fall back to SourceForge. Marked as prerelease so it never appears as the latest release.'
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create base-package release' }
+            $assets = ''
+          }
+          if ($assets -notlike '*15_0_2_ZeroXV.exe*') {
+            Write-Host '==> Uploading base package to mirror'
+            Copy-Item base.exe 15_0_2_ZeroXV.exe
+            & gh release upload base-package 15_0_2_ZeroXV.exe --clobber
+            if ($LASTEXITCODE -ne 0) { throw 'Mirror upload failed' }
+          } else {
+            Write-Host '==> Mirror already up to date'
+          }
+
       - name: Upload bundle
         uses: actions/upload-artifact@v4
         with:

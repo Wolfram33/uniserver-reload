@@ -104,7 +104,8 @@ All values remain editable: PHP via *PHP > Edit selected configuration file*, My
 * [x] Package current Apache / MariaDB versions (bundle ships the latest Apache Lounge 2.4.x build; MariaDB LTS available as a module) — every bundle is smoke-tested in CI: Apache is started on the runner and must serve a PHP-rendered page
 * [x] Command-line control of the servers: start/stop/restart/status/version with exit codes, safe for unattended scripts (see the bundled manual page *Command line parameters*)
 * [x] Own version line with tagged stable releases (see [Versioning](#versioning))
-* [ ] Reduce build-time dependencies on upstream infrastructure (base package mirror in the `base-package` release; CI prefers it and falls back to SourceForge)
+* [x] Reduce build-time dependencies on upstream infrastructure: the ZeroXV base package is mirrored automatically into the `base-package` release on first CI build; builds prefer the mirror and fall back to SourceForge
+* [x] Remove dead upstream services from the controller: the DtDNS updater and the *Server Internet status* window relied on services (dtdns.com, uniformserver.com version file) that no longer exist or are unmaintained
 * [ ] Work through the open issues of the upstream repository (see below)
 
 ## Upstream issue triage
