@@ -3,6 +3,7 @@ name: Build
 on:
   push:
     branches: ['**']
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -13,9 +14,36 @@ jobs:
   build:
     name: Build UniController & UniService
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Determine version and stamp VersionInfo
+        id: ver
+        shell: pwsh
+        run: |
+          # Single source of truth: UniController/reload_version.inc
+          $inc = Get-Content 'UniController/reload_version.inc' -Raw
+          if ($inc -notmatch "US_RELOAD_VERSION\s*=\s*'([^']+)'") { throw 'US_RELOAD_VERSION not found in reload_version.inc' }
+          $v = $Matches[1]
+          "version=$v" >> $env:GITHUB_OUTPUT
+          if ($env:GITHUB_REF -like 'refs/tags/*') {
+            $tag = $env:GITHUB_REF -replace '^refs/tags/', ''
+            if ($tag -ne "v$v") { throw "Tag $tag does not match source version v$v - bump UniController/reload_version.inc first" }
+          }
+          # Keep the exe VersionInfo of both controllers in sync with the source version
+          $parts = @($v.Split('.')) + @('0', '0', '0')
+          foreach ($lpi in 'UniController/UniController.lpi', 'UniService/UniService.lpi') {
+            $x = Get-Content $lpi -Raw
+            $x = $x -replace '<MajorVersionNr Value="\d+"/>', "<MajorVersionNr Value=`"$($parts[0])`"/>"
+            $x = $x -replace '<MinorVersionNr Value="\d+"/>', "<MinorVersionNr Value=`"$($parts[1])`"/>"
+            $x = $x -replace '<RevisionNr Value="\d+"/>',     "<RevisionNr Value=`"$($parts[2])`"/>"
+            $x = $x -replace 'ProductVersion="[^"]*"',        "ProductVersion=`"$v`""
+            Set-Content $lpi -Value $x -NoNewline
+            Write-Host "Stamped $lpi with version $v"
+          }
 
       - name: Install Lazarus
         run: choco install lazarus -y --no-progress
@@ -118,15 +146,31 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: Update rolling release
+    name: Publish release
     if: github.event_name == 'push'
     needs: [build, package-php-modules, bundle, package-mariadb-module]
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Determine release parameters
+        id: rel
+        run: |
+          # Tag push (vX.Y.Z) -> stable versioned release; branch push -> rolling latest
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            echo "name=UniServer Reload ${VERSION}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "name=Latest development build" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Collect release files
         run: |
@@ -134,21 +178,32 @@ jobs:
           find artifacts -name '*.exe' -exec cp {} release/ \;
           find artifacts -name '*.zip' -exec cp {} release/ \;
           find artifacts -name 'module-versions.txt' -exec cat {} \; | sort -u > release-versions.txt
-          echo "Packaged PHP versions:" && cat release-versions.txt
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            mv release/UniServer-Reload.exe "release/UniServer-Reload-${VERSION}.exe"
+          fi
+          echo "Packaged versions:" && cat release-versions.txt
           ls -l release/
 
       - name: Build release notes
         run: |
+          BUNDLE_NAME="UniServer-Reload.exe"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then BUNDLE_NAME="UniServer-Reload-${VERSION}.exe"; fi
           {
-            echo "Rolling development build - automatically updated on every push."
-            echo
-            echo "Built from commit ${GITHUB_SHA} on branch ${GITHUB_REF_NAME}."
+            if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+              echo "UniServer Reload ${VERSION} - stable release."
+              echo
+              echo "Built from commit ${GITHUB_SHA} (tag ${GITHUB_REF_NAME})."
+            else
+              echo "Rolling development build (version line ${VERSION}) - automatically updated on every push."
+              echo
+              echo "Built from commit ${GITHUB_SHA} on branch ${GITHUB_REF_NAME}."
+            fi
             echo
             echo "## Contents"
             echo
             echo "| File | Description |"
             echo "|---|---|"
-            echo "| **UniServer-Reload.exe** | **All-in-one package: complete server with current Apache, MySQL and PHP 8.3/8.4/8.5 - just run it, no further setup** |"
+            echo "| **${BUNDLE_NAME}** | **All-in-one package: complete server with current Apache, MySQL and PHP 8.3/8.4/8.5 - just run it, no further setup** |"
             echo "| UniController.exe | Controller only (replaces the one in an existing UniServerZ folder) |"
             echo "| UniService.exe | Windows service module |"
             echo "| ZeroXV_php84_module.zip | PHP 8.4 module - unzip into an existing UniServerZ root folder |"
@@ -173,7 +228,7 @@ jobs:
             echo
             echo "## Installation (all-in-one)"
             echo
-            echo "1. Run \`UniServer-Reload.exe\` and pick a target folder - it extracts a ready-to-use \`UniServerZ\` folder"
+            echo "1. Run \`${BUNDLE_NAME}\` and pick a target folder - it extracts a ready-to-use \`UniServerZ\` folder"
             echo "   (Uniform Server ZeroXV 15.0.2 base with the fork controller and the PHP 8.4/8.5 modules already integrated)."
             echo "2. Start \`UniServerZ\\UniController.exe\` and start Apache/MySQL."
             echo "3. To switch the PHP version: stop Apache first, then *PHP > Select PHP version*, then start Apache again."
@@ -201,10 +256,10 @@ jobs:
       - name: Create/update release
         uses: ncipollo/release-action@v1
         with:
-          tag: latest
-          name: Latest development build
+          tag: ${{ steps.rel.outputs.tag }}
+          name: ${{ steps.rel.outputs.name }}
           bodyFile: notes.md
-          prerelease: true
+          prerelease: ${{ steps.rel.outputs.prerelease }}
           allowUpdates: true
           replacesArtifacts: true
           removeArtifacts: true

@@ -10,18 +10,32 @@
 # format as the upstream 15_0_2_ZeroXV.exe)
 $ErrorActionPreference = 'Stop'
 
+# --- Fork version: single source of truth is UniController/reload_version.inc
+$versionInc = Get-Content 'UniController\reload_version.inc' -Raw
+if ($versionInc -notmatch "US_RELOAD_VERSION\s*=\s*'([^']+)'") { throw 'US_RELOAD_VERSION not found in UniController\reload_version.inc' }
+$reloadVersion = $Matches[1]
+$baseVersion = '15.0.2'   # Uniform Server ZeroXV base package the bundle builds on
+Write-Host "==> Building UniServer Reload $reloadVersion (base package $baseVersion)"
+
 $sevenZip = Join-Path $env:ProgramFiles '7-Zip\7z.exe'
 $sfxModule = Join-Path $env:ProgramFiles '7-Zip\7z.sfx'
 if (-not (Test-Path $sevenZip))  { throw "7z.exe not found at $sevenZip" }
 if (-not (Test-Path $sfxModule)) { throw "7z.sfx not found at $sfxModule" }
 
-# --- Fetch and unpack the upstream base package ------------------------------
+# --- Fetch and unpack the base package ---------------------------------------
+# Preferred source is our own mirror (assets of the base-package release) so
+# builds do not depend on SourceForge availability; SourceForge is the fallback.
+$mirrorUrl = 'https://github.com/Wolfram33/uniserver-reload/releases/download/base-package/15_0_2_ZeroXV.exe'
 $baseUrl = 'https://downloads.sourceforge.net/project/miniserver/Uniform%20Server%20ZeroXV/15_0_2_ZeroXV/15_0_2_ZeroXV.exe'
-Write-Host '==> Downloading Uniform Server ZeroXV 15.0.2 base package'
-# curl.exe instead of Invoke-WebRequest: SourceForge serves browser-like
-# clients an HTML mirror-selection page instead of the file.
-& curl.exe -fsSL -o base.exe $baseUrl
-if ($LASTEXITCODE -ne 0) { throw "Base package download failed ($LASTEXITCODE)" }
+Write-Host '==> Downloading Uniform Server ZeroXV 15.0.2 base package (mirror)'
+& curl.exe -fsSL -o base.exe $mirrorUrl
+if ($LASTEXITCODE -ne 0) {
+  Write-Host '==> Mirror not available, falling back to SourceForge'
+  # curl.exe instead of Invoke-WebRequest: SourceForge serves browser-like
+  # clients an HTML mirror-selection page instead of the file.
+  & curl.exe -fsSL -o base.exe $baseUrl
+  if ($LASTEXITCODE -ne 0) { throw "Base package download failed ($LASTEXITCODE)" }
+}
 $size = (Get-Item base.exe).Length
 if ($size -lt 40MB) { throw "Base package download too small ($size bytes) - got an HTML page instead of the installer?" }
 
@@ -84,6 +98,20 @@ Write-Host "==> Apache upgraded to $apVer"
 Write-Host '==> Installing fork UniController/UniService'
 Copy-Item 'artifacts\uniserver-binaries\UniController\UniController.exe' "$root\UniController.exe" -Force
 Copy-Item 'artifacts\uniserver-binaries\UniService\UniService.exe' "$root\UniService.exe" -Force
+
+# --- Stamp the fork version --------------------------------------------------
+# AppVersion carries the fork version (splash page and controller read it);
+# BaseVersion records the ZeroXV base package the bundle was built from.
+Write-Host "==> Stamping version $reloadVersion"
+$cfg = "$root\home\us_config\us_config.ini"
+$c = Get-Content $cfg -Raw
+$c = $c -replace '(?m)^AppVersion=.*?(\r?)$', "AppVersion=$reloadVersion`$1"
+if ($c -notmatch '(?m)^BaseVersion=') {
+  $c = $c -replace '(?m)^(AppVersion=.*?\r?)$', "`$1`nBaseVersion=$baseVersion"
+}
+Set-Content $cfg -Value $c -NoNewline
+if ((Get-Content $cfg -Raw) -notmatch "(?m)^AppVersion=$([regex]::Escape($reloadVersion))") { throw 'us_config.ini version stamp failed' }
+Set-Content "$root\home\version.txt" -Value "UniServer Reload $reloadVersion (base package Uniform Server ZeroXV $baseVersion)"
 
 # --- Merge the PHP modules ---------------------------------------------------
 $modules = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'ZeroXV_php8*_module.zip'
@@ -283,6 +311,7 @@ Write-Host '==> Packing self-extracting bundle'
 New-Item -ItemType Directory -Force dist | Out-Null
 & $sevenZip a -sfx"$sfxModule" -mx=7 'dist\UniServer-Reload.exe' '.\base\UniServerZ'
 if ($LASTEXITCODE -ne 0) { throw "7z sfx packing failed ($LASTEXITCODE)" }
+Add-Content 'dist\module-versions.txt' "UniServer Reload $reloadVersion (base ZeroXV $baseVersion)"
 Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"
 
 Get-Item 'dist\UniServer-Reload.exe' | Format-List Name, Length

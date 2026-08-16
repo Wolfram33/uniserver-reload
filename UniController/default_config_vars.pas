@@ -16,7 +16,8 @@ uses
 {global vars}
 
 const
-  UNICONTROLLER_VERSION = 'v2.5.5-reload';
+  {$I reload_version.inc} //US_RELOAD_VERSION - fork version, single source of truth
+  UNICONTROLLER_VERSION = US_RELOAD_VERSION; // Controller is released with the fork version
   ZENDOPCACHE_DLL       = 'php_opcache.dll';
 
   Btn_text_enable_ssl   = 'Enable SSL (Currently Disabled)';
@@ -82,6 +83,7 @@ Var
    //[App]
    USC_AppNumber       : String;  // Application number
    USC_AppVersion      : String;  // Version
+   USC_BaseVersion     : String;  // Version of the Uniform Server ZeroXV base package the bundle is built from
    USC_ServerType      : String;  // Server Type: WAMP=Default APS=Apache standalone server MYS=MySQL  standalone server
    USC_ServerTypeText1 : String;  // TrayIcon hover text
    USC_ServerTypeText2 : String;  // TrayIcon hover text
@@ -743,6 +745,7 @@ begin
    //[APP]
    USC_AppNumber       := Ini1.ReadString('APP','AppNumber','1');                          // Application number
    USC_AppVersion      := Ini1.ReadString('APP','AppVersion','15.0.2');                    // Version
+   USC_BaseVersion     := Ini1.ReadString('APP','BaseVersion','15.0.2');                   // Base package version
    USC_ServerType      := Ini1.ReadString('APP','ServerType','WAMP0');                     // Default=WAMP APS=Apache standalone server MYS=MySQL  standalone server
    USC_ServerTypeText1 := Ini1.ReadString('APP','ServerTypeText1','Uniform Server Zero');  // TrayIcon hover text
    USC_ServerTypeText2 := Ini1.ReadString('APP','ServerTypeText2','Portable WAMP Server'); // TrayIcon hover text

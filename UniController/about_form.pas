@@ -49,8 +49,8 @@ begin
    about.Caption := 'About';     // About
 
   str1:='';
-  str1:= str1 + 'UniServer Zero XV '+ USC_AppVersion +sLineBreak;
-  str1:= str1 + 'UniController XV ' + UNICONTROLLER_VERSION;
+  str1:= str1 + 'UniServer Reload '+ US_RELOAD_VERSION +sLineBreak;
+  str1:= str1 + 'Based on Uniform Server Zero XV ' + USC_BaseVersion;
   Label1.Caption := str1;
 
   str2:='';

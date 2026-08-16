@@ -37,7 +37,7 @@ uses
    start_apache   stop_apache   restart_apache
    start_mysql    stop_mysql    restart_mysql
    start_both     stop_both     restart_both
-   status         help
+   status         version       help
 
   Also accepted:
    --start-apache style: leading dashes/slashes, dashes for underscores
@@ -85,6 +85,7 @@ begin
   If (cmd = 'stop_all')    Then cmd := 'stop_both';
   If (cmd = 'restart_all') Then cmd := 'restart_both';
   If (cmd = '?') or (cmd = 'h') Then cmd := 'help';
+  If (cmd = 'v') Then cmd := 'version';
 
   cli_normalize_command := cmd;
 end;
@@ -99,7 +100,7 @@ begin
        (cmd = 'start_apache') or (cmd = 'stop_apache') or (cmd = 'restart_apache')
     or (cmd = 'start_mysql')  or (cmd = 'stop_mysql')  or (cmd = 'restart_mysql')
     or (cmd = 'start_both')   or (cmd = 'stop_both')   or (cmd = 'restart_both')
-    or (cmd = 'status')       or (cmd = 'help');
+    or (cmd = 'status')       or (cmd = 'version')     or (cmd = 'help');
 end;
 {--- End cli_known_command --------------------------------------------------}
 
@@ -108,13 +109,15 @@ end;
 ============================================================================}
 procedure cli_print_usage;
 begin
-  cli_write_line('UniController command line usage: UniController.exe <command>');
+  cli_write_line('UniServer Reload ' + US_RELOAD_VERSION);
+  cli_write_line('Usage: UniController.exe <command>');
   cli_write_line('');
   cli_write_line('Commands (also accepted as --command form, e.g. --restart-apache):');
   cli_write_line('  start_apache | stop_apache | restart_apache');
   cli_write_line('  start_mysql  | stop_mysql  | restart_mysql');
   cli_write_line('  start_both   | stop_both   | restart_both   (aliases: *_all)');
   cli_write_line('  status       Report server state');
+  cli_write_line('  version      Print version');
   cli_write_line('  help         Show this help');
   cli_write_line('');
   cli_write_line('Exit codes: 0 = success, 1 = operation failed, 2 = unknown command');
@@ -257,6 +260,12 @@ begin
   If cmd = 'help' Then
    begin
      cli_print_usage;
+     Halt(CLI_EXIT_OK);
+   end;
+
+  If cmd = 'version' Then
+   begin
+     cli_write_line('UniServer Reload ' + US_RELOAD_VERSION);
      Halt(CLI_EXIT_OK);
    end;
 

@@ -4,7 +4,7 @@
 
 [![Build](https://github.com/Wolfram33/uniserver-reload/actions/workflows/build.yml/badge.svg)](https://github.com/Wolfram33/uniserver-reload/actions/workflows/build.yml)
 
-**A community fork of [The Uniform Server](https://github.com/iamola/uniserver), aiming to continue development.**
+**A community fork of [The Uniform Server](https://github.com/iamola/uniserver) — continued as an independent project with its own version line.**
 
 **No external dependencies, no installation, no configuration:** the complete WAMP stack — Apache, MySQL, PHP 8.3/8.4/8.5, phpMyAdmin and the updated controller — ships as a **single self-extracting 7-Zip archive** ([`UniServer-Reload.exe`](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)). Unpack it anywhere and everything is immediately ready to run. Nothing needs to be downloaded from SourceForge or windows.php.net, no modules need to be added, no settings need to be changed. Portable as ever: no installer, no registry entries.
 
@@ -43,6 +43,17 @@ Every push triggers a build that updates the rolling release with fixed download
 The single-file downloads exist only for users who want to upgrade an existing Uniform Server installation piece by piece; with `UniServer-Reload.exe` none of them are needed.
 
 Quick start: run `UniServer-Reload.exe`, pick a target folder, then start `UniServerZ\UniController.exe` — the servers are ready to go. To switch the PHP version stop Apache first, then use *PHP > Select PHP version*.
+
+## Versioning
+
+UniServer Reload follows its **own version line starting at 1.0.0** (`MAJOR.MINOR.PATCH`), independent of upstream's 15.x numbering — the origin stays credited, but the project evolves on its own.
+
+* **Stable releases** are built from git tags (`vX.Y.Z`) and published as versioned GitHub releases with versioned file names (e.g. `UniServer-Reload-1.0.0.exe`).
+* The **rolling `latest` release** continues to be updated on every push with development builds.
+* The version is visible everywhere: the *About* dialog, `UniController.exe version` on the command line, the splash page, the exe file properties and `home\version.txt` in the bundle (which also records the ZeroXV base package the bundle was built from).
+* Single source of truth is [`UniController/reload_version.inc`](UniController/reload_version.inc): CI stamps it into the exe VersionInfo and the bundle, and refuses to build a release tag that does not match it.
+
+Release procedure: bump the version in `reload_version.inc`, commit, tag the commit `vX.Y.Z`, push branch and tag — CI builds, verifies and publishes the versioned release.
 
 ## HTTPS (`https://localhost` without browser warning)
 
@@ -91,6 +102,9 @@ All values remain editable: PHP via *PHP > Edit selected configuration file*, My
 * [x] Package current PHP versions as ready-to-use modules (built by CI, see Downloads)
 * [x] Automatic rolling GitHub release with fixed download links
 * [x] Package current Apache / MariaDB versions (bundle ships the latest Apache Lounge 2.4.x build; MariaDB LTS available as a module) — every bundle is smoke-tested in CI: Apache is started on the runner and must serve a PHP-rendered page
+* [x] Command-line control of the servers: start/stop/restart/status/version with exit codes, safe for unattended scripts (see the bundled manual page *Command line parameters*)
+* [x] Own version line with tagged stable releases (see [Versioning](#versioning))
+* [ ] Reduce build-time dependencies on upstream infrastructure (base package mirror in the `base-package` release; CI prefers it and falls back to SourceForge)
 * [ ] Work through the open issues of the upstream repository (see below)
 
 ## Upstream issue triage
