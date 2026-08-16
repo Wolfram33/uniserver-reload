@@ -1,0 +1,123 @@
+/* Uniform Server Reload - test page
+   Palette taken from images/logo.png (banner): navy #182c45 / #284669, link blue #1d6fae */
+* {
+	padding: 0;
+	margin: 0;
+	box-sizing: border-box;
+}
+body {
+	font: 14px/1.5 "Lucida Sans", "Trebuchet MS", Verdana, Arial, sans-serif;
+	background-color: #203957;
+	color: #1a1a1a;
+	padding: 0 10px;
+}
+a {
+	color: #1d6fae;
+	text-decoration: underline;
+}
+a:hover {
+	color: #182c45;
+}
+a:focus-visible {
+	outline: 2px solid #1d6fae;
+	outline-offset: 2px;
+}
+img {
+	border: 0;
+	max-width: 100%;
+	height: auto;
+}
+.skip-link {
+	position: absolute;
+	left: -9999px;
+	top: 0;
+	z-index: 10;
+	padding: 10px 14px;
+	background-color: #fff;
+	color: #182c45;
+	font-weight: bold;
+}
+.skip-link:focus {
+	left: 10px;
+}
+#wrap {
+	max-width: 550px;
+	margin: 20px auto;
+	padding: 10px;
+	background-color: #fff;
+	border: 1px solid #0e1b2c;
+}
+#header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	/* continues the banner's own vertical gradient across the full header width */
+	background: linear-gradient(#182c45, #284669);
+}
+#header a {
+	display: block;
+	min-width: 0;   /* let the banner shrink inside the flex row on small screens */
+	max-width: 100%;
+}
+#header img {
+	display: block;
+}
+.version {
+	margin-left: auto;
+	padding: 8px 12px;
+	color: #fff;
+	font: bold 15px Verdana, Arial, sans-serif;
+}
+main {
+	padding: 10px 6px;
+}
+main h1 {
+	margin: 8px 0 4px;
+	text-align: center;
+	font-size: 22px;
+	color: #182c45;
+}
+main h2 {
+	margin: 16px 0 4px;
+	font-size: 16px;
+	color: #284669;
+}
+.intro {
+	margin: 12px 0;
+	padding: 6px 8px;
+	font-size: 13px;
+	font-family: Verdana, Arial, sans-serif;
+	background-color: #e8f1fa;
+	border-top: 1px solid #284669;
+	border-bottom: 1px solid #284669;
+}
+.padlock {
+	margin: 14px 0;
+	text-align: center;
+}
+.link-list {
+	list-style: none;
+	margin: 4px 0 0;
+}
+.link-list li {
+	padding: 5px 0;
+}
+.link-list .empty,
+.link-list li.empty {
+	color: #b03a2e;
+	font-weight: bold;
+}
+footer {
+	margin-top: 18px;
+	text-align: center;
+	font-size: 12px;
+}
+.footer-links {
+	padding: 4px 0;
+	font-weight: bold;
+}
+.credits {
+	padding: 4px 0;
+	color: #333;
+}

@@ -249,11 +249,17 @@ Copy-Item 'bundle\us_docs\index.html' "$root\docs\manual\index.html" -Force
 # matching manual page instead of the stock one.
 Copy-Item 'bundle\us_docs\command_line_parameters.html' "$root\docs\manual\command_line_parameters.html" -Force
 
-# --- Reload branding: banner, favicon ----------------------------------------
+# --- Reload branding: banner, favicon, www test page -------------------------
 Copy-Item 'bundle\branding\banner.png' "$root\home\us_splash\images\logo.png" -Force
 Copy-Item 'bundle\branding\banner.png' "$root\docs\manual\common\images\us_zero_logo.png" -Force
 Copy-Item 'bundle\branding\favicon.ico' "$root\home\us_splash\favicon.ico" -Force
 if (Test-Path "$root\www\favicon.ico") { Copy-Item 'bundle\branding\favicon.ico' "$root\www\favicon.ico" -Force }
+# Branded www test page: replaces the stock ZeroXV page; the banner doubles as
+# its header logo and the old background tile becomes obsolete (CSS gradient).
+Copy-Item 'bundle\www\index.php' "$root\www\index.php" -Force
+Copy-Item 'bundle\www\css\style.css' "$root\www\css\style.css" -Force
+Copy-Item 'bundle\branding\banner.png' "$root\www\images\logo.png" -Force
+if (Test-Path "$root\www\images\branding_bg.png") { Remove-Item "$root\www\images\branding_bg.png" -Force }
 
 # --- Smoke test: every PHP version must execute and load the default exts ----
 # Starts Apache once per installed PHP version and verifies PHP is executed
@@ -300,13 +306,15 @@ foreach ($ver in $versions) {
 }
 Remove-Item "$root\www\_ci_probe.php" -Force
 
-# Splash page renders (fork content) under the default version
+# Splash page and www test page render (fork content) under the default version
 $env:PHP_SELECT = ($versions | Select-Object -First 1)
 Start-Process -FilePath $httpd -ArgumentList '-f', "$rootAbs\core\apache2\conf\httpd.conf", '-d', "$rootAbs\core\apache2" | Out-Null
 $resp = $null
 foreach ($i in 1..30) { Start-Sleep -Seconds 1; $resp = & curl.exe -fsS 'http://localhost:8088/us_splash/index.php' 2>$null; if ($LASTEXITCODE -eq 0 -and $resp) { break } }
+$respWww = & curl.exe -fsS 'http://localhost:8088/index.php' 2>$null
 & taskkill /F /IM httpd_z.exe 2>$null | Out-Null
 if (($resp -join "`n") -notmatch 'Uniform Server Reload') { throw 'Smoke test: splash page did not render fork content' }
+if (($respWww -join "`n") -notmatch 'Uniform Server Reload') { throw 'Smoke test: www test page did not render fork content' }
 Write-Host "==> Smoke test passed: Apache $apVer, all PHP versions execute with required extensions"
 
 # --- Pack as self-extracting exe ---------------------------------------------
