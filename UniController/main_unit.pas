@@ -30,9 +30,7 @@ uses
   php_extensions_form,
   edit_php_basic_form,
   msmtp_php_mail_form,
-  server_internet_status_form,
   pc_win_startup_form,
-  dtdns_form,
   cron_form,
   command_line_start_up,
   mysql_db_create_delete_form,
@@ -102,10 +100,8 @@ type
     MMSS_display_at_startup_page2: TMenuItem;
     MMSS_select_page_to_display2: TMenuItem;
     MMS_acache_start_up_pages: TMenuItem;
-    MMS_server_internet_status: TMenuItem;
     MenuItem14_spacer: TMenuItem;
     MenuItem15_spacer: TMenuItem;
-    MenuItem16_spacer: TMenuItem;
     MMS_php_mail_msmtp: TMenuItem;
     MMS_view_phpinfo: TMenuItem;
     MMSS_php_edit_basic: TMenuItem;
@@ -241,7 +237,6 @@ type
     procedure FormCreate(Sender: TObject);
     procedure MMS_clean_upClick(Sender: TObject);
     procedure MMS_cronClick(Sender: TObject);
-    //procedure MMS_dtdnsClick(Sender: TObject);
     procedure MMS_edit_selected_php_configClick(Sender: TObject);
     procedure MMS_edit_uniformserver_pacClick(Sender: TObject);
     procedure MMS_force_unix_shebangClick(Sender: TObject);
@@ -263,7 +258,6 @@ type
     procedure MMS_php_mail_msmtpClick(Sender: TObject);
     procedure MMS_php_view_accelerator_control_panelClick(Sender: TObject);
     procedure MMS_select_php_versionClick(Sender: TObject);
-    procedure MMS_server_internet_statusClick(Sender: TObject);
     procedure MMS_shebang_helpClick(Sender: TObject);
     procedure MMS_select_portable_browserClick(Sender: TObject);
     procedure MMS_select_default_browserClick(Sender: TObject);
@@ -643,10 +637,10 @@ begin
      USUC_PAGE_1   := page1;                            // Set var
      us_ini_set(USF_US_USER_INI,'USER','PAGE_1',page1); // save to config file
      us_update_server_state;                            // Update menus
-     us_MessageDlg('DtDNS Info','New PAGE was set', mtcustom,[mbOk],0); //Display information
+     us_MessageDlg('Page Info','New PAGE was set', mtcustom,[mbOk],0); //Display information
    end
   Else
-      us_MessageDlg('DtDNS Info','Cancel clicked: No action taken', mtcustom,[mbOk],0);
+      us_MessageDlg('Page Info','Cancel clicked: No action taken', mtcustom,[mbOk],0);
 
 end;
 
@@ -662,10 +656,10 @@ begin
       USUC_PAGE_2   := page2;                            // Set var
       us_ini_set(USF_US_USER_INI,'USER','PAGE_2',page2); // save to config file
       us_update_server_state;                            // Update menus
-       us_MessageDlg('DtDNS Info','New PAGE was set', mtcustom,[mbOk],0); //Display information
+       us_MessageDlg('Page Info','New PAGE was set', mtcustom,[mbOk],0); //Display information
     end
    Else
-     us_MessageDlg('DtDNS Info','Cancel clicked: No action taken', mtcustom,[mbOk],0);
+     us_MessageDlg('Page Info','Cancel clicked: No action taken', mtcustom,[mbOk],0);
 end;
 
 procedure TMain.MMSS_apache_access_logClick(Sender: TObject);
@@ -1205,11 +1199,6 @@ begin
   cron.ShowModal;  // Display Cron menu
 end;
 
-//procedure TMain.MMS_dtdnsClick(Sender: TObject);
-//begin
-//  dtdns.ShowModal; // Display DtDns menu;
-//end;
-
 procedure TMain.MMS_edit_selected_php_configClick(Sender: TObject);
 begin
   //==Edit selected PHP configuration file
@@ -1537,12 +1526,6 @@ begin
 
 end;
 
-procedure TMain.MMS_server_internet_statusClick(Sender: TObject);
-
-begin
-   server_internet_status.ShowModal;  //Display Internet Status Window;
-end;
-
 procedure TMain.MMS_shebang_helpClick(Sender: TObject);
 var
  title:string;
@@ -1620,15 +1603,12 @@ end;
 
 
 {====================================================================
-This procedure periodically runs DtDNS update and Cron.
-If either is disabled that section is skipped.
+This procedure periodically runs Cron.
+If Cron is disabled the section is skipped.
 --------------------------------------------------------------------}
 procedure TMain.Timer1Timer(Sender: TObject);
 begin
  Timer1.Enabled := False; //Disable timer
-
- //--- Auto run DtDNS
- If DTDNS_auto_run Then dtdns_perform_update; // Run DtDNS updater
 
  //--- Auto run Cron
  If USC_enable_cron Then run_cron;            // Run Cron

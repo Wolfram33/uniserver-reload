@@ -22,7 +22,6 @@ uses
   LazFileUtils,
   FileUtil,
   Controls,
-  httpsend,
   blcksock,
   INIFiles,
   forms,
@@ -82,11 +81,6 @@ function us_www_htaccess_check_create: boolean;  // Check htaccess file exists o
 function us_ssl_htaccess_check_create: boolean;  // Check htaccess file exists or create default htaccess file
 function password_file_contains_defaults(password_file:string):boolean; //Check password file for root:root
 function password_file_empty(password_file:string):boolean; //Check password file empty
-
-//=== GET WEB DATA ===
-function get_ip_address(var ip:string):boolean;                //Get ip-address s seen from internet
-function get_version_information(var version:string):boolean;  //Get current version from UniServer
-function server_accessible_from_internet:boolean;              //Is this server accessible from internet
 
 //=== PALE MOON BROWSER ===
 function PaleMoonPortableRunning():boolean; // Is Pale Moon Portable browser running. Returns true running
@@ -2033,154 +2027,6 @@ end;
 {---End password_file_empty ---------------------------------------}
 
 //=== GET WEB DATA ===
-
-{====================================================================
-This function gets ip address as seen fom the Internet
-It uses the web-pge http://myip.dtdns.com
-
-Output returns true  - ip-address obtained
-Output ip            - returns ip-address to variable ip
-
-Uses:  httpsend - From synapse
-        httpsend.pas - Add to proect
-=====================================================================}
-function get_ip_address(var ip:string):boolean;
-var
-  ret             :boolean;   // True if ip address obtained
-  us_web_page_data: boolean;  // True: File dta received
-  HTTP   :THTTPSend;          // Var for object
-  sList  :tstringlist;        // Storage for returned page
-begin
-   ip  :='';                      // Set initial value
-   ret := False;                  // Assume ip not found
-   us_web_page_data := False;     // Assume no reply
-
-   HTTP   := THTTPSend.Create;    // Create object
-   sList  := TStringList.create;  // Create list storage
-   try
-       HTTP.Timeout := 2000;      //Defaults to 5000
-       if HTTP.HTTPMethod('GET', 'http://myip.dtdns.com') then
-       begin
-          us_web_page_data := True;            // Received reply
-          sList.loadfromstream(Http.Document); // Save data in sList
-       end;
-   finally
-     HTTP.Free;
-   end;
-
-   If us_web_page_data Then  // IP Received
-     begin
-       ip := sList[0];       // Ip address is first line in list
-       ret := True;          // IP obtained
-     end;
-
-   get_ip_address := ret;   // Return status
-
-   //Clean up
-   sList.free;              // Free List
-
-end;
-{---End get_ip_address ----------------------------------------------}
-
-{====================================================================
-This function gets current Uniform Server version from a file
-hosted at uniformserver.com
-
-Output returns true  - version obtained
-Output version       - returns version obtained to variable version
-
-Uses:  httpsend - From synapse
-        httpsend.pas - Add to proect
-
-VERSION_FILE_ADDRESS  = 'http://www.uniformserver.com/system/.version2';
-=====================================================================}
-function get_version_information(var version:string):boolean;
-var
-  ret              :boolean;  // True if version obtained
-  us_web_page_data: boolean;  // True: File data received
-  HTTP   :THTTPSend;          // Var for object
-  sList  :tstringlist;        // Storage for returned page
-begin
-   version  :='';                 // Set initial value
-   ret      := False;             // Assume version not found
-   us_web_page_data := False;     // Assume no reply
-
-   HTTP   := THTTPSend.Create;    // Create object
-   sList  := TStringList.create;  // Create list storage
-   try
-       HTTP.Timeout := 2000;      //Defaults to 5000
-       if HTTP.HTTPMethod('GET', VERSION_FILE_ADDRESS) then
-       begin
-          us_web_page_data := True;            // Received reply
-          sList.loadfromstream(Http.Document); // Save data in sList
-       end;
-   finally
-     HTTP.Free;
-   end;
-
-   If us_web_page_data Then  // version Received
-     begin
-       version := sList[0];  // version is first line in list
-       ret := True;          // version obtained
-     end;
-
-   get_version_information := ret;   // Return status
-
-   //Clean up
-   sList.free;              // Free List
-
-end;
-{---End get_version_information --------------------------------------}
-
-
-{====================================================================
-This function checks server is accessible from internet
-
-Output returns true  - accessible from internet
-
-Uses:  httpsend - From synapse
-        httpsend.pas - Add to proect
-
-uses file:   UniServerZ\home\us_access\www\index.html
-web address: http://ip_address:port/us_test_access/index.html
-
-=====================================================================}
-function server_accessible_from_internet:boolean;
-var
-  us_page_url      :string;       // Url of page to read
-  ip               :string;       // Server ip address seen from Internet
-  ret              :boolean;      // True if accessible
-  HTTP             :THTTPSend;    // Var for object
-begin
-   ret  := False;   // Assume not accessible
-   ip   :='';       //Set initial value
-
-  //Must have an ip address to obtain data from index.html
-  If get_ip_address(ip) Then     // ip address obtained
-    begin
-      //Create page url
-      us_page_url := 'http://' + ip +':'+ UENV_AP_PORT +'/us_test_access/index.html';
-
-      //==Get web page
-      HTTP   := THTTPSend.Create;    // Create object
-      try
-          HTTP.Timeout := 2000;      //Defaults to 5000
-          if HTTP.HTTPMethod('GET', us_page_url) then
-             ret := True;            // Received reply
-      finally
-        HTTP.Free;
-      end;
-    end
-
-  Else //No ip address
-    ret      := False;              // Not accessible no ip address
-
-  //Return status
-  server_accessible_from_internet := ret;
-
-
-end;
-{---End server_accessible_from_internet ----------------------------}
 
 //=== PALE MOON BROWSER ===
 

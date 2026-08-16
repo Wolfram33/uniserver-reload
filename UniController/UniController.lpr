@@ -12,7 +12,7 @@ uses
   vhost_create_form, vhost_delete_form, apache_modules_form, apache_basic_form,
   root_www_pass_access_form, root_ssl_pass_access_form, php_extensions_form,
   edit_php_basic_form, msmtp_php_mail_form, are_servers_runable, httpsend,
-  server_internet_status_form, pc_win_startup_form, dtdns_form, cron_form,
+  pc_win_startup_form, cron_form,
   lazcontrols, command_line_start_up, mysql_db_create_delete_form,
   mysql_create_restricted_user_form, mysql_edit_restricted_user_form,
   mysql_database_backup_form, mysql_database_restore_form, message_dlg_form;
@@ -35,9 +35,7 @@ begin
   Application.CreateForm(Tphp_extensions, php_extensions);
   Application.CreateForm(Tedit_php_basic, edit_php_basic);
   Application.CreateForm(Tmsmtp_php_mail, msmtp_php_mail);
-  Application.CreateForm(Tserver_internet_status, server_internet_status);
   Application.CreateForm(Tpc_win_startup, pc_win_startup);
-  Application.CreateForm(Tdtdns, dtdns);
   Application.CreateForm(Tcron, cron);
   Application.CreateForm(Tmysql_db_create_delete, mysql_db_create_delete);
   Application.CreateForm(Tmysql_create_restricted_user, mysql_create_restricted_user);

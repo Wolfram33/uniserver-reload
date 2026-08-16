@@ -1468,14 +1468,6 @@ object Main: TMain
     Top = 20
     object MM_general: TMenuItem
       Caption = 'General'
-      object MMS_server_internet_status: TMenuItem
-        Caption = 'Server Internet status'
-        ImageIndex = 20
-        OnClick = MMS_server_internet_statusClick
-      end
-      object MenuItem16_spacer: TMenuItem
-        Caption = '-'
-      end
       object MMS_php_mail_msmtp: TMenuItem
         Caption = 'Mail utility msmtp'
         ImageIndex = 8

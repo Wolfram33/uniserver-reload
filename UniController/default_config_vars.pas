@@ -22,7 +22,6 @@ const
 
   Btn_text_enable_ssl   = 'Enable SSL (Currently Disabled)';
   Btn_text_disable_ssl  = 'Disable SSL (Currently Enabled)';
-  VERSION_FILE_ADDRESS  = 'http://www.uniformserver.com/system/.version';
 
   //Portable Web browser Pale Moon
   PALE_MOONL_EXE           = 'Palemoon-Portable.exe'; // Portable Palemoon launcher start-up exe name
@@ -61,20 +60,6 @@ Var
    US_MYMAR_TXT        :string;   // Display string MySQL or MariaDB - Depends on server installed
   //==== User Config button options
 
-
-  //==== DtDNS Config and variables
-   DTDNS_domain_name_1    :string;  // DtDns Domain name 
-   DTDNS_domain_name_2    :string;  // DtDns Domain name 
-   DTDNS_domain_name_3    :string;  // DtDns Domain name 
-   DTDNS_domain_name_4    :string;  // DtDns Domain name 
-   DTDNS_domain_name_5    :string;  // DtDns Domain name 
-   DTDNS_account_password :string;  // DtDns account password 
-   DTDNS_auto_run         :Boolean; // Automatically run DtDNS update
-
-   DTDNS_logging          :Boolean; // Loging enabled or disabled in config file
-   DTDNS_time_tracker     :Integer; // Ref time
-
-  //==== End DtDNS Config and variables
 
 
 
@@ -317,10 +302,6 @@ Var
  USF_MSMTP_LOG          :String;  // MSMTP log file
  USF_MSMTP_BAT          :String;  // MSMTP batch file
  USF_MSMTP_MESSAGE_TEMP :String;  // MSMTP message to be piped into command line
-
- //-- DtDNS
- USF_DTDNS_INI      :String;       // DTDNS Config
- USF_DTDNS_LOG      :String;       // DTDNS log
 
  //-- Cron
  USF_CRON_INI       :String;       // Full path to Cron configuration file
@@ -578,10 +559,6 @@ begin
   USF_MSMTP_BAT          := US_MSMTP + '\Send_test_email.bat';  // MSMTP batch file
   USF_MSMTP_MESSAGE_TEMP := US_MSMTP + '\message_temp.txt';     // MSMTP Message to be piped. Temp file
 
-  //-- DtDNS
-  USF_DTDNS_INI          := US_HOME + '\us_dtdns\dtdns.ini';    // DTDNS Config
-  USF_DTDNS_LOG          := US_HOME + '\us_dtdns\dtdns.log';    // DTDNS log
-
   //-- Cron
   USF_CRON_INI           := US_HOME + '\us_cron\cron.ini';      // Full path to Cron configuration file
   USF_CRON_LOG           := US_HOME + '\us_cron\cron.log';      // CRON log
@@ -712,29 +689,6 @@ begin
   //=== Default browser Global variables
   DEFAULT_BROWSER_EXE := 'xxx';        // Executable name of default browser
   default_browser_ready_flag := False; // Default browser ready flag
-
-  DTDNS_time_tracker    :=0; // Ref time
-  //==== DtDNS Config and variables
-   //==USF_DTDNS_INI - Default DtDNS configuration
-
-   Ini3 := TINIFile.Create(USF_DTDNS_INI); // create object
-   //*** Start ***
-   //[DTDNS]
-   DTDNS_logging          := strToBool(Ini3.ReadString('DTDNS','logging','false'));  // Loging enabled or disabled
-   DTDNS_auto_run         := strToBool(Ini3.ReadString('DTDNS','auto_run','false')); // Automatically run DtDNS update
-
-   //[ACCOUNTS]
-   DTDNS_domain_name_1    := Ini3.ReadString('ACCOUNTS','domain_name_1','');    //DtDns Domain name
-   DTDNS_domain_name_2    := Ini3.ReadString('ACCOUNTS','domain_name_2','');    //DtDns Domain name
-   DTDNS_domain_name_3    := Ini3.ReadString('ACCOUNTS','domain_name_3','');    //DtDns Domain name
-   DTDNS_domain_name_4    := Ini3.ReadString('ACCOUNTS','domain_name_4','');    //DtDns Domain name
-   DTDNS_domain_name_5    := Ini3.ReadString('ACCOUNTS','domain_name_5','');    //DtDns Domain name
-   DTDNS_account_password := Ini3.ReadString('ACCOUNTS','password','');         //DtDns account password
-
-
-   //*** End ***
-   Ini3.Free;     // Free method of object
-  //==== End DtDNS Config and variables
 
 
  //=== Unicontroller configuration us_config.ini
