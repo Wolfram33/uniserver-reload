@@ -121,6 +121,11 @@ Var
    USP_INNODB_DATA_HOME_DIR      : String;  // MySQL innodb data folder - command line parameter 
    USP_INNODB_LOG_GROUP_HOME_DIR : String;  // MySQL innodb log folder - command line parameter 
 
+   //--Command line control (runtime state - never read from a config file)
+   USC_CLI_MODE : Boolean = False; // UniController driven by a command line parameter
+                                   // (see command_line_start_up): suppress all dialogs,
+                                   // results are reported via console text and exit code
+
    //--End UniServer configuration
 
    //Button text Toggle

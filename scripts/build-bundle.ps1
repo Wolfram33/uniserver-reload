@@ -214,6 +214,9 @@ Copy-Item 'bundle\us_splash\index.php' "$root\home\us_splash\index.php" -Force
 Copy-Item 'bundle\us_docs\header.js' "$root\docs\manual\common\header.js" -Force
 Copy-Item 'bundle\us_docs\footer.js' "$root\docs\manual\common\footer.js" -Force
 Copy-Item 'bundle\us_docs\index.html' "$root\docs\manual\index.html" -Force
+# The fork controller adds restart/status commands and exit codes: ship the
+# matching manual page instead of the stock one.
+Copy-Item 'bundle\us_docs\command_line_parameters.html' "$root\docs\manual\command_line_parameters.html" -Force
 
 # --- Reload branding: banner, favicon ----------------------------------------
 Copy-Item 'bundle\branding\banner.png' "$root\home\us_splash\images\logo.png" -Force

@@ -1,0 +1,246 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+  <title>Command line parameters</title>
+  <meta name="Description" content="Control Apache and MySQL/MariaDB from the command line: start, stop, restart, status and exit codes for scripting">
+  <meta name="Keywords" content="UniController,Command,line,parameters,restart,status,exit,codes,The Uniform Server,UniServer">
+  <link href="common/css/main.css" rel="stylesheet" type="text/css">
+  <link href="common/css/menu.css" rel="stylesheet" type="text/css">
+
+<style type="text/css">
+/*****************************************/
+.heading {
+ margin:0px;
+ padding:4px;
+ padding-left:8px;
+ color: #ffffff;
+ background-color:  #2F2F76;
+ font-size: 13px;
+ font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+
+.td_sub{
+ margin:0px;
+ padding:4px;
+ padding-left:8px;
+ color: #000000;
+ background-color:  #f0f0f0;
+ font-size: 12px;
+ font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+
+ul.plugins li{
+ font-size: 12px;
+  font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+}
+
+/*****************************************/
+</style>
+</head>
+
+
+<body id="p120">
+<!-- Start header -->
+  <script language="javascript" type="text/javascript" src="common/header.js"></script>
+<!-- End header -->
+
+<table id="main" >
+<tr valign="top">
+
+<td id="td_menu">
+<script language="javascript" type="text/javascript" src="common/top_menu.js"></script>
+<script language="javascript" type="text/javascript" src="common/home_additional_menu.js"></script>
+</td>
+
+<td id="td_spacer" >
+</td >
+
+<td id="td_content" >
+<!-- ============ Start Content ========== -->
+
+<table >
+<tr>
+ <td>
+    <img src="common/images/zero_logo4.png" alt="Zero logo">
+ </td>
+ <td>
+<h1>Command line parameters</h1>
+</tr>
+</table>
+
+<p>The servers can be controlled directly from the command line by running UniController with a command parameter: start, stop and restart Apache and MySQL/MariaDB individually or together, and query server status. UniController executes the command, reports the result on the console and terminates with an exit code, making all commands fully scriptable (batch files, PowerShell, build and deployment scripts, CI pipelines).</p>
+
+<p>This page covers command parameters supported by UniController.</p>
+
+<div id="page_links_menu_shadow" >
+ <div id="page_links_menu" >
+  <ul>
+   <li><a href="#Parameters" >Parameters</a></li>
+   <li><a href="#Exit codes" >Exit codes</a></li>
+   <li><a href="#Script examples" >Script examples</a></li>
+   </ul>
+ </div>
+</div>
+
+<a name="Parameters"></a>
+<h2>Parameters</h2>
+
+<p>UniController accepts one of the following parameters:</p>
+
+<table cellspacing="4">
+<tr valign="top">  <td class="heading" ><b>Parameter</b></td>   <td class="heading" ><b>Description</b></td></tr>
+<tr valign="top"> <td class="td_sub"><b>start_apache</b></td>   <td class="td_sub">Starts Apache server</td></tr>
+<tr valign="top"> <td class="td_sub"><b>stop_apache</b></td>    <td class="td_sub">Stops Apache server</td></tr>
+<tr valign="top"> <td class="td_sub"><b>restart_apache</b></td> <td class="td_sub">Restarts Apache server (starts it if it was stopped)</td></tr>
+<tr valign="top"> <td class="td_sub"><b>start_mysql</b></td>    <td class="td_sub">Starts MySQL/MariaDB server</td></tr>
+<tr valign="top"> <td class="td_sub"><b>stop_mysql</b></td>     <td class="td_sub">Stops MySQL/MariaDB server</td></tr>
+<tr valign="top"> <td class="td_sub"><b>restart_mysql</b></td>  <td class="td_sub">Restarts MySQL/MariaDB server (starts it if it was stopped)</td></tr>
+<tr valign="top"> <td class="td_sub"><b>start_both</b></td>     <td class="td_sub">Starts Apache and MySQL/MariaDB servers</td></tr>
+<tr valign="top"> <td class="td_sub"><b>stop_both</b></td>      <td class="td_sub">Stops Apache and MySQL/MariaDB servers</td></tr>
+<tr valign="top"> <td class="td_sub"><b>restart_both</b></td>   <td class="td_sub">Restarts Apache and MySQL/MariaDB servers</td></tr>
+<tr valign="top"> <td class="td_sub"><b>status</b></td>         <td class="td_sub">Prints the state of both servers (running / stopped / not installed) and encodes it in the exit code</td></tr>
+<tr valign="top"> <td class="td_sub"><b>help</b></td>           <td class="td_sub">Prints usage, all commands and the exit codes</td></tr>
+<tr valign="top"> <td class="td_sub"><b>pc_win_start</b></td>   <td class="td_sub">Automatic start-up. For details, see note 2.</td></tr>
+</table>
+
+<p>All commands are also accepted in the common double-dash spelling, for example <b>--restart-apache</b> for <b>restart_apache</b>. The <b>_both</b> commands are additionally accepted as <b>start_all</b>, <b>stop_all</b> and <b>restart_all</b>.</p>
+
+<p><b>Note 1:</b> Before starting UniController with a parameter, first ensure servers have been configured and function correctly. In other words, start UniController normally and test the servers.<br>
+
+<b>Note 2:</b> Except for <b>pc_win_start</b>, UniController is closed after executing the command line parameter.
+Detailed use of <b>pc_win_start</b> is covered in section <a href="extra.html#PC-Win start-up">PC-Win start-up</a> on the <a href="extra.html">Extra Utilities</a> page.<br>
+
+<b>Note 3:</b> In command line mode no dialog windows are shown; warnings are printed to the console instead, hence commands never block waiting for a click and are safe to run from unattended scripts and remote sessions.</p>
+
+<script language="javascript" type="text/javascript" src="common/top.js"></script>
+<a name="Exit codes"></a>
+<h2>Exit codes</h2>
+
+<p>Every command returns an exit code so scripts can detect success or failure:</p>
+
+<table cellspacing="4">
+<tr valign="top">  <td class="heading" ><b>Command</b></td> <td class="heading" ><b>Exit code</b></td>   <td class="heading" ><b>Meaning</b></td></tr>
+<tr valign="top"> <td class="td_sub"><b>Actions</b> (start/stop/restart)</td> <td class="td_sub">0</td> <td class="td_sub">Success &ndash; the server(s) reached the requested state</td></tr>
+<tr valign="top"> <td class="td_sub">&nbsp;</td> <td class="td_sub">1</td> <td class="td_sub">Failure &ndash; a server did not reach the requested state (or is not installed)</td></tr>
+<tr valign="top"> <td class="td_sub">&nbsp;</td> <td class="td_sub">2</td> <td class="td_sub">Unknown command line parameter</td></tr>
+<tr valign="top"> <td class="td_sub"><b>status</b></td> <td class="td_sub">0</td> <td class="td_sub">All servers running</td></tr>
+<tr valign="top"> <td class="td_sub">&nbsp;</td> <td class="td_sub">+1</td> <td class="td_sub">Apache not running (bit mask)</td></tr>
+<tr valign="top"> <td class="td_sub">&nbsp;</td> <td class="td_sub">+2</td> <td class="td_sub">MySQL/MariaDB not running (bit mask)</td></tr>
+</table>
+
+<p>For <b>status</b> the exit code is a bit mask: <b>0</b> = both running, <b>1</b> = only Apache down, <b>2</b> = only MySQL/MariaDB down, <b>3</b> = both down.</p>
+
+<p><b>Important &ndash; waiting for the exit code:</b> UniController is a GUI application. An <i>interactive</i> command prompt does not wait for GUI programs, so the exit code is not available directly. Inside a <b>batch file</b> cmd waits automatically. From an interactive shell or PowerShell use:</p>
+
+<table width="100%">
+<tr valign="top">
+<td width="47%"><b>cmd (interactive)</b>
+<pre>
+start /wait UniController.exe restart_apache
+echo %ERRORLEVEL%
+</pre>
+</td>
+<td> &nbsp; </td>
+<td width="47%"><b>PowerShell</b>
+<pre>
+$p = Start-Process .\UniController.exe restart_apache -PassThru
+$p.WaitForExit()
+$p.ExitCode
+</pre>
+</td>
+</tr>
+</table>
+
+<p><b>Do not use <span style="font-family:Consolas,monospace">Start-Process -Wait</span> in PowerShell:</b> it waits for the started process <i>and all its child processes</i>. A <b>start_*</b> command launches the server as a child process, so <b>-Wait</b> would block until the server itself is stopped. <b>$p.WaitForExit()</b> waits for UniController only.</p>
+
+<p>Console output: text output (for example from <b>status</b> or <b>help</b>) is written to the console the command was started from and can be redirected to a file as usual (<b>UniController.exe status &gt; state.txt</b>). When UniController is started by double click there is no console; the exit code still carries the result.</p>
+
+<script language="javascript" type="text/javascript" src="common/top.js"></script>
+<a name="Script examples"></a>
+<h2>Script examples</h2>
+
+<p>Create the following batch files and place them in folder <b>UniServerZ</b>.</p>
+<p>Run each file pair. For example, <b>start_apache.bat/stop_apache.bat</b> demonstrates starting and stopping the Apache server.</p>
+<table width="100%">
+<tr valign="top">
+<td width="30%"><b>start_apache.bat</b>
+<pre>
+UniController.exe start_apache
+pause
+</pre>
+</td>
+<td> &nbsp; </td>
+<td width="30%"><b>start_mysql.bat</b>
+<pre>
+UniController.exe start_mysql
+pause
+</pre>
+</td>
+<td> &nbsp; </td>
+<td width="30%"><b>start_both.bat</b>
+<pre>
+UniController.exe start_both
+pause
+</pre>
+</td>
+</tr>
+<tr valign="top">
+<td><b>stop_apache.bat</b>
+<pre>
+UniController.exe stop_apache
+pause
+</pre>
+</td>
+<td> &nbsp; </td>
+<td><b>stop_mysql.bat</b>
+<pre>
+UniController.exe stop_mysql
+pause
+</pre>
+</td>
+<td> &nbsp; </td>
+<td><b>stop_both.bat</b>
+<pre>
+UniController.exe stop_both
+pause
+</pre>
+</td>
+</tr>
+</table>
+
+<p>A deployment-style example &ndash; restart Apache after changing its configuration and fail the script if the restart failed:</p>
+
+<table width="100%">
+<tr valign="top">
+<td width="47%"><b>deploy.bat</b>
+<pre>
+UniController.exe restart_apache
+if errorlevel 1 (
+  echo Apache restart FAILED
+  exit /b 1
+)
+echo Apache restarted
+</pre>
+</td>
+<td> &nbsp; </td>
+<td width="47%"><b>deploy.ps1</b>
+<pre>
+$p = Start-Process .\UniController.exe restart_apache `
+     -PassThru
+$p.WaitForExit()
+if ($p.ExitCode -ne 0) {
+  throw "Apache restart failed ($($p.ExitCode))"
+}
+"Apache restarted"
+</pre>
+</td>
+</tr>
+</table>
+
+<p><b>Note:</b><br> If the batch files are located outside of folder <b>UniServerZ</b> (for example, folder <b>UniServerZ</b> and batch files are located at the top-level of C drive), adjust path to <b>UniController.exe</b> in each batch file (<b>C:\UniServerZ\UniController.exe start_apache</b>). Relative paths work as well (<b>UniServerZ\UniController.exe start_apache</b>).</p>
+
+
+<script language="javascript" type="text/javascript" src="common/top.js"></script>
+<hr>
+<div align="center">--oOo--</div>

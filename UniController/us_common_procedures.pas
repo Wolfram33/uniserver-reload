@@ -616,8 +616,11 @@ Var
  saftey_loop: Integer;
 
 begin
+ saftey_loop:=0;   // Initialize unconditionally: previously only this line was
+                   // guarded by the If, leaving the counter uninitialized when
+                   // Apache was not running - a garbage value triggered a
+                   // spurious "Failed to stop Apache" warning
  if ApacheRunning() then
-  saftey_loop:=0;
   begin
       KillRunningProcess(AP_EXE_NAME);           //Kill Apache program
   end;
@@ -969,12 +972,21 @@ begin
       saftey_loop := saftey_loop +1;              // Increment counter
       if saftey_loop > (USC_MY_StopSafetyTime*10) then
        begin
-        //Clean shutdown failed ask user if they want to use MySQL kill?
-        BoxStyle := MB_ICONQUESTION + MB_YESNO;
-        //Reply := Application.MessageBox(Pchar('Unable to perform clean shut-down. Kill process ), 'Kill MySQL', BoxStyle);
-        Reply := Application.MessageBox(Pchar('Unable to perform clean shut-down. Kill process' ),Pchar('Kill '+US_MYMAR_TXT), BoxStyle);
-        if Reply = IDYES then
-           us_kill_mysql_program;
+        If USC_CLI_MODE Then
+         begin
+          //Command line mode: no dialogs - force kill so scripts never block
+          cli_write_line('Unable to perform clean shut-down of '+US_MYMAR_TXT+': killing process');
+          us_kill_mysql_program;
+         end
+        Else
+         begin
+          //Clean shutdown failed ask user if they want to use MySQL kill?
+          BoxStyle := MB_ICONQUESTION + MB_YESNO;
+          //Reply := Application.MessageBox(Pchar('Unable to perform clean shut-down. Kill process ), 'Kill MySQL', BoxStyle);
+          Reply := Application.MessageBox(Pchar('Unable to perform clean shut-down. Kill process' ),Pchar('Kill '+US_MYMAR_TXT), BoxStyle);
+          if Reply = IDYES then
+             us_kill_mysql_program;
+         end;
         Break;
        end;
      end;

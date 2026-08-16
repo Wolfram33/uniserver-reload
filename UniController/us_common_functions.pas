@@ -101,6 +101,9 @@ function default_browser_ready():boolean; // Check default browser ready, uses a
 //=== MESSAGE DIALOG ===
 function us_MessageDlg(aCaption:string; aMsg: string; DlgType: TMsgDlgType; Buttons: TMsgDlgButtons; HelpCtx: Longint): Integer;
 
+//=== COMMAND LINE CONTROL ===
+procedure cli_write_line(msg:string);  // Write one line to the calling console (command line mode)
+
 //===END===
 
 implementation
@@ -2359,10 +2362,63 @@ us_message_dlg:
     MessageDlg(str_title, str_msg, mtcustom,       [mbOk],        0) ; //Display information message
  if MessageDlg(str_title, str_msg, mtConfirmation, [mbYes, mbNo], 0) = mrYes then
 =====================================================================}
+{====================================================================
+cli_write_line: Write one line to the calling console.
+
+UniController is built as a GUI application and hence has no console
+of its own. Three situations are covered:
+ - Output redirected by the caller (UniController.exe status > file):
+   the inherited standard handle is used as is.
+ - Started from a console (cmd/PowerShell): attach to the parent
+   console with AttachConsole.
+ - Started by double click: no console exists - text is dropped
+   silently, the exit code still carries the result.
+=====================================================================}
+const
+  ATTACH_PARENT_PROCESS = DWORD(-1);
+
+//Declared here: not all FPC versions expose AttachConsole in the windows unit
+function AttachConsole(dwProcessId: DWORD): BOOL; stdcall; external 'kernel32.dll' name 'AttachConsole';
+
+var
+  cli_console_ready: Boolean = False;  // Console attach already attempted
+
+procedure cli_write_line(msg:string);
+var
+  hOut    : HANDLE;
+  written : DWORD;
+  buffer  : String;
+begin
+  written := 0;
+  If not cli_console_ready Then
+   begin
+     hOut := GetStdHandle(STD_OUTPUT_HANDLE);
+     If (hOut = 0) or (hOut = INVALID_HANDLE_VALUE) or (GetFileType(hOut) = FILE_TYPE_UNKNOWN) Then
+       AttachConsole(ATTACH_PARENT_PROCESS);  // No inherited/redirected handle: try callers console
+     cli_console_ready := True;
+   end;
+
+  hOut := GetStdHandle(STD_OUTPUT_HANDLE);
+  If (hOut = 0) or (hOut = INVALID_HANDLE_VALUE) Then Exit; // No console (double click): nothing to write to
+
+  buffer := msg + #13#10;
+  WriteFile(hOut, buffer[1], Length(buffer), written, nil);
+end;
+{--- End cli_write_line ----------------------------------------------}
+
 function us_MessageDlg(aCaption:string; aMsg: string; DlgType: TMsgDlgType; Buttons: TMsgDlgButtons; HelpCtx: Longint): Integer;
 var
   new_form: Tus_message_dlg;
 begin
+  //--Command line mode: dialogs would block scripts. Reroute the message to
+  //  the console. mrOK is a neutral default: YesNo callers take their No path.
+  If USC_CLI_MODE Then
+   begin
+     cli_write_line(aCaption + ': ' + aMsg);
+     us_MessageDlg := mrOK;
+     Exit;
+   end;
+
   new_form := Tus_message_dlg.Create(Application);  // Create a new instance of us_message_dlg
 
   new_form.us_heading := aCaption;;  // Heading displayed in window title box (caption)
