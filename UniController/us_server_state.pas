@@ -189,6 +189,9 @@ begin
    Else
      Main.MMS_edit_uniformserver_pac.Enabled := false;
 
+   //=== Minimize to system tray toggle (General menu)
+   Main.MMS_tray_icon.Checked := USC_TrayIconEnabled;
+
    //===Display pages
    If USUC_DISPLAY_PAGE_1 = 'yes' Then
      Main.MMSS_display_at_startup_page1.Checked := True

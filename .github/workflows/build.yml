@@ -204,6 +204,7 @@ jobs:
           find artifacts -name 'module-versions.txt' -exec cat {} \; | sort -u > release-versions.txt
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             mv release/UniServer-Reload.exe "release/UniServer-Reload-${VERSION}.exe"
+            mv release/UniServer-Reload.zip "release/UniServer-Reload-${VERSION}.zip"
           fi
           echo "Packaged versions:" && cat release-versions.txt
           ls -l release/
@@ -211,7 +212,11 @@ jobs:
       - name: Build release notes
         run: |
           BUNDLE_NAME="UniServer-Reload.exe"
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then BUNDLE_NAME="UniServer-Reload-${VERSION}.exe"; fi
+          BUNDLE_ZIP_NAME="UniServer-Reload.zip"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            BUNDLE_NAME="UniServer-Reload-${VERSION}.exe"
+            BUNDLE_ZIP_NAME="UniServer-Reload-${VERSION}.zip"
+          fi
           {
             if [[ "$GITHUB_REF" == refs/tags/* ]]; then
               echo "UniServer Reload ${VERSION} - stable release."
@@ -228,6 +233,7 @@ jobs:
             echo "| File | Description |"
             echo "|---|---|"
             echo "| **${BUNDLE_NAME}** | **All-in-one package: complete server with current Apache, MySQL and PHP 8.3/8.4/8.5 - just run it, no further setup** |"
+            echo "| ${BUNDLE_ZIP_NAME} | Same all-in-one package as a plain zip (for setups where antivirus blocks the unsigned self-extracting exe): extract, then start \`UniServerZ\\UniController.exe\` |"
             echo "| UniController.exe | Controller only (replaces the one in an existing UniServerZ folder) |"
             echo "| UniService.exe | Windows service module |"
             echo "| ZeroXV_php84_module.zip | PHP 8.4 module - unzip into an existing UniServerZ root folder |"

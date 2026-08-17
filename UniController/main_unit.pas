@@ -93,6 +93,8 @@ type
     MenuItem20_spacer: TMenuItem;
     MMS_cron: TMenuItem;
     MMS_pc_win_startup: TMenuItem;
+    MMS_tray_icon: TMenuItem;
+    MenuItem_tray_spacer: TMenuItem;
     MMS_clean_up: TMenuItem;
     MMSS_display_at_startup_page1: TMenuItem;
     MMSS_select_page_to_display1: TMenuItem;
@@ -261,12 +263,14 @@ type
     procedure MMS_shebang_helpClick(Sender: TObject);
     procedure MMS_select_portable_browserClick(Sender: TObject);
     procedure MMS_select_default_browserClick(Sender: TObject);
+    procedure MMS_tray_iconClick(Sender: TObject);
     procedure MMS_view_phpinfoClick(Sender: TObject);
     procedure MM_aboutClick(Sender: TObject);
     procedure SystrayIconClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
     { private declarations }
+    state_refresh_tick: integer; // Timer divider for the periodic server-state refresh
   public
     { public declarations }
   end;
@@ -1598,13 +1602,38 @@ end;
 
 procedure TMain.SystrayIconClick(Sender: TObject);
 begin
-   Main.Show; //Show main form
+   Main.Show;              //Show main form
+   us_update_server_state; //State may have changed while hidden in the tray
+end;
+
+
+{====================================================================
+Toggle: minimize to system tray.
+UI switch for TrayIconEnabled in us_config.ini, previously ini-only.
+--------------------------------------------------------------------}
+procedure TMain.MMS_tray_iconClick(Sender: TObject);
+begin
+ If Main.MMS_tray_icon.Checked Then
+  begin
+    Main.MMS_tray_icon.Checked := False;                            // Set to un-checked
+    USC_TrayIconEnabled := False;                                   // Stay in taskbar when minimized
+    us_ini_set(USF_US_CONF_INI,'APP','TrayIconEnabled','False');    // save to config file
+  end
+ Else
+  begin
+    Main.MMS_tray_icon.Checked := True;                             // Set to checked
+    USC_TrayIconEnabled := True;                                    // Minimize to system tray
+    us_ini_set(USF_US_CONF_INI,'APP','TrayIconEnabled','True');     // save to config file
+  end;
 end;
 
 
 {====================================================================
 This procedure periodically runs Cron.
 If Cron is disabled the section is skipped.
+Every fifth tick the server state is refreshed so changes made
+outside this program (UniService installing/starting the services,
+services.msc) show up without user interaction.
 --------------------------------------------------------------------}
 procedure TMain.Timer1Timer(Sender: TObject);
 begin
@@ -1612,6 +1641,14 @@ begin
 
  //--- Auto run Cron
  If USC_enable_cron Then run_cron;            // Run Cron
+
+ //--- Periodic server-state refresh
+ Inc(state_refresh_tick);
+ If state_refresh_tick >= 5 Then
+  begin
+    state_refresh_tick := 0;
+    If Main.Visible Then us_update_server_state; // Update buttons/indicators/menus
+  end;
 
  Timer1.Enabled := True;  //Enable timer
 end;

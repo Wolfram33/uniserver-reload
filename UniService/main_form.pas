@@ -15,7 +15,9 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
   ExtCtrls, default_config_vars, us_common_procedures, us_common_functions,
-  about_form;
+  about_form,
+  JwaTlHelp32,
+  windows;
 
 type
 
@@ -62,9 +64,62 @@ implementation
 
 { TMain }
 
+{=================================================================
+ WinUniqueInstance:
+ Returns true if this is the only running instance of UniService,
+ false if another instance is already running.
+ Same mechanism as UniController's instance check
+ (are_servers_runable.pas): count processes with this exe name.
+==================================================================}
+function WinUniqueInstance:boolean;
+var
+  ProcessName:string;            // This application
+  total:integer;                 // Number of this application running
+  hProcessSnap: THandle;         // Snapshot
+  pe          : TProcessEntry32; // Process entry
+  Continue    : BOOL;            // Flag
+begin
+ WinUniqueInstance := True;                   // Assume Unique
+ total             := 0;                      // Reset counter
+ ProcessName       := ApplicationName+'.exe'; // Name of this exe file
+
+ hProcessSnap := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); //Take snapshot
+ if (hProcessSnap=0) or (hProcessSnap=INVALID_HANDLE_VALUE) then Exit;
+   try
+     pe.dwSize := SizeOf(pe);                       // Set-up structure size
+     Continue := Process32First(hProcessSnap, pe);  // Set flag first (first tobe processed)
+
+     while Continue do
+     begin
+       //Walk snapshot and count number of ProcessNames
+       if SameText(pe.szExeFile, ProcessName) then total:= total+1; // Count instances
+       If total >= 2 then                          // Test two or more not unique
+         begin
+           WinUniqueInstance := False;             // Set False not unique
+           exit;                                   // Nothing else to do
+         end;
+      Continue := Process32Next(hProcessSnap, pe); // Set flag next (more to process)
+     end;
+
+   finally
+     CloseHandle(hProcessSnap); // Close handle
+   end;
+end;
+
 procedure TMain.FormCreate(Sender: TObject);
 
 begin
+ //=== Only allow a single instance of UniService
+ If not WinUniqueInstance Then
+  begin
+    Application.ShowMainForm := False;   // Hide application
+    MessageDlg('UniService not unique instance',
+               'An instance of UniService is already running.'+ sLineBreak + sLineBreak +
+               'This new UniService instance will close.', mtError,[mbOk],0);
+    Application.Terminate;               // Close this instance
+    Exit;                                // Skip initialisation
+  end;
+
  us_main_init;     // Set initial values for variables, paths and environment variables.
  us_update_status; // Update button text and indicators
 

@@ -1500,11 +1500,18 @@ object Main: TMain
         Caption = 'Default browser'
         OnClick = MMS_select_default_browserClick
       end
+      object MenuItem_tray_spacer: TMenuItem
+        Caption = '-'
+      end
+      object MMS_tray_icon: TMenuItem
+        Caption = 'Minimize to system tray'
+        OnClick = MMS_tray_iconClick
+      end
     end
     object MenuItem1: TMenuItem
       Caption = 'Extra'
       object MMS_pc_win_startup: TMenuItem
-        Caption = 'PC-Win start-up'
+        Caption = 'Start with Windows'
         ImageIndex = 26
         OnClick = MMS_pc_win_startupClick
       end

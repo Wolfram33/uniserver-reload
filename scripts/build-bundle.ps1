@@ -326,7 +326,15 @@ Write-Host '==> Packing self-extracting bundle'
 New-Item -ItemType Directory -Force dist | Out-Null
 & $sevenZip a -sfx"$sfxModule" -mx=7 'dist\UniServer-Reload.exe' '.\base\UniServerZ'
 if ($LASTEXITCODE -ne 0) { throw "7z sfx packing failed ($LASTEXITCODE)" }
+
+# Same payload as plain zip: for users whose antivirus/SmartScreen distrusts
+# unsigned self-extracting exes. The SFX does nothing beyond extracting, so
+# the zip is fully equivalent - extract and start UniServerZ\UniController.exe.
+Write-Host '==> Packing plain-zip bundle'
+& $sevenZip a -tzip -mx=5 'dist\UniServer-Reload.zip' '.\base\UniServerZ'
+if ($LASTEXITCODE -ne 0) { throw "7z zip packing failed ($LASTEXITCODE)" }
+
 Add-Content 'dist\module-versions.txt' "UniServer Reload $reloadVersion (base ZeroXV $baseVersion)"
 Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"
 
-Get-Item 'dist\UniServer-Reload.exe' | Format-List Name, Length
+Get-Item 'dist\UniServer-Reload.exe', 'dist\UniServer-Reload.zip' | Format-List Name, Length

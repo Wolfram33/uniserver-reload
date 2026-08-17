@@ -5,7 +5,7 @@ object pc_win_startup: Tpc_win_startup
   Width = 329
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
-  Caption = 'PC-Win start-up'
+  Caption = 'Start with Windows'
   ClientHeight = 234
   ClientWidth = 329
   OnCreate = FormCreate
