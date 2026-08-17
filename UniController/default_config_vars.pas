@@ -701,7 +701,7 @@ begin
    USC_AppVersion      := Ini1.ReadString('APP','AppVersion','15.0.2');                    // Version
    USC_BaseVersion     := Ini1.ReadString('APP','BaseVersion','15.0.2');                   // Base package version
    USC_ServerType      := Ini1.ReadString('APP','ServerType','WAMP0');                     // Default=WAMP APS=Apache standalone server MYS=MySQL  standalone server
-   USC_ServerTypeText1 := Ini1.ReadString('APP','ServerTypeText1','Uniform Server Zero');  // TrayIcon hover text
+   USC_ServerTypeText1 := Ini1.ReadString('APP','ServerTypeText1','Uniform Server Reload');  // TrayIcon hover text
    USC_ServerTypeText2 := Ini1.ReadString('APP','ServerTypeText2','Portable WAMP Server'); // TrayIcon hover text
    USC_TrayIconEnabled := strToBool(Ini1.ReadString('APP','TrayIconEnabled','True'));      // TrayIcon enabled
 

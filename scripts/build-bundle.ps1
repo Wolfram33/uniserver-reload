@@ -109,8 +109,11 @@ $c = $c -replace '(?m)^AppVersion=.*?(\r?)$', "AppVersion=$reloadVersion`$1"
 if ($c -notmatch '(?m)^BaseVersion=') {
   $c = $c -replace '(?m)^(AppVersion=.*?\r?)$', "`$1`nBaseVersion=$baseVersion"
 }
+# Window title / tray hover text still carries the upstream name in the stock ini
+$c = $c -replace '(?m)^ServerTypeText1=Uniform Server Zero(\r?)$', 'ServerTypeText1=Uniform Server Reload$1'
 Set-Content $cfg -Value $c -NoNewline
 if ((Get-Content $cfg -Raw) -notmatch "(?m)^AppVersion=$([regex]::Escape($reloadVersion))") { throw 'us_config.ini version stamp failed' }
+if ((Get-Content $cfg -Raw) -notmatch '(?m)^ServerTypeText1=Uniform Server Reload') { throw 'us_config.ini ServerTypeText1 stamp failed' }
 Set-Content "$root\home\version.txt" -Value "UniServer Reload $reloadVersion (base package Uniform Server ZeroXV $baseVersion)"
 
 # --- Merge the PHP modules ---------------------------------------------------
