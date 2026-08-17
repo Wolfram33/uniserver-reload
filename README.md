@@ -3,6 +3,7 @@
 # Uniform Server Reload
 
 [![Build](https://github.com/Wolfram33/uniserver-reload/actions/workflows/build.yml/badge.svg)](https://github.com/Wolfram33/uniserver-reload/actions/workflows/build.yml)
+[![Donate via PayPal](https://img.shields.io/badge/Donate-PayPal-0070ba?logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/robderoy)
 
 **A community fork of [The Uniform Server](https://github.com/iamola/uniserver) — continued as an independent project with its own version line.**
 
@@ -44,6 +45,10 @@ Every push triggers a build that updates the rolling release with fixed download
 The single-file downloads exist only for users who want to upgrade an existing Uniform Server installation piece by piece; with `UniServer-Reload.exe` none of them are needed.
 
 Quick start: run `UniServer-Reload.exe`, pick a target folder, then start `UniServerZ\UniController.exe` — the servers are ready to go. To switch the PHP version stop Apache first, then use *PHP > Select PHP version*.
+
+## Support the project
+
+UniServer Reload is free and open source. If it saves you time, you can support its development with a donation: **[Donate via PayPal](https://www.paypal.com/paypalme/robderoy)** — thank you!
 
 ## Upgrading
 

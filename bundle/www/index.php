@@ -158,6 +158,7 @@ if (!ctype_digit((string)$server_port) || (int)$server_port < 1 || 65535 < (int)
 
   <footer>
     <p class="footer-links"><a href="https://github.com/Wolfram33/uniserver-reload">GitHub Repository</a> | <a href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">Latest Downloads</a> | <a href="/us_docs/manual/index.html">Local Documentation</a></p>
+    <p><a class="donate" href="https://www.paypal.com/paypalme/robderoy" rel="noopener"><span aria-hidden="true">&#9829;</span> Donate via PayPal</a></p>
     <p class="credits">Originally developed by <a href="https://www.uniformserver.com/">The Uniform Server Development Team</a> &mdash; Reload fork initiated by Rob de Roy</p>
   </footer>
 </div>

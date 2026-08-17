@@ -120,6 +120,21 @@ footer p {
 .footer-links {
 	font-weight: bold;
 }
+.donate {
+	display: inline-block;
+	margin: 6px 0 2px;
+	padding: 7px 16px;
+	background-color: #ffe3c2;
+	border: 1px solid #b07830;
+	border-radius: 4px;
+	color: #7a4a00;
+	font-weight: bold;
+	text-decoration: none;
+}
+.donate:hover {
+	background-color: #ffd49e;
+	color: #5e3900;
+}
 .credits {
 	color: #333;
 }

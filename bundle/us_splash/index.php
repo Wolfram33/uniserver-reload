@@ -116,6 +116,7 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
 
   <footer>
     <p class="footer-links"><a target="_1" rel="noopener" href="https://github.com/Wolfram33/uniserver-reload">GitHub Repository</a> | <a target="_1" rel="noopener" href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">Latest Downloads</a> | <a target="_1" rel="noopener" href="https://github.com/Wolfram33/uniserver-reload/issues">Issues / Support</a> | <a href="/us_docs/manual/index.html">Local Documentation</a></p>
+    <p><a class="donate" target="_1" rel="noopener" href="https://www.paypal.com/paypalme/robderoy"><span aria-hidden="true">&#9829;</span> Donate via PayPal</a></p>
     <p>Uniform Server Reload is a portable WAMP package for Windows (64-bit): unpack it anywhere and Apache, MySQL and PHP are ready to run &mdash; no installation, no registry entries, no external dependencies. Updated builds with current PHP versions are published automatically on the <a target="_1" rel="noopener" href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">releases page</a>.</p>
     <p class="credits">Originally developed by <a target="_1" rel="noopener" href="https://www.uniformserver.com/">The Uniform Server Development Team</a> &mdash; Reload fork initiated by Rob de Roy</p>
   </footer>

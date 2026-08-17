@@ -281,6 +281,11 @@ jobs:
             echo "PHP binaries are the official thread-safe x64 builds from windows.php.net,"
             echo "repackaged in the Uniform Server module layout. Default timezone in the"
             echo "generated php inis is Europe/London - adjust \`date.timezone\` as needed."
+            echo
+            echo "---"
+            echo
+            echo "If UniServer Reload saves you time, you can support its development:"
+            echo "**[Donate via PayPal](https://www.paypal.com/paypalme/robderoy)** - thank you!"
           } > notes.md
 
       - name: Create/update release
