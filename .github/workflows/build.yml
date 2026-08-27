@@ -45,9 +45,29 @@ jobs:
             Write-Host "Stamped $lpi with version $v"
           }
 
+      # Lazarus via chocolatey is the flakiest step of the build: the download
+      # stalls at times and then dies on chocolatey's timeout. Cache the
+      # installed C:\lazarus between runs so only the first build after a
+      # cache eviction pays the install. Bump the -v1 suffix in the key to
+      # force a fresh install (e.g. to pick up a new Lazarus version).
+      - name: Cache Lazarus
+        id: lazarus-cache
+        uses: actions/cache@v4
+        with:
+          path: C:\lazarus
+          key: lazarus-${{ runner.os }}-v1
+
       - name: Install Lazarus
-        run: choco install lazarus -y --no-progress
+        if: steps.lazarus-cache.outputs.cache-hit != 'true'
         shell: pwsh
+        run: |
+          # Two attempts: the throttled download usually succeeds on retry
+          foreach ($attempt in 1..2) {
+            choco install lazarus -y --no-progress
+            if ($LASTEXITCODE -eq 0) { break }
+            Write-Host "choco install lazarus attempt $attempt failed ($LASTEXITCODE)"
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Locate lazbuild
         id: lazbuild
