@@ -17,7 +17,8 @@ uses
   JwaTlHelp32,windows,Process,
   Graphics, Controls,
   RegExpr, LazFileUtils, FileUtil,
-  ExtCtrls, LCLType, INIFiles, registry;
+  ExtCtrls, LCLType, INIFiles, registry,
+  fileinfo, winpeimagereader;
 
 //=== General ===
  procedure us_set_environment_path;             //Set enironment path
@@ -481,6 +482,58 @@ end;
 {--- End us_set_icon_and_hover_text --------------------------------}
 
 
+{===================================================================
+ us_vcruntime_dll_version:
+ Reads major.minor from the file version of System32\vcruntime140.dll.
+ Fallback for systems where the redistributable's registry key is
+ absent although the runtime DLLs exist (e.g. the runtime landed on
+ the PC without the official installer, or the key was cleaned up).
+ Returns false when the DLL is missing or its version is unreadable.
+====================================================================}
+function us_vcruntime_dll_version(var major:integer; var minor:integer):boolean;
+var
+  dll      :string;
+  ver      :string;   // Full file version e.g. 14.50.35719.0
+  info     :TFileVersionInfo;
+  dot_pos  :integer;
+  major_s  :string;
+  minor_s  :string;
+begin
+ Result := False;
+ dll := SysUtils.GetEnvironmentVariable('SystemRoot')+'\System32\vcruntime140.dll';
+ If not FileExists(dll) Then Exit;
+
+ ver  := '';
+ info := TFileVersionInfo.Create(nil);
+ try
+   try
+     info.FileName := dll;
+     info.ReadFileInfo;
+     ver := info.VersionStrings.Values['FileVersion'];
+   except
+     ver := '';                            // Unreadable version resource
+   end;
+ finally
+   info.Free;
+ end;
+ If ver = '' Then Exit;
+
+ //--First two numeric parts are major.minor
+ dot_pos := Pos('.',ver);
+ If dot_pos = 0 Then Exit;
+ major_s := Copy(ver,1,dot_pos-1);
+ minor_s := Copy(ver,dot_pos+1,Length(ver));
+ dot_pos := Pos('.',minor_s);
+ If dot_pos <> 0 Then minor_s := Copy(minor_s,1,dot_pos-1);
+
+ major := StrToIntDef(Trim(major_s),-1);
+ minor := StrToIntDef(Trim(minor_s),-1);
+ If (major < 0) or (minor < 0) Then Exit;
+ Result := True;
+end;
+{--- End us_vcruntime_dll_version ----------------------------------}
+
+
 {********************************************************************
  us_warn_if_vcruntime_too_old:
  PHP builds from windows.php.net require a minimum version of the
@@ -498,7 +551,11 @@ end;
 
  Installed version is read from the registry (64-bit view):
  HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64
- A missing key means no redistributable is installed at all.
+ Despite the "VisualStudio" path the key is written by the standalone
+ redistributable installer too - it is Microsoft's documented way to
+ detect the installed redist. If the key is absent the file version
+ of System32\vcruntime140.dll is used as fallback; only when both
+ sources fail is the runtime reported as not installed.
 ********************************************************************}
 procedure us_warn_if_vcruntime_too_old(php_sel:string);
 const
@@ -549,6 +606,14 @@ begin
  finally
    Reg.Free;
  end;
+
+ //--Registry key absent: the runtime may still exist (deployed without the
+ //  official installer) - fall back to the DLL file version in System32
+ If have_str = 'not installed' Then
+  begin
+    If us_vcruntime_dll_version(have_major,have_minor) Then
+      have_str := IntToStr(have_major)+'.'+IntToStr(have_minor)+' (from vcruntime140.dll)';
+  end;
 
  //--Installed runtime is new enough: nothing to do
  If (have_major > req_major) or
