@@ -2538,6 +2538,139 @@ us_trust_ssl_cert
  https://localhost is shown as secure without a warning.
  Windows displays its own confirmation prompt before importing.
 =============================================================================}
+{===================================================================
+ us_firefox_installed:
+ Best-effort detection of a Firefox installation: registry entries
+ written by the installer (machine or per-user install) plus the
+ default install path.
+====================================================================}
+function us_firefox_installed:boolean;
+var
+  Reg :TRegistry;
+begin
+ Result := False;
+ Reg := TRegistry.Create(KEY_READ);
+ try
+   Reg.RootKey := HKEY_LOCAL_MACHINE;
+   If Reg.KeyExists('SOFTWARE\Mozilla\Mozilla Firefox') Then Result := True;
+   If Not Result Then
+    begin
+      Reg.RootKey := HKEY_CURRENT_USER;
+      If Reg.KeyExists('SOFTWARE\Mozilla\Mozilla Firefox') Then Result := True;
+    end;
+ finally
+   Reg.Free;
+ end;
+ If Not Result Then
+   Result := FileExists(SysUtils.GetEnvironmentVariable('ProgramFiles')+'\Mozilla Firefox\firefox.exe');
+end;
+{--- End us_firefox_installed --------------------------------------}
+
+
+{===================================================================
+ firefox_policy_enabled:
+ True when Mozilla's ImportEnterpriseRoots policy is already active
+ (per-user or machine location) - Firefox then trusts certificates
+ from the Windows certificate store.
+====================================================================}
+function firefox_policy_enabled:boolean;
+var
+  Reg :TRegistry;
+
+  function check_root(root:HKEY):boolean;
+  begin
+    Result := False;
+    Reg.RootKey := root;
+    If Reg.OpenKeyReadOnly('SOFTWARE\Policies\Mozilla\Firefox\Certificates') Then
+     begin
+       try
+         If Reg.ValueExists('ImportEnterpriseRoots') and
+            (Reg.ReadInteger('ImportEnterpriseRoots') = 1) Then Result := True;
+       except
+         //Unreadable value: treat as not enabled
+       end;
+       Reg.CloseKey;
+     end;
+  end;
+
+begin
+ Reg := TRegistry.Create(KEY_READ);
+ try
+   Result := check_root(HKEY_CURRENT_USER) or check_root(HKEY_LOCAL_MACHINE);
+ finally
+   Reg.Free;
+ end;
+end;
+{--- End firefox_policy_enabled ------------------------------------}
+
+
+{********************************************************************
+ us_offer_firefox_trust_policy:
+ Called after the certificate was added to the Windows store.
+ Firefox ignores the Windows certificate store by default, so its
+ https warning stays although Chrome/Edge are already satisfied.
+ When Firefox is installed this offers - exactly once - to enable
+ Mozilla's official ImportEnterpriseRoots policy for the current
+ user, which makes Firefox use the Windows store too.
+ Skipped silently when the policy is already active.
+********************************************************************}
+procedure us_offer_firefox_trust_policy;
+var
+  Reg :TRegistry;
+  str :string;
+  ok  :boolean;
+begin
+ If Not us_firefox_installed Then Exit;                                          // No Firefox on this PC
+ If firefox_policy_enabled Then Exit;                                            // Already active
+ If us_ini_get(USF_US_CONF_INI,'APP','FirefoxPolicyPromptDone') = 'true' Then Exit; // Already asked
+
+ //--Remember the question was asked, whatever the answer is
+ us_ini_set(USF_US_CONF_INI,'APP','FirefoxPolicyPromptDone','true');
+
+ str :=       'Firefox is installed on this PC. Unlike Chrome and Edge,'    + sLineBreak;
+ str := str + 'Firefox ignores the Windows certificate store by default,'   + sLineBreak;
+ str := str + 'so its https warning stays although the certificate is now'  + sLineBreak;
+ str := str + 'trusted in Windows.'                                         + sLineBreak + sLineBreak;
+ str := str + 'Enable the official Firefox policy "ImportEnterpriseRoots"'  + sLineBreak;
+ str := str + 'for the current user, so Firefox uses the Windows store'     + sLineBreak;
+ str := str + 'too? Restart Firefox afterwards.'                            + sLineBreak + sLineBreak;
+ str := str + 'Undo any time: delete value ImportEnterpriseRoots under'     + sLineBreak;
+ str := str + 'HKCU\Software\Policies\Mozilla\Firefox\Certificates.'        + sLineBreak;
+ str := str + 'Alternative: import the certificate manually in Firefox'     + sLineBreak;
+ str := str + '(Settings, Privacy & Security, View Certificates, Import).';
+
+ If us_MessageDlg('Firefox detected', str, mtConfirmation,[mbYes,mbNo],0) <> mrYes Then Exit;
+
+ ok  := False;
+ Reg := TRegistry.Create(KEY_WRITE);
+ try
+   try
+     Reg.RootKey := HKEY_CURRENT_USER;
+     If Reg.OpenKey('SOFTWARE\Policies\Mozilla\Firefox\Certificates', True) Then
+      begin
+        Reg.WriteInteger('ImportEnterpriseRoots', 1);
+        ok := True;
+      end;
+   except
+     ok := False;
+   end;
+ finally
+   Reg.Free;
+ end;
+
+ If ok Then
+   us_MessageDlg('Firefox policy set',
+     'Done. Restart Firefox completely - it then trusts the'          + sLineBreak +
+     'certificates from the Windows store.', mtInformation,[mbOk],0)
+ Else
+   us_MessageDlg('Firefox policy not set',
+     'The registry value could not be written. You can import the'    + sLineBreak +
+     'certificate manually instead: Firefox Settings,'                + sLineBreak +
+     'Privacy & Security, View Certificates, Import.', mtWarning,[mbOk],0);
+end;
+{--- End us_offer_firefox_trust_policy -----------------------------}
+
+
 procedure us_trust_ssl_cert;
 Var
  AProcess: TProcess;
@@ -2573,6 +2706,9 @@ begin
     str := str + 'a new Vhost later, run "Regenerate certificate for all' + sLineBreak;
     str := str + 'Vhosts", then trust and restart the browser again.';
     us_MessageDlg('Trust Certificate', str, mtInformation,[mbOk],0);
+
+    //Firefox ignores the Windows store by default: offer the policy fix once
+    us_offer_firefox_trust_policy;
   end
  Else
   begin

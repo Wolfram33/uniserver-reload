@@ -129,6 +129,7 @@
         <li>Restart the browser completely (Chrome: <code>chrome://restart</code>).</li>
       </ol>
       <div class="note">One certificate covers localhost <i>and</i> all your Vhost domains. Both HTTP and HTTPS serve the same <code>www</code> folder — and with Vhosts, unknown host names (e.g. access by IP) fall back to <code>www</code> on both ports.</div>
+      <div class="note"><b>Firefox</b> ignores the Windows certificate store by default. When Firefox is installed, the controller offers (once, after trusting) to enable Mozilla's official <code>ImportEnterpriseRoots</code> policy for the current user so Firefox uses the Windows store too — undo by deleting the value under <code>HKCU\Software\Policies\Mozilla\Firefox\Certificates</code>. Alternatively import the certificate manually in Firefox's certificate settings.</div>
     </section>
 
     <section id="vhosts">
@@ -138,7 +139,7 @@
         <li><b>Apache &gt; Apache Vhosts &gt; Create Apache Vhost</b>.</li>
         <li>Document root: a plain name (portable, created under <code>vhosts\</code>) <b>or</b> click <b>Browse…</b> and choose any folder, e.g. <code>D:\projects\app</code>.</li>
         <li>Server name, e.g. <code>app.test</code> — the controller adds it to the Windows hosts file automatically.</li>
-        <li><b>Create Vhost</b> → <b>Apache SSL &gt; Regenerate certificate for all Vhosts</b> → <b>Trust certificate</b> → restart browser → restart Apache.</li>
+        <li><b>Create Vhost</b> → the certificate is rebuilt automatically to cover the new domain; answer the trust question with <b>Yes</b> → restart the browser → restart Apache.</li>
       </ol>
       <p><code>http://app.test</code> and <code>https://app.test</code> both serve your project. <code>mod_rewrite</code>, <code>AllowOverride All</code> and <code>FollowSymLinks</code> are set, so <code>.htaccess</code> rewrites work immediately.</p>
       <div class="note warn">Deleting a Vhost only offers to remove folders created under <code>vhosts\</code>. An external project folder you pointed to is never deleted.</div>

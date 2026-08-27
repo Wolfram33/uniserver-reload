@@ -285,13 +285,20 @@ begin
      //   (and every other) vhost domain -> https://<domain> works too.
      us_regenerate_cert_for_all_vhosts;
 
-     //Inform user
-     us_MessageDlg('Apache Info',
+     //Proactively offer to trust the rebuilt certificate: it changed, so the
+     //previous trust no longer covers it - browsers would warn again.
+     If us_MessageDlg('Vhost created - trust certificate?',
        'New Vhost created for ' + new_ServerName + '.' + sLineBreak + sLineBreak +
-       'HTTPS is set up: the server certificate now covers this domain.' + sLineBreak +
-       'Because the certificate was rebuilt, re-run' + sLineBreak +
-       '  Apache > Apache SSL > Trust certificate in Windows' + sLineBreak +
-       'and restart your browser to get the padlock without a warning.' + sLineBreak + sLineBreak +
+       'HTTPS is set up: the server certificate was rebuilt so it also' + sLineBreak +
+       'covers this domain. Browsers only drop their warning after the' + sLineBreak +
+       'rebuilt certificate is trusted again.' + sLineBreak + sLineBreak +
+       'Trust the rebuilt certificate in Windows now?' + sLineBreak +
+       '(Afterwards restart your browser completely. Also available' + sLineBreak +
+       'later: Apache > Apache SSL > Trust certificate in Windows.)',
+       mtConfirmation,[mbYes,mbNo],0) = mrYes Then
+         us_trust_ssl_cert;
+
+     us_MessageDlg('Apache Info',
        'Restart Apache for the new Vhost to take effect.',
        mtInformation,[mbOk],0) ; //Display information message
   end;//End valid_input
