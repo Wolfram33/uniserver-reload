@@ -1134,6 +1134,11 @@ If us_application_is_runable Then   // A draconian check. If a space found in pa
 
   us_main_init;                     // Set initial values for variables, paths and environment variables.
   us_auto_generate_ssl_cert;        // First start: generate localhost certificate and enable SSL
+
+  //--- First interactive start: proactively offer to trust the certificate
+  //    (asked once) instead of hiding it in Apache > Apache SSL.
+  //    Skipped for command line and PC-Win start-up runs (no dialogs there).
+  If (ParamCount = 0) Then us_offer_trust_ssl_cert_once;
   us_update_server_state;           // Set button and indicator state
   us_update_go_pear_config;         // Update go-pear configuration file if it exists
   us_check_servers_are_runable;     // Warnings ports in use, ZoneAlarm running

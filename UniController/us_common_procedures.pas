@@ -42,6 +42,7 @@ procedure us_auto_generate_ssl_cert;      // First start: generate localhost cer
 procedure us_generate_ssl_cert(san_ext:string; overwrite:boolean); // Generate self-signed cert with given subjectAltName
 procedure us_regenerate_cert_for_all_vhosts; // Rebuild cert covering localhost + all vhost domains
 procedure us_trust_ssl_cert;              // Add server certificate to the Windows user certificate store
+procedure us_offer_trust_ssl_cert_once;   // First interactive start: offer to trust the certificate (asked once)
 
 //=== MySQL ===
 procedure us_start_mysql_program;                   // Start MySQL as a standard program
@@ -2582,6 +2583,41 @@ begin
  AProcess.Free;                           // Release process
 end;
 {--- End us_trust_ssl_cert ---------------------------------------------------}
+
+
+{********************************************************************
+ us_offer_trust_ssl_cert_once:
+ First interactive start: proactively offer to trust the generated
+ server certificate in Windows instead of leaving the function hidden
+ in menu Apache > Apache SSL > Trust certificate in Windows.
+ Asked exactly once - the fact that the question was asked is stored
+ in us_config.ini, so the dialog never nags on later starts,
+ whatever the answer was.
+********************************************************************}
+procedure us_offer_trust_ssl_cert_once;
+var
+  str :string;
+begin
+ If us_ini_get(USF_US_CONF_INI,'APP','TrustCertPromptDone') = 'true' Then Exit; // Already asked
+ If Not FileExists(USF_CERT) Then Exit;                                         // Nothing to trust yet
+
+ //--Remember the question was asked, whatever the answer is
+ us_ini_set(USF_US_CONF_INI,'APP','TrustCertPromptDone','true');
+
+ str :=       'HTTPS is ready: https://localhost uses a self-signed'      + sLineBreak;
+ str := str + 'certificate generated for this installation.'              + sLineBreak + sLineBreak;
+ str := str + 'Windows does not trust self-signed certificates yet, so'   + sLineBreak;
+ str := str + 'browsers will show a security warning on https pages.'     + sLineBreak + sLineBreak;
+ str := str + 'Trust the certificate now? Windows will ask for a final'   + sLineBreak;
+ str := str + 'confirmation; afterwards restart your browser completely'  + sLineBreak;
+ str := str + 'to get the padlock without a warning.'                     + sLineBreak + sLineBreak;
+ str := str + 'You can also do this any time later via menu:'             + sLineBreak;
+ str := str + 'Apache > Apache SSL > Trust certificate in Windows';
+
+ If us_MessageDlg('Trust HTTPS certificate?', str, mtConfirmation,[mbYes,mbNo],0) = mrYes Then
+   us_trust_ssl_cert;
+end;
+{--- End us_offer_trust_ssl_cert_once ------------------------------}
 
 
 {****************************************************************************
