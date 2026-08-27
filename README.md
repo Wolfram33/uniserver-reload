@@ -73,13 +73,13 @@ Release procedure: bump the version in `reload_version.inc`, commit, tag the com
 The controller generates a self-signed `localhost` certificate on first start and enables SSL automatically — `https://localhost` works right away, but browsers mark self-signed certificates as "not secure" until they are trusted. To get the padlock without a warning:
 
 1. **Upgrading from an older install?** Delete `core\apache2\server_certs\server.crt` and `server.key` first (with Apache stopped), then start UniController — certificates created by the old generator lack the subjectAltName entries Chrome requires and are rejected even when trusted. Fresh installs skip this step.
-2. In UniController: **Apache → Apache SSL → Trust certificate in Windows (remove browser warning)** and confirm the Windows security prompt with **Yes**.
+2. On its **first interactive start UniController asks right away** whether to trust the certificate — answer **Yes** and confirm the Windows security prompt. (Any time later or again: **Apache → Apache SSL → Trust certificate in Windows**.)
 3. **Restart the browser completely** (Chrome: enter `chrome://restart` in the address bar — closing the tab is not enough, and check the system tray for background instances).
 4. Open `https://localhost` — the padlock now shows without a warning.
 
 The certificate covers `localhost`, `127.0.0.1` and `::1`, is valid for 10 years and is only trusted for the current Windows user.
 
-**Note:** In this fork HTTP and HTTPS serve the **same** `www` folder — apps placed in `www` work on both `http://localhost/...` and `https://localhost/...`. (Upstream serves HTTPS from a separate `ssl` folder, which makes apps 404 over HTTPS.) To restore the classic split set `US_ROOTF_SSL=./ssl` in `home\us_config\us_user.ini`.
+**Note:** In this fork HTTP and HTTPS serve the **same** `www` folder — apps placed in `www` work on both `http://localhost/...` and `https://localhost/...`. (Upstream serves HTTPS from a separate `ssl` folder, which makes apps 404 over HTTPS.) To restore the classic split set `US_ROOTF_SSL=./ssl` in `home\us_config\us_user.ini`. With virtual hosts both ports also behave identically: requests with unknown host names (e.g. access by IP address) fall back to `www` on http **and** https instead of landing in the first vhost.
 
 ## E-mail: PHP `mail()` with a real SMTP account
 
@@ -108,9 +108,9 @@ All values remain editable: PHP via *PHP > Edit selected configuration file*, My
 ## Development goals
 
 * [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching
-* [x] HTTPS out of the box: the controller auto-generates a `localhost` certificate on first start and enables SSL; *Apache > Apache SSL > Trust certificate* adds it to the Windows store to remove the browser warning
+* [x] HTTPS out of the box: the controller auto-generates a `localhost` certificate on first start, enables SSL and **proactively offers to trust the certificate on the first start** (also available any time via *Apache > Apache SSL > Trust certificate*) to remove the browser warning
 * [x] Vhosts with a folder picker: *Apache > Apache Vhosts > Create Apache Vhost* now takes either a portable name (created under `vhosts\`) **or a full path via Browse…** — point a host straight at `D:\projects\app` with no copying into `www`, no duplicated project folders
-* [x] Per-vhost HTTPS: creating a vhost also writes a matching `:443` block and rebuilds the server certificate so its subjectAltName covers every vhost domain (plus `*.domain`). `https://app.test` works like `https://localhost` — re-run *Trust certificate* once after adding a vhost to clear the browser warning
+* [x] Per-vhost HTTPS: creating a vhost also writes a matching `:443` block and rebuilds the server certificate so its subjectAltName covers every vhost domain (plus `*.domain`). `https://app.test` works like `https://localhost` — re-run *Trust certificate* once after adding a vhost to clear the browser warning. Default vhosts guard **both** ports: unknown host names fall back to `www` on http and https alike
 * [x] Automated builds via CI (Lazarus build on Windows runners)
 * [x] Package current PHP versions as ready-to-use modules (built by CI, see Downloads)
 * [x] Automatic rolling GitHub release with fixed download links

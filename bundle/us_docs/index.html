@@ -125,10 +125,10 @@
       <p><code>https://localhost</code> works out of the box: on first start the controller generates a self-signed certificate (covering <code>localhost</code>, <code>127.0.0.1</code>, <code>::1</code>) and enables SSL. When SSL is on, the controller opens the start page as <code>https://</code>.</p>
       <h3>Remove the browser warning</h3>
       <ol class="steps">
-        <li><b>Apache &gt; Apache SSL &gt; Trust certificate in Windows</b> → confirm the Windows prompt with <b>Yes</b>.</li>
+        <li>UniController <b>asks on its first start</b> whether to trust the certificate → confirm with <b>Yes</b> and accept the Windows prompt. (Any time later: <b>Apache &gt; Apache SSL &gt; Trust certificate in Windows</b>.)</li>
         <li>Restart the browser completely (Chrome: <code>chrome://restart</code>).</li>
       </ol>
-      <div class="note">One certificate covers localhost <i>and</i> all your Vhost domains. Both HTTP and HTTPS serve the same <code>www</code> folder.</div>
+      <div class="note">One certificate covers localhost <i>and</i> all your Vhost domains. Both HTTP and HTTPS serve the same <code>www</code> folder — and with Vhosts, unknown host names (e.g. access by IP) fall back to <code>www</code> on both ports.</div>
     </section>
 
     <section id="vhosts">
