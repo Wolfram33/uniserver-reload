@@ -10,3 +10,7 @@ backup/
 
 # Windows
 Thumbs.db
+
+# Local build-tool safety copies (e.g. tools/lazarus - a portable copy of the
+# Lazarus installation so local builds survive a broken C:\lazarus). Never committed.
+/tools/
