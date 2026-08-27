@@ -142,7 +142,7 @@
         <li><b>Create Vhost</b> → the certificate is rebuilt automatically to cover the new domain; answer the trust question with <b>Yes</b> → restart the browser → restart Apache.</li>
       </ol>
       <p><code>http://app.test</code> and <code>https://app.test</code> both serve your project. <code>mod_rewrite</code>, <code>AllowOverride All</code> and <code>FollowSymLinks</code> are set, so <code>.htaccess</code> rewrites work immediately.</p>
-      <div class="note warn">Deleting a Vhost only offers to remove folders created under <code>vhosts\</code>. An external project folder you pointed to is never deleted.</div>
+      <div class="note warn">Deleting a Vhost only offers to remove folders created under <code>vhosts\</code>. An external project folder you pointed to is never deleted. The built-in default host (the localhost/<code>www</code> fallback) is protected and never listed for deletion.</div>
     </section>
 
     <section id="db">

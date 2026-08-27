@@ -46,18 +46,19 @@ implementation
 
 {===============================================================
 Set Initial state:
- Read Vhost file and display Server Names (each host once,
- skipping the first/default vhost).
+ Read Vhost file and display Server Names (each host once).
+ The built-in default vhosts (shallow duplicates of the main host,
+ one for the http and one for the https port) are never offered:
+ the first block answers all requests with unknown host names -
+ deleting it would send every such request to the first user vhost.
 ----------------------------------------------------------------}
 procedure set_initial_state;
 var
   sList     : TStringList;  // String list
   i         : integer;      // Loop counter
   RegexObj  : TRegExpr;     // Object
-  is_first  : boolean;      // First Server name is default
   host      : string;
 begin
-  is_first  := True;
   vhost_delete.ListBox1.ItemIndex  := -1;  // Clear selection
   vhost_delete.ListBox1.Clear;             // Clear list box
 
@@ -74,13 +75,13 @@ begin
           RegexObj.Expression := '^\s*ServerName\s*([^\s]*)';      // Set search pattern
            if (sList[i]<>'') and RegexObj.Exec(sList[i]) then                         // Match found
              begin
-               host := RegexObj.Match[1];
-               If is_first Then
-                  is_first := false //Do not display first (the default vhost)
-               Else
-                  // Each host appears in a :80 and a :443 block - show once
-                  If vhost_delete.ListBox1.Items.IndexOf(host) < 0 Then
-                     vhost_delete.ListBox1.Items.Add(host); // Add item
+               host := StringReplace(RegexObj.Match[1],'"','',[rfReplaceAll]); // Name, quotes stripped
+               //-- Skip the protected default vhosts (unexpanded variable or
+               //   the configured server name, e.g. localhost)
+               If (host = '${US_SERVERNAME}') or (host = UENV_US_SERVERNAME) Then Continue;
+               // Each host appears in a :80 and a :443 block - show once
+               If vhost_delete.ListBox1.Items.IndexOf(host) < 0 Then
+                  vhost_delete.ListBox1.Items.Add(host); // Add item
              end;
           end;
 
@@ -232,6 +233,19 @@ begin
   If  ListBox1.ItemIndex >=0 Then // Item selected
     begin
       selected_host := ListBox1.Items[ListBox1.ItemIndex]; // Get name selected
+
+      //Safety net: never delete the built-in default vhosts, even if one ever
+      //slips into the list - without them every request with an unknown host
+      //name would land in the first user vhost (on both ports).
+      If (selected_host = '${US_SERVERNAME}') or (selected_host = UENV_US_SERVERNAME) Then
+        begin
+          us_MessageDlg('Protected entry',
+            'This is the built-in default host: it keeps requests with'  + sLineBreak +
+            'unknown host names in the main www folder. Deleting it'     + sLineBreak +
+            'would send them to the first Vhost instead - it stays.', mtInformation,[mbOk],0);
+          Exit;
+        end;
+
       delete_vhost_block(selected_host,Out_doc_root);      // Delete selected item(s) from config file
       us_delete_from_pac_file(selected_host);              // Delete selected host from PAC file
       us_delete_from_hosts_file(selected_host);            // Delete selected host from hosts file
