@@ -239,6 +239,39 @@ $userIni = "$root\home\us_config\us_user.ini"
 (Get-Content $userIni -Raw) -replace 'US_ROOTF_SSL=\./ssl', 'US_ROOTF_SSL=./www' | Set-Content $userIni -NoNewline
 if ((Get-Content $userIni -Raw) -notmatch [regex]::Escape('US_ROOTF_SSL=./www')) { throw 'us_user.ini SSL root patch failed' }
 
+# --- Default SSL vhost -------------------------------------------------------
+# The stock httpd-vhosts.conf only carries a default vhost for the http port.
+# Once user vhosts exist, requests with unknown host names (e.g. access by IP)
+# on the SSL port would be answered by the first user vhost instead of www.
+# Mirror the default block for the SSL port so both ports behave identically.
+$vhostConf = "$root\core\apache2\conf\extra\httpd-vhosts.conf"
+$v = Get-Content $vhostConf -Raw
+if ($v -notmatch '_default_:\$\{AP_SSL_PORT\}') {
+  $sslBlock = @'
+
+
+# Same shallow duplicate for the SSL port: keeps requests with unknown host
+# names on https in the main document root instead of the first user vhost.
+<IfModule ssl_module>
+<VirtualHost _default_:${AP_SSL_PORT}>
+  DocumentRoot ${US_ROOTF_SSL}
+  ServerName ${US_SERVERNAME}
+  ErrorLog "logs/error.log"
+  CustomLog "logs/access.log" common
+  SSLEngine on
+  SSLCertificateFile "${US_ROOTF}/core/apache2/server_certs/server.crt"
+  SSLCertificateKeyFile "${US_ROOTF}/core/apache2/server_certs/server.key"
+</VirtualHost>
+</IfModule>
+'@
+  $idx = $v.IndexOf('</VirtualHost>')
+  if ($idx -lt 0) { throw 'httpd-vhosts.conf: default vhost block not found' }
+  $v = $v.Insert($idx + '</VirtualHost>'.Length, $sslBlock)
+  Set-Content $vhostConf -Value $v -NoNewline
+}
+if ((Get-Content $vhostConf -Raw) -notmatch '_default_:\$\{AP_SSL_PORT\}') { throw 'httpd-vhosts.conf SSL default vhost patch failed' }
+Write-Host '==> Default SSL vhost added to httpd-vhosts.conf'
+
 # --- Install fork splash page ------------------------------------------------
 # Replaces the stock splash page (stale version list, upstream download links)
 # with the fork's version-aware page. The stock static index.html must go:
