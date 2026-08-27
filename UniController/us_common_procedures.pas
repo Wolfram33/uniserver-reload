@@ -15,9 +15,9 @@ uses
   default_config_vars,
   us_common_functions,
   JwaTlHelp32,windows,Process,
-  Graphics,
+  Graphics, Controls,
   RegExpr, LazFileUtils, FileUtil,
-  ExtCtrls, LCLType, INIFiles;
+  ExtCtrls, LCLType, INIFiles, registry;
 
 //=== General ===
  procedure us_set_environment_path;             //Set enironment path
@@ -27,6 +27,7 @@ uses
  procedure us_set_icon_and_hover_text;      // Set icon displayed and hover text based on ServerType in config file
  procedure KillRunningProcess(ProcessName: string);        // Kill named process
  procedure us_display_in_editor(FileToDisplay: string);    // Display page in editor default - notepad
+ procedure us_warn_if_vcruntime_too_old(php_sel:string);   // Warn when selected PHP needs a newer VC++ runtime
 
  //=== Apache ===
 procedure us_start_apache_program;        // Start Apache as a standard program
@@ -478,6 +479,100 @@ begin
 
 end;
 {--- End us_set_icon_and_hover_text --------------------------------}
+
+
+{********************************************************************
+ us_warn_if_vcruntime_too_old:
+ PHP builds from windows.php.net require a minimum version of the
+ Microsoft Visual C++ runtime. Loading the PHP module into Apache on
+ a system with an older runtime kills the Apache start with nothing
+ but "Configuration Failed, exiting" in logs\error.log (issue #3).
+ This warns the user up front, names the installed and required
+ versions and offers to open the redistributable download page.
+ The start attempt itself is never blocked (detection could be wrong).
+
+ Minimum versions are read from us_config.ini section [VCRUNTIME]
+ (key = PHP folder name, value = major.minor, e.g. php85=14.44) so
+ future PHP versions can raise the bar without a code change;
+ php85 has a built-in default of 14.44.
+
+ Installed version is read from the registry (64-bit view):
+ HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64
+ A missing key means no redistributable is installed at all.
+********************************************************************}
+procedure us_warn_if_vcruntime_too_old(php_sel:string);
+const
+  REDIST_URL = 'https://aka.ms/vs/17/release/vc_redist.x64.exe';
+var
+  required   :string;    // Required version for the selected PHP e.g. 14.44
+  req_major  :integer;   // Required version split into numbers
+  req_minor  :integer;
+  have_major :integer;   // Installed runtime version
+  have_minor :integer;
+  have_str   :string;    // Installed version as text for the dialog
+  ver_txt    :string;    // PHP version for display e.g. 8.5
+  dot_pos    :integer;
+  Reg        :TRegistry;
+  str        :string;
+begin
+ If (php_sel = '') or (php_sel = 'None') Then Exit;   // No PHP selected
+
+ //--Minimum runtime for this PHP version: config wins, php85 has a default
+ required := us_ini_get(USF_US_CONF_INI,'VCRUNTIME',php_sel);
+ If (required = '') and (php_sel = 'php85') Then required := '14.44';
+ If required = '' Then Exit;                          // No requirement known
+
+ //--Parse required major.minor; a malformed entry disables the check
+ dot_pos   := Pos('.',required);
+ If dot_pos = 0 Then Exit;
+ req_major := StrToIntDef(Copy(required,1,dot_pos-1),-1);
+ req_minor := StrToIntDef(Copy(required,dot_pos+1,Length(required)),-1);
+ If (req_major < 0) or (req_minor < 0) Then Exit;
+
+ //--Installed x64 VC++ runtime from the registry
+ have_major := 0;
+ have_minor := 0;
+ have_str   := 'not installed';
+ Reg := TRegistry.Create(KEY_READ);
+ try
+   Reg.RootKey := HKEY_LOCAL_MACHINE;
+   If Reg.OpenKeyReadOnly('SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64') Then
+    begin
+      try
+        have_major := Reg.ReadInteger('Major');
+        have_minor := Reg.ReadInteger('Minor');
+        have_str   := IntToStr(have_major)+'.'+IntToStr(have_minor);
+      except
+        //Unreadable values: keep defaults, treated as not installed
+      end;
+    end;
+ finally
+   Reg.Free;
+ end;
+
+ //--Installed runtime is new enough: nothing to do
+ If (have_major > req_major) or
+    ((have_major = req_major) and (have_minor >= req_minor)) Then Exit;
+
+ //--Runtime too old: name cause and fix, offer the download page
+ ver_txt := php_sel;                                  // Fallback: raw folder name
+ If (Length(php_sel) >= 5) and (Copy(php_sel,1,3) = 'php') Then
+   ver_txt := Copy(php_sel,4,1)+'.'+Copy(php_sel,5,Length(php_sel));
+
+ str :=       'PHP '+ver_txt+' requires the Microsoft Visual C++ runtime '+required+' or newer.'+ sLineBreak;
+ str := str + 'Installed on this PC: '+have_str+'.'+ sLineBreak + sLineBreak;
+ str := str + 'With the old runtime Apache cannot load the PHP module and stops'+ sLineBreak;
+ str := str + 'with "Configuration Failed" (details in logs\error.log).'+ sLineBreak + sLineBreak;
+ str := str + 'Fix: install the latest "Visual C++ Redistributable (x64)" from'+ sLineBreak;
+ str := str + REDIST_URL + sLineBreak;
+ str := str + 'It updates in place - nothing needs to be uninstalled.'+ sLineBreak;
+ str := str + 'Afterwards start Apache again.'+ sLineBreak + sLineBreak;
+ str := str + 'Open the download in your browser now?';
+
+ If us_MessageDlg('Visual C++ runtime too old for PHP '+ver_txt, str, mtWarning,[mbYes,mbNo],0) = mrYes Then
+   browser_display_url(REDIST_URL);   // Download starts in the default browser
+end;
+{--- End us_warn_if_vcruntime_too_old ------------------------------}
 
  {********************************************************************
  Kill named process.

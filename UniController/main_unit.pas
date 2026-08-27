@@ -292,6 +292,7 @@ var
 begin
    If (Main.Btn_start_apache.Caption  = START_AP) Then
     begin
+     us_warn_if_vcruntime_too_old(UENV_PHP_SELECT); // Warn early: selected PHP may need a newer VC++ runtime
      Btn_start_apache.Enabled := False; // Disable button
      us_start_apache_program;           // Start Apache server
      us_update_server_state;            // Update server state. Set button and indicator state
@@ -582,6 +583,7 @@ begin
  windows.SetEnvironmentVariable('PHP_SELECT',PCHAR(UENV_PHP_SELECT)); // PHP Select
  us_set_environment_path;  // Set new enironment paths
  us_update_server_state;   // Update menus
+ us_warn_if_vcruntime_too_old(UENV_PHP_SELECT); // Warn if this PHP needs a newer VC++ runtime (config-driven)
  msg_restart_apache;       // Reminder dialog - Restart apache.
  us_update_go_pear_config; // update paths in go-pear configuration file
 
@@ -603,6 +605,7 @@ begin
  windows.SetEnvironmentVariable('PHP_SELECT',PCHAR(UENV_PHP_SELECT)); // PHP Select
  us_set_environment_path;  // Set new enironment paths
  us_update_server_state;   // Update menus
+ us_warn_if_vcruntime_too_old(UENV_PHP_SELECT); // Warn if this PHP needs a newer VC++ runtime (config-driven)
  msg_restart_apache;       // Reminder dialog - Restart apache.
  us_update_go_pear_config; // update paths in go-pear configuration file
 
@@ -624,6 +627,7 @@ begin
  windows.SetEnvironmentVariable('PHP_SELECT',PCHAR(UENV_PHP_SELECT)); // PHP Select
  us_set_environment_path;  // Set new enironment paths
  us_update_server_state;   // Update menus
+ us_warn_if_vcruntime_too_old(UENV_PHP_SELECT); // PHP 8.5 needs VC++ runtime 14.44+; warn at selection
  msg_restart_apache;       // Reminder dialog - Restart apache.
  us_update_go_pear_config; // update paths in go-pear configuration file
 

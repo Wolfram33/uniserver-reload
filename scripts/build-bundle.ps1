@@ -111,9 +111,15 @@ if ($c -notmatch '(?m)^BaseVersion=') {
 }
 # Window title / tray hover text still carries the upstream name in the stock ini
 $c = $c -replace '(?m)^ServerTypeText1=Uniform Server Zero(\r?)$', 'ServerTypeText1=Uniform Server Reload$1'
+# Minimum VC++ runtime per PHP version: UniController warns (with download
+# link) before an Apache start that would die on module load (issue #3).
+if ($c -notmatch '(?m)^\[VCRUNTIME\]') {
+  $c = $c.TrimEnd() + "`r`n`r`n[VCRUNTIME]`r`n; Minimum Microsoft Visual C++ runtime (x64) per PHP version (major.minor).`r`n; UniController warns before starting Apache when the installed runtime is older.`r`nphp85=14.44`r`n"
+}
 Set-Content $cfg -Value $c -NoNewline
 if ((Get-Content $cfg -Raw) -notmatch "(?m)^AppVersion=$([regex]::Escape($reloadVersion))") { throw 'us_config.ini version stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch '(?m)^ServerTypeText1=Uniform Server Reload') { throw 'us_config.ini ServerTypeText1 stamp failed' }
+if ((Get-Content $cfg -Raw) -notmatch '(?m)^php85=14\.44') { throw 'us_config.ini VCRUNTIME stamp failed' }
 Set-Content "$root\home\version.txt" -Value "UniServer Reload $reloadVersion (base package Uniform Server ZeroXV $baseVersion)"
 
 # --- Merge the PHP modules ---------------------------------------------------
