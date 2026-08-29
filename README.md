@@ -9,6 +9,9 @@
 
 **No external dependencies, no installation, no configuration:** the complete WAMP stack — Apache, MySQL, PHP 8.3/8.4/8.5, phpMyAdmin and the updated controller — ships as a **single self-extracting 7-Zip archive** ([`UniServer-Reload.exe`](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)). Unpack it anywhere and everything is immediately ready to run. Nothing needs to be downloaded from SourceForge or windows.php.net, no modules need to be added, no settings need to be changed. Portable as ever: no installer, no registry entries.
 
+> ### ⚡ Current PHP versions — upstream never made it past 8.3
+> The original server is stuck on PHP 8.3 (no updates since November 2023) — a dealbreaker for modern apps and frameworks. This fork ships **PHP 8.3, 8.4 and 8.5 preinstalled and switchable** in the controller (*PHP > Select PHP version*), repackaged from the official windows.php.net builds. CI packages new PHP releases automatically, so future versions reach the bundle quickly — and every build is smoke-tested with each installed PHP version before it is published.
+
 > ### 🎉 Multiple virtual hosts finally work — including HTTPS
 > One of the most notorious problems of the original Uniform Server is fixed in this fork: **creating more than one virtual host silently failed.** The controller handed the Windows hosts file entry to the interactive EdHost utility as a command line call — but EdHost has no command line interface, so **nothing was ever written** and the new host name simply did not resolve. It looked like a broken Apache configuration and was masked whenever an entry already existed from another tool. UniServer Reload writes the hosts entries itself — deduplicated, elevated only when needed, and verified with a clear message if anything fails. Create as many vhosts as you like: `http://` **and** `https://` work for every one of them.
 

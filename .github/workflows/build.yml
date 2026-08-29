@@ -298,6 +298,13 @@ jobs:
             echo "installed, the controller offers to enable Mozilla's ImportEnterpriseRoots"
             echo "policy (current user only) so Firefox uses the Windows store too."
             echo
+            echo "## Current PHP versions"
+            echo
+            echo "The original server never made it past PHP 8.3. This bundle ships PHP 8.3,"
+            echo "8.4 and 8.5 preinstalled and switchable in the controller (*PHP > Select"
+            echo "PHP version*), repackaged from the official windows.php.net builds - and"
+            echo "every build is smoke-tested with each installed PHP version."
+            echo
             echo "## Multiple virtual hosts - finally working"
             echo
             echo "Create as many virtual hosts as you like (*Apache > Apache Vhosts*): the"
