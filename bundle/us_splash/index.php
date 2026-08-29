@@ -106,6 +106,8 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
         <p>Switch versions in UniController: stop Apache, then <em>PHP &gt; Select PHP version</em>, then start Apache again.</p>
         <h3>HTTPS</h3>
         <p><a href="https://localhost">https://localhost</a> works out of the box and serves the same <strong>www</strong> folder as http. UniController offers to trust the certificate on its first start &mdash; confirm with Yes and restart the browser completely to remove the warning. Any time later: <em>Apache &gt; Apache SSL &gt; Trust certificate in Windows</em>.</p>
+        <h3>Virtual hosts</h3>
+        <p>Create as many as you like (<em>Apache &gt; Apache Vhosts</em>) &mdash; host names are added to the Windows hosts file automatically and verified, and every vhost is served over http <strong>and</strong> https.</p>
         <h3>PHP Accelerator</h3>
         <ul>
           <li><strong>Zend OpCache</strong></li>

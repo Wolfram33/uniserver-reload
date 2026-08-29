@@ -9,6 +9,9 @@
 
 **No external dependencies, no installation, no configuration:** the complete WAMP stack — Apache, MySQL, PHP 8.3/8.4/8.5, phpMyAdmin and the updated controller — ships as a **single self-extracting 7-Zip archive** ([`UniServer-Reload.exe`](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)). Unpack it anywhere and everything is immediately ready to run. Nothing needs to be downloaded from SourceForge or windows.php.net, no modules need to be added, no settings need to be changed. Portable as ever: no installer, no registry entries.
 
+> ### 🎉 Multiple virtual hosts finally work — including HTTPS
+> One of the most notorious problems of the original Uniform Server is fixed in this fork: **creating more than one virtual host silently failed.** The controller handed the Windows hosts file entry to the interactive EdHost utility as a command line call — but EdHost has no command line interface, so **nothing was ever written** and the new host name simply did not resolve. It looked like a broken Apache configuration and was masked whenever an entry already existed from another tool. UniServer Reload writes the hosts entries itself — deduplicated, elevated only when needed, and verified with a clear message if anything fails. Create as many vhosts as you like: `http://` **and** `https://` work for every one of them.
+
 The original project — a free lightweight WAMP server solution for Windows — has seen no commits since November 2023.
 This fork imports the source of its two control programs (UniController and UniService) as a clean starting point for further development.
 
@@ -112,6 +115,7 @@ All values remain editable: PHP via *PHP > Edit selected configuration file*, My
 * [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching
 * [x] HTTPS out of the box: the controller auto-generates a `localhost` certificate on first start, enables SSL and **proactively offers to trust the certificate on the first start** (also available any time via *Apache > Apache SSL > Trust certificate*) to remove the browser warning
 * [x] Vhosts with a folder picker: *Apache > Apache Vhosts > Create Apache Vhost* now takes either a portable name (created under `vhosts\`) **or a full path via Browse…** — point a host straight at `D:\projects\app` with no copying into `www`, no duplicated project folders
+* [x] **Multiple vhosts actually work** — fixed the long-standing upstream bug that only one vhost ever resolved: the controller now writes the Windows hosts file entries itself (deduplicated, verified, elevation only when needed) instead of handing off to the interactive EdHost utility, which never wrote anything
 * [x] Per-vhost HTTPS: creating a vhost also writes a matching `:443` block and rebuilds the server certificate so its subjectAltName covers every vhost domain (plus `*.domain`). `https://app.test` works like `https://localhost` — the controller offers to re-trust the rebuilt certificate right after creating the vhost. Default vhosts guard **both** ports: unknown host names fall back to `www` on http and https alike
 * [x] Automated builds via CI (Lazarus build on Windows runners)
 * [x] Package current PHP versions as ready-to-use modules (built by CI, see Downloads)

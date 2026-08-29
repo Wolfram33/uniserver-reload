@@ -134,7 +134,7 @@
 
     <section id="vhosts">
       <h2><span class="ico">🌐</span> Virtual hosts</h2>
-      <p>Give each project its own hostname — pointing directly at your project folder, no copying into <code>www</code>.</p>
+      <p>Give each project its own hostname — pointing directly at your project folder, no copying into <code>www</code>. Create as many as you like: the controller writes the Windows hosts file entries itself (deduplicated and verified — the upstream limitation that only one vhost ever resolved is fixed in this fork).</p>
       <ol class="steps">
         <li><b>Apache &gt; Apache Vhosts &gt; Create Apache Vhost</b>.</li>
         <li>Document root: a plain name (portable, created under <code>vhosts\</code>) <b>or</b> click <b>Browse…</b> and choose any folder, e.g. <code>D:\projects\app</code>.</li>
