@@ -17,7 +17,7 @@ uses
   JwaTlHelp32,windows,Process,
   Graphics, Controls,
   RegExpr, LazFileUtils, FileUtil,
-  ExtCtrls, LCLType, INIFiles, registry,
+  ExtCtrls, LCLType, INIFiles, registry, ShellApi,
   fileinfo, winpeimagereader;
 
 //=== General ===
@@ -2792,79 +2792,218 @@ end;
 {--- End us_launch_edit_hosts_utility ----------------------------------------}
 
 
+{===================================================================
+ us_hosts_file_path: Full path of the Windows hosts file.
+====================================================================}
+function us_hosts_file_path:string;
+begin
+ Result := SysUtils.GetEnvironmentVariable('SystemRoot')+'\System32\drivers\etc\hosts';
+end;
+{--- End us_hosts_file_path ----------------------------------------}
+
+
+{===================================================================
+ us_hosts_entry_regex: Matches an active (un-commented) hosts line
+ mapping any IP to the given host name, e.g. "127.0.0.1  app.test".
+====================================================================}
+function us_hosts_entry_regex(host:string):string;
+begin
+ Result := '^\s*[0-9a-fA-F\.:]+\s+'+QuoteRegExprMetaChars(host)+'(\s|$)';
+end;
+{--- End us_hosts_entry_regex --------------------------------------}
+
+
+{===================================================================
+ us_hosts_has_entry: True when the hosts file already resolves the
+ given host name (reading needs no administrator rights).
+====================================================================}
+function us_hosts_has_entry(host:string):boolean;
+var
+  sList :TStringList;
+  re    :TRegExpr;
+  i     :integer;
+  line  :string;
+begin
+ Result := False;
+ If Not FileExists(us_hosts_file_path) Then Exit;
+ sList := TStringList.Create;
+ re    := TRegExpr.Create;
+ try
+   re.Expression := us_hosts_entry_regex(host);
+   re.ModifierI  := True;
+   sList.LoadFromFile(us_hosts_file_path);
+   for i:=0 to sList.Count-1 do
+     begin
+       line := Trim(sList[i]);
+       If (line<>'') and (line[1]<>'#') and re.Exec(sList[i]) Then
+         begin
+           Result := True;
+           Break;
+         end;
+     end;
+ finally
+   re.Free;
+   sList.Free;
+ end;
+end;
+{--- End us_hosts_has_entry ----------------------------------------}
+
+
+{===================================================================
+ us_write_hosts_file: Save the new hosts file content.
+ Direct write works when the controller runs elevated; otherwise the
+ content is staged in a temp file and copied over the hosts file by
+ an elevated one-shot cmd (Windows shows the UAC prompt).
+====================================================================}
+function us_write_hosts_file(sList:TStringList):boolean;
+var
+  tmpPath      :string;
+  sei          :TShellExecuteInfoW;
+  verbW, fileW :WideString;
+  parW, dirW   :WideString;
+begin
+ Result := False;
+
+ //--Direct write: succeeds when running with administrator rights
+ try
+   sList.SaveToFile(us_hosts_file_path);
+   Result := True;
+   Exit;
+ except
+   //Access denied - continue with the elevated copy below
+ end;
+
+ //--Stage content in a temp file, then copy it elevated
+ tmpPath := SysUtils.GetTempDir + 'us_hosts_new.txt';
+ try
+   sList.SaveToFile(tmpPath);
+ except
+   Exit;                                     // Cannot even stage: give up
+ end;
+
+ verbW := 'runas';
+ fileW := WideString('cmd.exe');
+ parW  := WideString('/c copy /y "'+tmpPath+'" "'+us_hosts_file_path+'"');
+ dirW  := WideString(SysUtils.GetTempDir);
+
+ FillChar(sei, SizeOf(sei), 0);
+ sei.cbSize       := SizeOf(sei);
+ sei.fMask        := SEE_MASK_NOCLOSEPROCESS;
+ sei.lpVerb       := PWideChar(verbW);
+ sei.lpFile       := PWideChar(fileW);
+ sei.lpParameters := PWideChar(parW);
+ sei.lpDirectory  := PWideChar(dirW);
+ sei.nShow        := SW_HIDE;
+
+ If ShellExecuteExW(@sei) Then               // False when the UAC prompt is declined
+  begin
+    If sei.hProcess <> 0 Then
+     begin
+       WaitForSingleObject(sei.hProcess, 120000); // Allow time for the UAC prompt
+       CloseHandle(sei.hProcess);
+     end;
+    Result := True;                          // Copy attempted; caller verifies
+  end;
+
+ SysUtils.DeleteFile(tmpPath);               // Best effort clean-up
+end;
+{--- End us_write_hosts_file ---------------------------------------}
+
+
 {****************************************************************************
 us_add_to_hosts_file
- Add domain (e.g fred.com) name to Windows hosts
- Uses a seperate cmd window forces user to confirm changes to hosts file.
+ Add domain (e.g fred.com) to the Windows hosts file, mapped to 127.0.0.1.
+
+ The entry is written directly by the controller (the former hand-off to the
+ interactive EdHost utility silently added nothing - EdHost has no command
+ line interface). Already-resolvable names are left untouched, and the
+ result is verified: if the entry is still missing afterwards the user is
+ told what failed, what the consequence is and how to fix it manually.
 =============================================================================}
 procedure us_add_to_hosts_file(host:string);
-Var
- AProcess: TProcess;
+var
+  sList :TStringList;
+  str   :string;
 begin
- If USC_EditHostsFileEnabled Then          // Check user has enabled Edit Windows hosts file
+ If Not USC_EditHostsFileEnabled Then Exit;   // User disabled hosts file editing
+ If Not us_is_valid_hostname(host) Then Exit; // Never write invalid names
+ If us_hosts_has_entry(host) Then Exit;       // Already resolves - nothing to do
+
+ sList := TStringList.Create;
+ try
+   If FileExists(us_hosts_file_path) Then
+     sList.LoadFromFile(us_hosts_file_path);
+   sList.Add('127.0.0.1'+#9+host+#9+'# UniServer Reload vhost');
+   us_write_hosts_file(sList);
+ finally
+   sList.Free;
+ end;
+
+ //--Verify: without the entry the host name will not resolve in a browser
+ If Not us_hosts_has_entry(host) Then
   begin
-   If FileExists(USF_EDHOST_UTILITY) Then  // Check edit host utility EdHost.exe exists
-   begin
-    AProcess := TProcess.Create(nil); // Create process
-
-    AProcess.Executable := 'cmd';                           // Executable to run
-    AProcess.Parameters.Add('/T:B0');                       // Set background colour
-    AProcess.Parameters.Add('/C');                          // Close on exit
-
-    AProcess.Parameters.Add('title');                       // A title is required
-    AProcess.Parameters.Add('Edit hosts');                  // Title
-
-    AProcess.Parameters.Add('&&');                          // Start a new command line
-    AProcess.Parameters.Add('start');                       // Command to run
-    AProcess.Parameters.Add(USF_EDHOST_UTILITY);            // Run EDHost utility
-    AProcess.Parameters.Add('add');                         // Utility Command parameter
-    AProcess.Parameters.Add(host);                          // Domain name to add
-
-    AProcess.Options := AProcess.Options + [poNoConsole];   // Set option no console
-    AProcess.Options := AProcess.Options + [poWaitOnExit];  // Wait for command to run
-    AProcess.Execute;                                       // execute detatched process
-    AProcess.Free;                                          // free memory
-
-   end;
+    str :=       'The Windows hosts file entry for "'+host+'" could not be'    + sLineBreak;
+    str := str + 'written - this needs administrator rights and the Windows'   + sLineBreak;
+    str := str + 'prompt may have been declined.'                              + sLineBreak + sLineBreak;
+    str := str + 'Without the entry http://'+host+' will not resolve.'         + sLineBreak + sLineBreak;
+    str := str + 'Fix: add this line to '+us_hosts_file_path+':'               + sLineBreak;
+    str := str + '127.0.0.1   '+host                                           + sLineBreak;
+    str := str + 'or use menu: Extra > Edit Win hosts file.';
+    us_MessageDlg('Hosts file entry missing', str, mtWarning,[mbOk],0);
   end;
 end;
 {--- End us_add_to_hosts_file ------------------------------------------------}
 
 {****************************************************************************
 us_delete_from_hosts_file
- Delete domain (e.g fred.com) name from Windows hosts file
- Uses a seperate cmd window forces user to confirm changes to hosts file.
+ Delete domain (e.g fred.com) from the Windows hosts file.
+ Direct rewrite by the controller (see us_add_to_hosts_file); verified,
+ with a manual-fix hint when the entry could not be removed.
 =============================================================================}
 procedure us_delete_from_hosts_file(host:string);
-Var
- AProcess: TProcess;
+var
+  sList   :TStringList;
+  re      :TRegExpr;
+  i       :integer;
+  line    :string;
+  changed :boolean;
+  str     :string;
 begin
- If USC_EditHostsFileEnabled Then          // Check user has enabled Edit Windows hosts file
+ If Not USC_EditHostsFileEnabled Then Exit;   // User disabled hosts file editing
+ If Not FileExists(us_hosts_file_path) Then Exit;
+
+ sList   := TStringList.Create;
+ re      := TRegExpr.Create;
+ changed := False;
+ try
+   re.Expression := us_hosts_entry_regex(host);
+   re.ModifierI  := True;
+   sList.LoadFromFile(us_hosts_file_path);
+   for i:=sList.Count-1 downto 0 do
+     begin
+       line := Trim(sList[i]);
+       If (line<>'') and (line[1]<>'#') and re.Exec(sList[i]) Then
+         begin
+           sList.Delete(i);
+           changed := True;
+         end;
+     end;
+   If changed Then us_write_hosts_file(sList);
+ finally
+   re.Free;
+   sList.Free;
+ end;
+
+ //--Verify removal; explain the manual way when it failed
+ If us_hosts_has_entry(host) Then
   begin
-   If FileExists(USF_EDHOST_UTILITY) Then  // Check edit host utility EdHost.exe exists
-   begin
-
-   AProcess := TProcess.Create(nil); // Create process
-
-   AProcess.Executable := 'cmd';                           // Executable to run
-   AProcess.Parameters.Add('/T:B0');                       // Set background colour
-   AProcess.Parameters.Add('/C');                          // Close on exit
-
-   AProcess.Parameters.Add('title');                       // A title is required
-   AProcess.Parameters.Add('Edit hosts');                  // Title
-
-   AProcess.Parameters.Add('&&');                          // Start a new command line
-   AProcess.Parameters.Add('start');                       // Command to run
-   AProcess.Parameters.Add(USF_EDHOST_UTILITY);            // Run EDHost utility
-   AProcess.Parameters.Add('del');                         // Utility Command parameter
-   AProcess.Parameters.Add(host);                          // Domain name to delete
-
-   AProcess.Options := AProcess.Options + [poNoConsole];   // Set option no console
-   AProcess.Options := AProcess.Options + [poWaitOnExit];  // Wait for command to run
-   AProcess.Execute;                                       // execute detatched process
-   AProcess.Free;                                          // free memory
-
-   end;
+    str :=       'The Windows hosts file entry for "'+host+'" could not be'  + sLineBreak;
+    str := str + 'removed - this needs administrator rights and the Windows' + sLineBreak;
+    str := str + 'prompt may have been declined.'                            + sLineBreak + sLineBreak;
+    str := str + 'Remove the line containing "'+host+'" from'                + sLineBreak;
+    str := str + us_hosts_file_path                                          + sLineBreak;
+    str := str + 'or use menu: Extra > Edit Win hosts file.';
+    us_MessageDlg('Hosts file entry still present', str, mtWarning,[mbOk],0);
   end;
 end;
 {--- End us_delete_from_hosts_file -------------------------------------------}
