@@ -459,7 +459,7 @@ type
     AProcess := TProcess.Create(nil);       // Create process
     AProcess.Executable := 'cmd';           // Want to run a command prompt
 
-    AProcess.Parameters.Add('/T:B0');       // Set background colour
+    AProcess.Parameters.Add('/T:0F');       // Set background colour
     AProcess.Parameters.Add('/c');          // 'c' Close when finished note 'K' remains open
     AProcess.Parameters.Add('title');       // A title is required
     AProcess.Parameters.Add('US Test');     // Title

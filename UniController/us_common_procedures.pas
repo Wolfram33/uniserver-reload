@@ -813,7 +813,7 @@ begin
  AProcess := TProcess.Create(nil); // Create process
 
  AProcess.Executable := 'cmd';                                // Executable to run
- AProcess.Parameters.Add('/T:B0');                            // Set background colour
+ AProcess.Parameters.Add('/T:0F');                            // Set background colour
  AProcess.Parameters.Add('/K');                               // Keep open
  AProcess.Parameters.Add('title');                            // A title is required
  AProcess.Parameters.Add('Apache Syntax check');              // Title
@@ -1232,7 +1232,7 @@ begin
  AProcess := TProcess.Create(nil); // Create process
 
  AProcess.Executable := 'cmd';                             // Executable to run
- AProcess.Parameters.Add('/T:B0');                         // Set background colour
+ AProcess.Parameters.Add('/T:0F');                         // Set background colour
  AProcess.Parameters.Add('/K');                            // Keep open
 
  AProcess.Parameters.Add('title');                         // A title is required
@@ -1643,7 +1643,7 @@ begin
  AProcess := TProcess.Create(nil); // Create process
 
  AProcess.Executable := 'cmd';                              // Executable to run
- AProcess.Parameters.Add('/T:B0');                          // Set background colour
+ AProcess.Parameters.Add('/T:0F');                          // Set background colour
  AProcess.Parameters.Add('/K');                             // Keep open
 
  AProcess.Parameters.Add('title');                          // A title is required
@@ -2390,7 +2390,7 @@ begin
  AProcess := TProcess.Create(nil);        // Create process
  AProcess.Executable := 'cmd';            // Want to run a command prompt
 
- AProcess.Parameters.Add('/T:B0');        // Set background colour
+ AProcess.Parameters.Add('/T:0F');        // Set background colour
  AProcess.Parameters.Add('/c');           // Close when finished
  AProcess.Parameters.Add('title');        // A title is required
  AProcess.Parameters.Add('US Cert');      // Title
@@ -2772,7 +2772,7 @@ begin
     AProcess := TProcess.Create(nil); // Create process
 
     AProcess.Executable := 'cmd';                           // Executable to run
-    AProcess.Parameters.Add('/T:B0');                       // Set background colour
+    AProcess.Parameters.Add('/T:0F');                       // Set background colour
     AProcess.Parameters.Add('/C');                          // Close on exit
 
     AProcess.Parameters.Add('title');                       // A title is required

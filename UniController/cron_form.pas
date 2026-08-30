@@ -210,7 +210,7 @@ begin
        AProcess := TProcess.Create(nil);     // Create new process
 
        AProcess.Executable := 'cmd';         // Executable to run
-       AProcess.Parameters.Add('/T:B0');     //
+       AProcess.Parameters.Add('/T:0F');     //
        AProcess.Parameters.Add('/c');        // Close when finished
        AProcess.Parameters.Add('title');     // A title is required
        AProcess.Parameters.Add('USTest');    // Title

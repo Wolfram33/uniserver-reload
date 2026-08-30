@@ -577,7 +577,7 @@ begin
  AProcess := TProcess.Create(nil); // Create process
 
  AProcess.Executable := 'cmd';                              // Executable to run
- AProcess.Parameters.Add('/T:B0');                          // Set background colour
+ AProcess.Parameters.Add('/T:0F');                          // Set background colour
  AProcess.Parameters.Add('/K');                             // Keep open
 
  AProcess.Parameters.Add('title');                          // A title is required
