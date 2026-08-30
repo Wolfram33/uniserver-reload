@@ -840,52 +840,49 @@ Inputs:
  state - Red
        - Green
 
-Requires TImage:
- Create a new TImage
-  set height = 19
-  set width  = 19
-  set name   = apache_img
-
+Draws a round LED sized to the target TImage (apache_img on the main form).
 =============================================================================}
-procedure apache_indicator(state:String);
+
+{Shared LED painter: green circle = running, red circle = stopped.
+ Sizes itself to the TImage so DPI scaling keeps the circle round.}
+procedure us_draw_state_led(AImg: TImage; ARunning: Boolean);
 Var
   Bmp: TBitmap;
-  clBorder       : TColor;
-  clBack_running : TColor;
-  clBack_stopped : TColor;
-
+  W, H: Integer;
+  clFill, clEdge: TColor;
 begin
- clBorder       := clBlack; // TColor($000000) Border colour
- clBack_running := clLime;  // TColor($00ff00) Server running
- clBack_stopped := clRed;   // TColor($0000ff) Server stopped
+  W := AImg.Width;
+  H := AImg.Height;
+  If (W < 2) or (H < 2) Then Exit;
 
-  // Not running Red
-  If state='red' Then
-   begin
-    Bmp := TBitmap.Create;
-    Bmp.Height := 19;
-    Bmp.Width  := 19;
-    Bmp.Canvas.Brush.Color := clBorder;
-    Bmp.Canvas.FillRect(0,0,19,19);
-    Bmp.Canvas.Brush.Color := clBack_stopped;
-    Bmp.Canvas.FillRect(1,1,19,19);
-    Main.apache_img.Canvas.Draw(0,0,Bmp);
-    Bmp.free;
-   end;
+  If ARunning Then
+    begin
+      clFill := TColor($48A124); // #24A148 green - running
+      clEdge := TColor($2E6B16); // darker green rim
+    end
+  Else
+    begin
+      clFill := TColor($2929D6); // #D62929 red - stopped
+      clEdge := TColor($1C1C96); // darker red rim
+    end;
 
-  // Running Green
-  If state='green' Then
-   begin
-    Bmp := TBitmap.Create;
-    Bmp.Height := 19;
-    Bmp.Width  := 19;
-    Bmp.Canvas.Brush.Color := clBorder;
-    Bmp.Canvas.FillRect(0,0,19,19);
-    Bmp.Canvas.Brush.Color := clBack_running;
-    Bmp.Canvas.FillRect(1,1,19,19);
-    Main.apache_img.Canvas.Draw(0,0,Bmp);
-    Bmp.free;
-   end;
+  Bmp := TBitmap.Create;
+  try
+    Bmp.SetSize(W, H);
+    Bmp.Canvas.Brush.Color := Main.Color;  // blend with form background
+    Bmp.Canvas.FillRect(0, 0, W, H);
+    Bmp.Canvas.Brush.Color := clFill;
+    Bmp.Canvas.Pen.Color   := clEdge;
+    Bmp.Canvas.Ellipse(0, 0, W, H);
+    AImg.Canvas.Draw(0, 0, Bmp);
+  finally
+    Bmp.Free;
+  end;
+end;
+
+procedure apache_indicator(state:String);
+begin
+  us_draw_state_led(Main.apache_img, state = 'green');
 end;
 {----------------------------------------------------------------------------}
 
@@ -1168,52 +1165,11 @@ Inputs:
  state - Red
        - Green
 
-Requires TImage:
- Create a new TImage
-  set height = 15
-  set width  = 15
-  set name   = mysql_img
-
+Draws a round LED sized to the target TImage (mysql_img on the main form).
 =============================================================================}
 procedure mysql_indicator(state:String);
-Var
-  Bmp: TBitmap;
-  clBorder       : TColor;
-  clBack_running : TColor;
-  clBack_stopped : TColor;
-
 begin
- clBorder       := clBlack; // TColor($000000) Border colour
- clBack_running := clLime;  // TColor($00ff00) Server running
- clBack_stopped := clRed;   // TColor($0000ff) Server stopped
-
-  // Not running Red
-  If state='red' Then
-   begin
-    Bmp := TBitmap.Create;
-    Bmp.Height := 19;
-    Bmp.Width  := 19;
-    Bmp.Canvas.Brush.Color := clBorder;
-    Bmp.Canvas.FillRect(0,0,19,19);
-    Bmp.Canvas.Brush.Color := clBack_stopped;
-    Bmp.Canvas.FillRect(1,1,19,19);
-    Main.mysql_img.Canvas.Draw(0,0,Bmp);
-    Bmp.free;
-   end;
-
-  // Running Green
-  If state='green' Then
-   begin
-    Bmp := TBitmap.Create;
-    Bmp.Height := 19;
-    Bmp.Width  := 19;
-    Bmp.Canvas.Brush.Color := clBorder;
-    Bmp.Canvas.FillRect(0,0,19,19);
-    Bmp.Canvas.Brush.Color := clBack_running;
-    Bmp.Canvas.FillRect(1,1,19,19);
-    Main.mysql_img.Canvas.Draw(0,0,Bmp);
-    Bmp.free;
-   end;
+  us_draw_state_led(Main.mysql_img, state = 'green');
 end;
 {--- ENd mysql_indicator ----------------------------------------------------}
 

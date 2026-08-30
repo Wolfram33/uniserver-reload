@@ -13,6 +13,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
   ExtCtrls, Menus,
+  us_buttons,
   default_config_vars,
   us_common_procedures,
   us_common_functions,
@@ -44,19 +45,18 @@ type
   { TMain }
 
   TMain = class(TForm)
-    Bevel1: TBevel;
-    Btn_opt2: TButton;
-    Btn_mysql_console: TButton;
-    Btn_opt1: TButton;
-    Btn_opt3: TButton;
-    Btn_start_apache: TButton;
-    Btn_start_mysql: TButton;
-    Btn_server_console: TButton;
-    Btn_view_www: TButton;
-    Btn_view_ssl: TButton;
-    Btn_documentation: TButton;
-    GB2: TGroupBox;
-    GB_mysql_utilities: TGroupBox;
+    Btn_opt2: TUsButton;
+    Btn_mysql_console: TUsButton;
+    Btn_opt1: TUsButton;
+    Btn_opt3: TUsButton;
+    Btn_start_apache: TUsButton;
+    Btn_start_mysql: TUsButton;
+    Btn_server_console: TUsButton;
+    Btn_view_www: TUsButton;
+    Btn_view_ssl: TUsButton;
+    Btn_documentation: TUsButton;
+    Lbl_apache_utilities: TLabel;
+    Lbl_mysql_utilities: TLabel;
     Image1: TImage;
     apache_img: TImage;
     menuImageList: TImageList;

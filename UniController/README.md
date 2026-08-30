@@ -35,3 +35,12 @@ With the working environment in place, you are ready to compile UniController as
  5. UniController will run.
 
  You can now change code as required and re-compile.
+
+### Custom controls
+
+The main form uses `TUsButton` (see `us_buttons.pas`), a flat coloured button
+drawn by the controller itself, because the native `TButton` ignores colours
+on Windows. It is registered at runtime, so `lazbuild` and the CI build work
+unchanged. The Lazarus **form designer** however does not know the class:
+to edit `main_unit.lfm` visually you must first add `us_buttons.pas` to a
+design-time package, or simply edit the `.lfm` as text.

@@ -1,13 +1,14 @@
 object Main: TMain
   Left = 1148
-  Height = 394
+  Height = 458
   Top = 306
-  Width = 583
+  Width = 660
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
   Caption = 'Uniform Server Reload'
-  ClientHeight = 360
-  ClientWidth = 583
+  ClientHeight = 424
+  ClientWidth = 660
+  Color = clWhite
   DesignTimePPI = 120
   FormStyle = fsStayOnTop
   Menu = MainMenu1
@@ -16,66 +17,66 @@ object Main: TMain
   OnWindowStateChange = FormWindowStateChange
   Position = poScreenCenter
   ShowHint = True
-  Font.Height = -16
+  Font.Height = -17
   Font.Name = 'Segoe UI'
   LCLVersion = '2.2.2'
-  object Bevel1: TBevel
-    Left = 14
-    Height = 115
-    Top = 14
-    Width = 556
-    Shape = bsFrame
-  end
-  object GB2: TGroupBox
-    Left = 14
-    Height = 204
-    Top = 142
-    Width = 262
+  object Lbl_apache_utilities: TLabel
+    Left = 24
+    Height = 26
+    Top = 148
+    Width = 150
     Caption = 'Apache Utilities'
-    ClientHeight = 170
-    ClientWidth = 256
-    TabOrder = 0
-    object Btn_server_console: TButton
-      Left = 12
-      Height = 39
-      Top = 3
-      Width = 228
-      Caption = 'Server Console'
-      OnClick = Btn_server_consoleClick
-      TabOrder = 0
-    end
-    object Btn_view_www: TButton
-      Left = 12
-      Height = 39
-      Top = 46
-      Width = 228
-      Caption = 'View www'
-      OnClick = Btn_view_wwwClick
-      TabOrder = 1
-    end
-    object Btn_view_ssl: TButton
-      Left = 12
-      Height = 39
-      Top = 88
-      Width = 228
-      Caption = 'View ssl'
-      OnClick = Btn_view_sslClick
-      TabOrder = 2
-    end
-    object Btn_documentation: TButton
-      Left = 12
-      Height = 39
-      Top = 130
-      Width = 228
-      Caption = 'Documentation'
-      OnClick = Btn_documentationClick
-      TabOrder = 3
-    end
+    Font.Color = 5325111
+    Font.Height = -19
+    Font.Name = 'Segoe UI'
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object Btn_server_console: TUsButton
+    Left = 24
+    Height = 44
+    Top = 186
+    Width = 280
+    BaseColor = 4279405
+    Caption = 'Server Console'
+    OnClick = Btn_server_consoleClick
+    TabOrder = 2
+  end
+  object Btn_view_www: TUsButton
+    Left = 24
+    Height = 44
+    Top = 242
+    Width = 280
+    BaseColor = 12608789
+    Caption = 'View www'
+    OnClick = Btn_view_wwwClick
+    TabOrder = 3
+  end
+  object Btn_view_ssl: TUsButton
+    Left = 24
+    Height = 44
+    Top = 298
+    Width = 280
+    BaseColor = 12608789
+    Caption = 'View ssl'
+    OnClick = Btn_view_sslClick
+    TabOrder = 4
+  end
+  object Btn_documentation: TUsButton
+    Left = 24
+    Height = 44
+    Top = 354
+    Width = 280
+    BaseColor = 12608789
+    Caption = 'Documentation'
+    OnClick = Btn_documentationClick
+    TabOrder = 5
   end
   object Image1: TImage
-    Left = 30
+    Left = 24
     Height = 92
-    Top = 24
+    Top = 30
     Width = 223
     Proportional = True
     Stretch = True
@@ -1386,81 +1387,92 @@ object Main: TMain
       7F0CF9FF8195CF3C59B022270000000049454E44AE426082
     }
   end
-  object Btn_start_apache: TButton
-    Left = 304
-    Height = 42
+  object Btn_start_apache: TUsButton
+    Left = 320
+    Height = 48
     Top = 24
-    Width = 194
+    Width = 280
+    BaseColor = 3308846
+    BoldCaption = True
     Caption = 'Start Apache'
     OnClick = Btn_start_apacheClick
-    TabOrder = 1
+    TabOrder = 0
   end
-  object Btn_start_mysql: TButton
-    Left = 304
-    Height = 42
-    Top = 73
-    Width = 194
+  object Btn_start_mysql: TUsButton
+    Left = 320
+    Height = 48
+    Top = 84
+    Width = 280
+    BaseColor = 3308846
+    BoldCaption = True
     Caption = 'Start MySQL'
     OnClick = Btn_start_mysqlClick
-    TabOrder = 2
+    TabOrder = 1
   end
   object apache_img: TImage
-    Left = 514
-    Height = 20
-    Top = 35
-    Width = 20
+    Left = 612
+    Height = 24
+    Top = 36
+    Width = 24
   end
   object mysql_img: TImage
-    Left = 514
-    Height = 20
-    Top = 84
-    Width = 20
+    Left = 612
+    Height = 24
+    Top = 96
+    Width = 24
   end
-  object GB_mysql_utilities: TGroupBox
-    Left = 304
-    Height = 204
-    Top = 142
-    Width = 262
+  object Lbl_mysql_utilities: TLabel
+    Left = 356
+    Height = 26
+    Top = 148
+    Width = 150
     Caption = 'MySQL Utilities'
-    ClientHeight = 170
-    ClientWidth = 256
-    TabOrder = 3
-    object Btn_mysql_console: TButton
-      Left = 12
-      Height = 39
-      Top = 3
-      Width = 228
-      Caption = 'MySQL Console'
-      OnClick = Btn_mysql_consoleClick
-      TabOrder = 0
-    end
-    object Btn_opt1: TButton
-      Left = 12
-      Height = 39
-      Top = 46
-      Width = 228
-      Caption = 'phpMyAdmin'
-      OnClick = Btn_opt1Click
-      TabOrder = 1
-    end
-    object Btn_opt2: TButton
-      Left = 12
-      Height = 39
-      Top = 88
-      Width = 228
-      Caption = 'Adminer'
-      OnClick = Btn_opt2Click
-      TabOrder = 2
-    end
-    object Btn_opt3: TButton
-      Left = 12
-      Height = 39
-      Top = 128
-      Width = 228
-      Caption = 'opt3'
-      OnClick = Btn_opt3Click
-      TabOrder = 3
-    end
+    Font.Color = 5325111
+    Font.Height = -19
+    Font.Name = 'Segoe UI'
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object Btn_mysql_console: TUsButton
+    Left = 356
+    Height = 44
+    Top = 186
+    Width = 280
+    BaseColor = 4279405
+    Caption = 'MySQL Console'
+    OnClick = Btn_mysql_consoleClick
+    TabOrder = 6
+  end
+  object Btn_opt1: TUsButton
+    Left = 356
+    Height = 44
+    Top = 242
+    Width = 280
+    BaseColor = 12608789
+    Caption = 'phpMyAdmin'
+    OnClick = Btn_opt1Click
+    TabOrder = 7
+  end
+  object Btn_opt2: TUsButton
+    Left = 356
+    Height = 44
+    Top = 298
+    Width = 280
+    BaseColor = 12608789
+    Caption = 'Adminer'
+    OnClick = Btn_opt2Click
+    TabOrder = 8
+  end
+  object Btn_opt3: TUsButton
+    Left = 356
+    Height = 44
+    Top = 354
+    Width = 280
+    BaseColor = 12608789
+    Caption = 'opt3'
+    OnClick = Btn_opt3Click
+    TabOrder = 9
   end
   object MainMenu1: TMainMenu
     Images = menuImageList

@@ -14,6 +14,7 @@ uses
   Classes, SysUtils,Dialogs,Forms,
   default_config_vars,us_common_functions,
   us_common_procedures,
+  us_buttons,
   Graphics,
   RegExpr,FileUtil,
   ExtCtrls, LCLType;
@@ -63,7 +64,7 @@ begin
  Main.MMS_mysql_edit_user.Caption   := 'Edit restricted '+US_MYMAR_TXT+' user';   // Edit restricted MySQL user
  Main.MMS_mysql_error_log.Caption   := US_MYMAR_TXT+' error log';                 // MySQL error log
 
- Main.GB_mysql_utilities.Caption    := US_MYMAR_TXT+' Utilities';                 // MySQL Utilities
+ Main.Lbl_mysql_utilities.Caption   := US_MYMAR_TXT+' Utilities';                 // MySQL Utilities
  Main.Btn_mysql_console.Caption     := US_MYMAR_TXT + ' Console';                 // MySQL Console
 
  //--MySQL option buttons
@@ -86,6 +87,7 @@ begin
    begin
      apache_indicator('green');                   // Server status running
      Main.Btn_start_apache.Caption  := STOP_AP;   // Set button text
+     Main.Btn_start_apache.BaseColor := USB_AMBER; // Stop action = amber
      Main.Btn_view_www.Enabled      := True;      // Enable www button
 
      If AP_SSL_ENABLED Then Main.Btn_view_ssl.Enabled:= True
@@ -109,6 +111,7 @@ begin
   begin
      apache_indicator('red');                     // Server status stopped
      Main.Btn_start_apache.Caption  := START_AP;  // Set button text
+     Main.Btn_start_apache.BaseColor := USB_GREEN; // Start action = green
      Main.Btn_view_www.Enabled      := False;     // Disable www button
      Main.Btn_view_ssl.Enabled      := False;     // Disable ssl button
 
@@ -141,12 +144,14 @@ begin
    begin
      mysql_indicator('green');                    // Server status running
      Main.Btn_start_mysql.Caption   := STOP_MY;   // Set button text
+     Main.Btn_start_mysql.BaseColor := USB_AMBER; // Stop action = amber
      Main.Btn_mysql_console.Enabled := True;      // Enable console button
    end
  Else        //--My NOT running
   begin
      mysql_indicator('red');                      // Server status stopped
      Main.Btn_start_mysql.Caption   := START_MY;  // Set button text
+     Main.Btn_start_mysql.BaseColor := USB_GREEN; // Start action = green
      Main.Btn_mysql_console.Enabled := False;     // Disable console button
   End;
 
