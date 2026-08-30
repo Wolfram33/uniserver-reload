@@ -20,7 +20,6 @@ type
   { TAbout }
 
   TAbout = class(TForm)
-    Bevel1: TBevel;
     Image1: TImage;
     Label1: TLabel;
     Label2: TLabel;
