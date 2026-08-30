@@ -65,6 +65,7 @@ procedure mysql_restore_root_password;                      // Restore MySQL ser
 
 //=== Display Server Console ===
 procedure us_display_server_console;   // Display console at root folder
+procedure us_display_uniservice;       // Launch UniService (Windows service module, UAC prompt)
 
 //=== Perl
 procedure force_shebang_update(NEW_SHEBANG:string); // Update shebang in all perl scripts
@@ -1615,6 +1616,32 @@ begin
 
 end;
 {----------------------------------------------------------------------------}
+
+
+{*****************************************************************************
+Launch UniService (Windows service module)
+UniService ships in the utils subfolder since 1.3.0; older installs have it
+next to UniController. Its manifest requires administrator rights, hence
+ShellExecute is used so Windows shows the UAC prompt.
+=============================================================================}
+procedure us_display_uniservice;
+Var
+ exePath :String;
+begin
+ exePath := UniConPath + '\utils\UniService.exe';           // Default location
+ If not FileExists(exePath) Then
+   exePath := UniConPath + '\UniService.exe';               // Legacy root location
+
+ If FileExists(exePath) Then
+   ShellExecute(0, 'open', PChar(exePath), Nil, PChar(UniConPath), SW_SHOWNORMAL)
+ Else
+   us_MessageDlg('UniService not found',
+     'UniService.exe was not found in:'+ sLineBreak +
+     UniConPath + '\utils'+ sLineBreak + sLineBreak +
+     'Download UniService.exe from the release page, place it in the utils folder and try again.',
+     mtError,[mbOk],0);
+end;
+{--- End us_display_uniservice ----------------------------------------------}
 
 
 //=== Perl

@@ -122,6 +122,7 @@ var
  Ini2:TINIFile;       // Handle for us_user.ini configuration file
  Ini3:TINIFile;       // Handle for MySQL or MariaDB configuration file
  AppNumber: String;
+ parentDir: String;   // Parent folder of the exe (utils layout detection)
  php_valid:boolean;   // PHP installed and version selected
 begin
 
@@ -131,9 +132,24 @@ begin
 
  //=== Create Top level folder -root paths. Note: Last slash removed.
  UniConPath   := ParamStr(0);                                        // Full path including name
- UniConPath   := ExtractFilePath(UniConPath);                        // Get path to this application E:\UniServerZ\
- SetLength(UniConPath, Length(UniConPath) - 1);                      // Remove last character E:\UniServerZ
- UniConPath_F := StringReplace(UniConPath, '\','/',[rfReplaceAll]);  // Path e.g E:/UniServer
+ UniConPath   := ExtractFilePath(UniConPath);                        // Get path to this application e.g E:\UniServer-Reload\utils\
+ SetLength(UniConPath, Length(UniConPath) - 1);                      // Remove last character e.g E:\UniServer-Reload\utils
+
+ //UniService ships in the utils subfolder since 1.3.0. The server root is
+ //the folder holding home\us_config\us_config.ini: the exe folder itself
+ //(legacy layout, exe next to UniController) or its parent (utils layout).
+ If not FileExists(UniConPath + '\home\us_config\us_config.ini') Then
+  begin
+   parentDir := ExtractFilePath(UniConPath);                  // Parent with trailing slash e.g E:\UniServer-Reload\
+   If parentDir <> '' Then
+    begin
+     SetLength(parentDir, Length(parentDir) - 1);             // Remove trailing slash
+     If FileExists(parentDir + '\home\us_config\us_config.ini') Then
+       UniConPath := parentDir;                               // Parent is the server root
+    end;
+  end;
+
+ UniConPath_F := StringReplace(UniConPath, '\','/',[rfReplaceAll]);  // Path e.g E:/UniServer-Reload
 
  //==Folders===
 

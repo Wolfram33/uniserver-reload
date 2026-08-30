@@ -1543,6 +1543,13 @@ object Main: TMain
         ImageIndex = 4
         OnClick = MMS_hostsClick
       end
+      object MenuItem_service_spacer: TMenuItem
+        Caption = '-'
+      end
+      object MMS_uniservice: TMenuItem
+        Caption = 'Run Apache/MySQL as Windows service (UniService)'
+        OnClick = MMS_uniserviceClick
+      end
     end
     object MM_apache: TMenuItem
       Caption = 'Apache'

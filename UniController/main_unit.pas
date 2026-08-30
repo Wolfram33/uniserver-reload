@@ -80,6 +80,8 @@ type
     MMSS_php85: TMenuItem;
 
     MMS_hosts: TMenuItem;
+    MenuItem_service_spacer: TMenuItem;
+    MMS_uniservice: TMenuItem;
     MMS_select_portable_browser: TMenuItem;
     MMS_select_default_browser: TMenuItem;
     MMS_pear_frontend: TMenuItem;
@@ -244,6 +246,7 @@ type
     procedure MMS_force_unix_shebangClick(Sender: TObject);
     procedure MMS_force_windows_shebangClick(Sender: TObject);
     procedure MMS_hostsClick(Sender: TObject);
+    procedure MMS_uniserviceClick(Sender: TObject);
     procedure MMS_mysql_change_portClick(Sender: TObject);
     procedure MMS_mysql_change_pwdClick(Sender: TObject);
     procedure MMS_mysql_create_userClick(Sender: TObject);
@@ -1425,6 +1428,11 @@ procedure TMain.MMS_hostsClick(Sender: TObject);
 begin
   us_launch_edit_hosts_utility; // Run Uniform Server Utility
   Application.Minimize;         // Hide main application
+end;
+
+procedure TMain.MMS_uniserviceClick(Sender: TObject);
+begin
+  us_display_uniservice; // Launch service module (Windows shows the UAC prompt)
 end;
 
 procedure TMain.MMS_mysql_change_portClick(Sender: TObject);

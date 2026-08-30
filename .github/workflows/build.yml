@@ -255,7 +255,7 @@ jobs:
             echo "| **${BUNDLE_NAME}** | **All-in-one package: complete server with current Apache, MySQL and PHP 8.3/8.4/8.5 - just run it, no further setup** |"
             echo "| ${BUNDLE_ZIP_NAME} | Same all-in-one package as a plain zip (for setups where antivirus blocks the unsigned self-extracting exe): extract into an empty folder, then start \`UniController.exe\` |"
             echo "| UniController.exe | Controller only (replaces the one in your existing server folder) |"
-            echo "| UniService.exe | Windows service module |"
+            echo "| UniService.exe | Windows service module - goes to \`utils\\UniService.exe\`; start it via *Extra > Run Apache/MySQL as Windows service* in the controller |"
             echo "| UniServer-Reload_php84_module.zip | PHP 8.4 module - unzip into your server folder (the folder with UniController.exe) |"
             echo "| UniServer-Reload_php85_module.zip | PHP 8.5 module - unzip into your server folder (the folder with UniController.exe) |"
             echo "| UniServer-Reload_mariadb_module.zip | Latest MariaDB LTS as database engine - fresh installs only: delete \`core\\mysql\` first, then unzip into your server folder |"

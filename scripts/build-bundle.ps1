@@ -96,9 +96,14 @@ Move-Item "$root\core\apache2\bin\httpd.exe" "$root\core\apache2\bin\httpd_z.exe
 Write-Host "==> Apache upgraded to $apVer"
 
 # --- Replace controllers with the fork builds --------------------------------
+# UniService lives in utils\ since 1.3.0: it is launched from the controller
+# menu (Extra > Run Apache/MySQL as Windows service) instead of sitting next
+# to UniController.exe, where it invited accidental double-clicks.
 Write-Host '==> Installing fork UniController/UniService'
 Copy-Item 'artifacts\uniserver-binaries\UniController\UniController.exe' "$root\UniController.exe" -Force
-Copy-Item 'artifacts\uniserver-binaries\UniService\UniService.exe' "$root\UniService.exe" -Force
+New-Item -ItemType Directory -Force "$root\utils" | Out-Null
+Copy-Item 'artifacts\uniserver-binaries\UniService\UniService.exe' "$root\utils\UniService.exe" -Force
+if (Test-Path "$root\UniService.exe") { Remove-Item "$root\UniService.exe" -Force }
 
 # --- Stamp the fork version --------------------------------------------------
 # AppVersion carries the fork version (splash page and controller read it);
@@ -388,6 +393,8 @@ $listing = & $sevenZip l -slt 'dist\UniServer-Reload.zip'
 if ($LASTEXITCODE -ne 0) { throw 'Could not list bundle zip' }
 if ($listing -notcontains 'Path = UniController.exe') { throw 'Bundle layout broken: UniController.exe is not at the archive root' }
 if ($listing | Where-Object { $_ -like 'Path = UniServerZ*' }) { throw 'Bundle layout broken: unexpected UniServerZ folder in the archive' }
+if ($listing -contains 'Path = UniService.exe') { throw 'Bundle layout broken: UniService.exe must live in utils\, not at the root' }
+if ($listing -notcontains 'Path = utils\UniService.exe') { throw 'Bundle layout broken: utils\UniService.exe is missing' }
 
 Add-Content 'dist\module-versions.txt' "UniServer Reload $reloadVersion (base ZeroXV $baseVersion)"
 Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"

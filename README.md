@@ -43,7 +43,7 @@ Every push triggers a build that updates the rolling release with fixed download
 | **`UniServer-Reload.exe`** | **All-in-one, zero-setup package: the complete server (Apache, MySQL, phpMyAdmin, PHP 8.3/8.4/8.5, updated controller) in one self-extracting 7-Zip archive — unpack and it runs, no further downloads or configuration** |
 | `UniServer-Reload.zip` | The same all-in-one package as a plain zip — for setups where antivirus software blocks the unsigned self-extracting exe; extract it into an empty folder and start `UniController.exe` |
 | `UniController.exe` | Controller only — for updating an existing installation |
-| `UniService.exe` | Windows service module — for updating an existing installation |
+| `UniService.exe` | Windows service module — replaces `utils\UniService.exe` in an existing installation; started from the controller via *Extra > Run Apache/MySQL as Windows service* |
 | `UniServer-Reload_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
 | `UniServer-Reload_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
 | `UniServer-Reload_mariadb_module.zip` | Latest MariaDB LTS as database engine — fresh installs only: delete `core\mysql` first, then unzip into the server folder |
@@ -60,7 +60,7 @@ UniServer Reload is free and open source. If it saves you time, you can support 
 
 There is no in-place updater — the package is portable by design. Two paths:
 
-* **Controller-only upgrade** (e.g. 1.2.0 → 1.2.1): replace `UniController.exe` and `UniService.exe` in your existing server folder with the single-file downloads from the release page — that is exactly what they are published for. Your `www` content, databases and configuration stay untouched. (The version shown on the splash and test pages comes from `AppVersion=` in `home\us_config\us_config.ini`; update it by hand if you want the pages to match.)
+* **Controller-only upgrade** (e.g. 1.2.0 → 1.2.1): replace `UniController.exe` (server folder) and `UniService.exe` (its `utils` subfolder) with the single-file downloads from the release page — that is exactly what they are published for. Your `www` content, databases and configuration stay untouched. (The version shown on the splash and test pages comes from `AppVersion=` in `home\us_config\us_config.ini`; update it by hand if you want the pages to match.)
 * **Full upgrade** (new Apache/PHP/MySQL builds): unpack the new bundle into a fresh folder and move over your `www` content, your databases (`core\mysql\data`) and any configuration you changed (e.g. `home\us_config\us_user.ini`, `core\msmtp\msmtprc.ini`, certificates in `core\apache2\server_certs`).
 
 ## Versioning
