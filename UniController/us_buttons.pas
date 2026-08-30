@@ -229,16 +229,13 @@ begin
 end;
 
 procedure TUsButton.MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-var
-  WasPressed: Boolean;
 begin
-  WasPressed := FPressed;
   FPressed := False;
   Invalidate;
   inherited MouseUp(Button, Shift, X, Y);
-  if Enabled and WasPressed and (Button = mbLeft)
-    and PtInRect(ClientRect, Point(X, Y)) then
-      Click;
+  // No explicit Click here: the LCL fires OnClick itself on mouse-up inside
+  // the control (csClickEvents). Calling Click as well ran every handler
+  // twice per click - Stop Apache/MySQL immediately restarted the server.
 end;
 
 procedure TUsButton.KeyDown(var Key: Word; Shift: TShiftState);
