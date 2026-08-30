@@ -120,6 +120,25 @@ begin
     Exit;                                // Skip initialisation
   end;
 
+ //=== Started directly (double-click)? The normal path is the controller
+ //menu, which passes --from-controller. New users who double-click
+ //UniService.exe get an explanation and the way to the right place
+ //instead of an unexplained service window.
+ If ParamStr(1) <> '--from-controller' Then
+  begin
+   If MessageDlg('UniService - Windows service module',
+        'UniService installs and runs Apache and MySQL as Windows services.'+ sLineBreak +
+        'It is normally opened from the controller:'+ sLineBreak + sLineBreak +
+        '    UniController.exe  >  Extra  >  Run Apache/MySQL as Windows service'+ sLineBreak + sLineBreak +
+        'Open the service module anyway?',
+        mtConfirmation,[mbYes, mbNo],0) <> mrYes Then
+    begin
+      Application.ShowMainForm := False; // Hide application
+      Application.Terminate;             // Close this instance
+      Exit;                              // Skip initialisation
+    end;
+  end;
+
  us_main_init;     // Set initial values for variables, paths and environment variables.
  us_update_status; // Update button text and indicators
 

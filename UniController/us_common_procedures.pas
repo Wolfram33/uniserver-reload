@@ -1633,7 +1633,10 @@ begin
    exePath := UniConPath + '\UniService.exe';               // Legacy root location
 
  If FileExists(exePath) Then
-   ShellExecute(0, 'open', PChar(exePath), Nil, PChar(UniConPath), SW_SHOWNORMAL)
+   //--from-controller: UniService skips its "please start me from the
+   //controller" hint when launched through this menu entry
+   ShellExecute(0, 'open', PChar(exePath), PChar('--from-controller'),
+                PChar(UniConPath), SW_SHOWNORMAL)
  Else
    us_MessageDlg('UniService not found',
      'UniService.exe was not found in:'+ sLineBreak +
