@@ -6,8 +6,9 @@
 #   artifacts/uniserver-binaries/UniService/UniService.exe
 #   artifacts/php-module-*/UniServer-Reload_php8*_module.zip
 #
-# Produces: dist/UniServer-Reload.exe (7-Zip GUI self-extractor, same
-# format as the upstream 15_0_2_ZeroXV.exe)
+# Produces: dist/UniServer-Reload.exe (7-Zip GUI self-extractor). Unlike the
+# upstream 15_0_2_ZeroXV.exe it extracts FLAT: the server files land directly
+# in the chosen target folder, without a UniServerZ subfolder.
 $ErrorActionPreference = 'Stop'
 
 # --- Fork version: single source of truth is UniController/reload_version.inc
@@ -364,17 +365,29 @@ if (($respWww -join "`n") -notmatch 'Uniform Server Reload') { throw 'Smoke test
 Write-Host "==> Smoke test passed: Apache $apVer, all PHP versions execute with required extensions"
 
 # --- Pack as self-extracting exe ---------------------------------------------
+# Flat layout (since 1.3.0): the archives carry the server files at their
+# root, so extraction puts them directly into the folder the user picks -
+# no UniServerZ nesting any more. 7z's dir\* form keeps empty directories
+# (Apache log folders) and dot-files (.htaccess).
 Write-Host '==> Packing self-extracting bundle'
 New-Item -ItemType Directory -Force dist | Out-Null
-& $sevenZip a -sfx"$sfxModule" -mx=7 'dist\UniServer-Reload.exe' '.\base\UniServerZ'
+& $sevenZip a -sfx"$sfxModule" -mx=7 'dist\UniServer-Reload.exe' '.\base\UniServerZ\*'
 if ($LASTEXITCODE -ne 0) { throw "7z sfx packing failed ($LASTEXITCODE)" }
 
 # Same payload as plain zip: for users whose antivirus/SmartScreen distrusts
 # unsigned self-extracting exes. The SFX does nothing beyond extracting, so
-# the zip is fully equivalent - extract and start UniServerZ\UniController.exe.
+# the zip is fully equivalent - extract into an empty folder and start
+# UniController.exe.
 Write-Host '==> Packing plain-zip bundle'
-& $sevenZip a -tzip -mx=5 'dist\UniServer-Reload.zip' '.\base\UniServerZ'
+& $sevenZip a -tzip -mx=5 'dist\UniServer-Reload.zip' '.\base\UniServerZ\*'
 if ($LASTEXITCODE -ne 0) { throw "7z zip packing failed ($LASTEXITCODE)" }
+
+# Guard the flat layout: the controller must sit at the archive root and no
+# stray UniServerZ folder may sneak back in.
+$listing = & $sevenZip l -slt 'dist\UniServer-Reload.zip'
+if ($LASTEXITCODE -ne 0) { throw 'Could not list bundle zip' }
+if ($listing -notcontains 'Path = UniController.exe') { throw 'Bundle layout broken: UniController.exe is not at the archive root' }
+if ($listing | Where-Object { $_ -like 'Path = UniServerZ*' }) { throw 'Bundle layout broken: unexpected UniServerZ folder in the archive' }
 
 Add-Content 'dist\module-versions.txt' "UniServer Reload $reloadVersion (base ZeroXV $baseVersion)"
 Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"

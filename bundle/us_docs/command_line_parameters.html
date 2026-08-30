@@ -161,7 +161,7 @@ $p.ExitCode
 <a name="Script examples"></a>
 <h2>Script examples</h2>
 
-<p>Create the following batch files and place them in folder <b>UniServerZ</b>.</p>
+<p>Create the following batch files and place them in the server folder (next to <b>UniController.exe</b>).</p>
 <p>Run each file pair. For example, <b>start_apache.bat/stop_apache.bat</b> demonstrates starting and stopping the Apache server.</p>
 <table width="100%">
 <tr valign="top">
@@ -239,7 +239,7 @@ if ($p.ExitCode -ne 0) {
 </tr>
 </table>
 
-<p><b>Note:</b><br> If the batch files are located outside of folder <b>UniServerZ</b> (for example, folder <b>UniServerZ</b> and batch files are located at the top-level of C drive), adjust path to <b>UniController.exe</b> in each batch file (<b>C:\UniServerZ\UniController.exe start_apache</b>). Relative paths work as well (<b>UniServerZ\UniController.exe start_apache</b>).</p>
+<p><b>Note:</b><br> If the batch files are located outside the server folder, adjust the path to <b>UniController.exe</b> in each batch file (for example <b>C:\UniServer-Reload\UniController.exe start_apache</b>). Relative paths work as well (<b>UniServer-Reload\UniController.exe start_apache</b>).</p>
 
 
 <script language="javascript" type="text/javascript" src="common/top.js"></script>

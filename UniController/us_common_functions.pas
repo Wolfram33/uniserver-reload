@@ -626,11 +626,11 @@ function us_get_new_root_folder(var server_root:string;root:string): boolean;
 
    str1 := '';
    str1 := str1 + 'Select new server-root folder ('+root+')'+ sLineBreak;
-   str1 := str1 + 'Note: For portability folder must be below folder UniServerZ';
+   str1 := str1 + 'Note: For portability the folder must be below the server folder (where UniController.exe is)';
 
    str2 := '';
    str2 := str2 + 'Invalid selection for ('+root+')!'+ sLineBreak;
-   str2 := str2 + 'Note: For portability folder must be below folder UniServerZ';
+   str2 := str2 + 'Note: For portability the folder must be below the server folder (where UniController.exe is)';
 
    while not valid do                        //Repeat until user makes a valid selection or clicks Cancel
     begin

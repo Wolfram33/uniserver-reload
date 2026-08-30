@@ -330,7 +330,7 @@ begin
     str := str + '1) A plain name, e.g. "app123":'                       + sLineBreak;
     str := str + '   A portable folder is created under'                 + sLineBreak;
     str := str + '   '+ US_VHOSTS+'\'                                     + sLineBreak;
-    str := str + '   Moves with the UniServerZ folder.'                  + sLineBreak + sLineBreak;
+    str := str + '   Moves with the server folder.'                      + sLineBreak + sLineBreak;
 
     str := str + '2) A full path, e.g. "D:\projects\app" (Browse...):'   + sLineBreak;
     str := str + '   Apache serves that folder directly - no need to'    + sLineBreak;

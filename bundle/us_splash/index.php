@@ -71,7 +71,7 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
 
   <main id="main">
     <h1>Welcome to Uniform Server Reload</h1>
-    <p><strong>Uniform Server Reload</strong> is a maintained community fork of The Uniform Server ZeroXV. This page and every other file are being served by Apache running from your <strong>UniServerZ</strong> folder. Documentation is included in <strong>UniServerZ\docs</strong> &mdash; see the <a href="/us_docs/manual/index.html">local documentation</a>.</p>
+    <p><strong>Uniform Server Reload</strong> is a maintained community fork of The Uniform Server ZeroXV. This page and every other file are being served by Apache running from your UniServer Reload folder. Documentation is included in its <strong>docs</strong> subfolder &mdash; see the <a href="/us_docs/manual/index.html">local documentation</a>.</p>
 
     <h2>This build</h2>
     <p>Everything below ships preinstalled in the all-in-one package &mdash; no further downloads or configuration needed.</p>

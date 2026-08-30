@@ -253,12 +253,12 @@ jobs:
             echo "| File | Description |"
             echo "|---|---|"
             echo "| **${BUNDLE_NAME}** | **All-in-one package: complete server with current Apache, MySQL and PHP 8.3/8.4/8.5 - just run it, no further setup** |"
-            echo "| ${BUNDLE_ZIP_NAME} | Same all-in-one package as a plain zip (for setups where antivirus blocks the unsigned self-extracting exe): extract, then start \`UniServerZ\\UniController.exe\` |"
-            echo "| UniController.exe | Controller only (replaces the one in an existing UniServerZ folder) |"
+            echo "| ${BUNDLE_ZIP_NAME} | Same all-in-one package as a plain zip (for setups where antivirus blocks the unsigned self-extracting exe): extract into an empty folder, then start \`UniController.exe\` |"
+            echo "| UniController.exe | Controller only (replaces the one in your existing server folder) |"
             echo "| UniService.exe | Windows service module |"
-            echo "| UniServer-Reload_php84_module.zip | PHP 8.4 module - unzip into an existing UniServerZ root folder |"
-            echo "| UniServer-Reload_php85_module.zip | PHP 8.5 module - unzip into an existing UniServerZ root folder |"
-            echo "| UniServer-Reload_mariadb_module.zip | Latest MariaDB LTS as database engine - fresh installs only: delete \`core\\mysql\` first, then unzip into the UniServerZ root |"
+            echo "| UniServer-Reload_php84_module.zip | PHP 8.4 module - unzip into your server folder (the folder with UniController.exe) |"
+            echo "| UniServer-Reload_php85_module.zip | PHP 8.5 module - unzip into your server folder (the folder with UniController.exe) |"
+            echo "| UniServer-Reload_mariadb_module.zip | Latest MariaDB LTS as database engine - fresh installs only: delete \`core\\mysql\` first, then unzip into your server folder |"
             echo
             echo "## Packaged component versions"
             echo
@@ -278,10 +278,16 @@ jobs:
             echo
             echo "## Installation (all-in-one)"
             echo
-            echo "1. Run \`${BUNDLE_NAME}\` and pick a target folder - it extracts a ready-to-use \`UniServerZ\` folder"
-            echo "   (Uniform Server ZeroXV 15.0.2 base with the fork controller and the PHP 8.4/8.5 modules already integrated)."
-            echo "2. Start \`UniServerZ\\UniController.exe\` and start Apache/MySQL."
+            echo "1. Run \`${BUNDLE_NAME}\` and pick an **empty target folder without spaces in the path**"
+            echo "   (e.g. \`C:\\UniServer-Reload\`) - the server extracts directly into it, without the old"
+            echo "   \`UniServerZ\` subfolder (Uniform Server ZeroXV 15.0.2 base with the fork controller"
+            echo "   and the PHP 8.4/8.5 modules already integrated)."
+            echo "2. Start \`UniController.exe\` and start Apache/MySQL."
             echo "3. To switch the PHP version: stop Apache first, then *PHP > Select PHP version*, then start Apache again."
+            echo
+            echo "Upgrading from an install with the old \`UniServerZ\` layout? Everything is fully"
+            echo "portable: your existing folder keeps working as is - or, with the servers stopped,"
+            echo "move the *contents* of \`UniServerZ\` one level up to adopt the flat layout."
             echo
             echo "## HTTPS without browser warning"
             echo

@@ -73,7 +73,7 @@ if (!ctype_digit((string)$server_port) || (int)$server_port < 1 || 65535 < (int)
   <main id="main">
     <h1>Welcome to Uniform Server Reload</h1>
 
-    <p class="intro">This test page <strong>index.php</strong> was served from root folder UniServerZ\<strong>www</strong>
+    <p class="intro">This test page <strong>index.php</strong> was served from the <strong>www</strong> folder of your UniServer Reload installation
     <?php if (0): ?><br />If no PHP module is installed, Apache returns PHP directives un-processed.<?php endif; ?>
     </p>
 

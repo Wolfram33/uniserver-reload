@@ -101,9 +101,9 @@
       <p class="lead">The all-in-one package ships the complete server in one self-extracting archive — no installation, no dependencies, no configuration.</p>
       <ol class="steps">
         <li>Download <b>UniServer-Reload.exe</b> from the <a href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">releases page</a> and run it.</li>
-        <li>Choose a target folder (no spaces in the path, not under <code>C:\Program Files</code>). A ready-to-use <b>UniServerZ</b> folder is extracted.</li>
-        <li>Start <code>UniServerZ\UniController.exe</code>, then click <b>Start Apache</b> and <b>Start MySQL</b>.</li>
-        <li>Put your site into <code>UniServerZ\www</code> — or point a Vhost straight at your project folder (see <a href="#vhosts">Virtual hosts</a>).</li>
+        <li>Choose an empty target folder (no spaces in the path, not under <code>C:\Program Files</code>), e.g. <code>C:\UniServer-Reload</code>. The server extracts directly into it.</li>
+        <li>Start <code>UniController.exe</code> from that folder, then click <b>Start Apache</b> and <b>Start MySQL</b>.</li>
+        <li>Put your site into the <code>www</code> subfolder — or point a Vhost straight at your project folder (see <a href="#vhosts">Virtual hosts</a>).</li>
       </ol>
       <div class="note">Everything below is preconfigured. This page describes the fork; the original ZeroXV reference manual is linked at the bottom.</div>
     </section>
@@ -151,7 +151,7 @@
       <div class="grid">
         <div class="card"><b>Admin</b>phpMyAdmin via the <b>phpMyAdmin</b> button. Default login <code>root</code> / <code>root</code>.</div>
         <div class="card"><b>Host</b>Use <code>127.0.0.1</code> as the DB host in your apps (not <code>localhost</code>) for a reliable IPv4 connection.</div>
-        <div class="card"><b>Switch to MariaDB</b>Stop MySQL, export your data, delete <code>core\mysql</code>, unzip the MariaDB module into the UniServerZ root. Fresh installs only.</div>
+        <div class="card"><b>Switch to MariaDB</b>Stop MySQL, export your data, delete <code>core\mysql</code>, unzip the MariaDB module into the server folder. Fresh installs only.</div>
       </div>
     </section>
 

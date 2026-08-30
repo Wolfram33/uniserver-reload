@@ -111,7 +111,7 @@ begin
   begin
    str_title := 'Error in path';
    str  :=      'A space in the path to this application was detected. Spaces are not allowed.'+ sLineBreak + sLineBreak;
-   str  :=      'Please move folder UniServerZ, making sure new path does not contain spaces.'+ sLineBreak + sLineBreak;
+   str  := str+ 'Please move the server folder, making sure the new path does not contain spaces.'+ sLineBreak + sLineBreak;
    str  := str+ 'To prevent problems, UniController will close.';
 
    //--Inform user a space was detected
@@ -125,7 +125,7 @@ begin
   if not FileExists(ExtractFilePath(Application.ExeName)+'home\us_config\us_config.ini') Then
     begin
      str_title := 'Error: Incorrect location!';
-     str       :=      'Incorrect location! Move UniController to folder UniServerZ.'+ sLineBreak + sLineBreak;
+     str       :=      'Incorrect location! UniController must be in the server folder (the folder containing home\us_config\us_config.ini).'+ sLineBreak + sLineBreak;
      str       := str+ 'To prevent problems, UniController will close.';
 
      //--Inform User inorrect location of this application
