@@ -435,23 +435,10 @@ begin
  //--Set hover text
  Application.Title:=USC_ServerTypeText1 + #13#10 + USC_ServerTypeText2;
 
- //-- Must clear Icon first
- Application.Icon.Clear; // Must clear Icon first
-
- If USC_ServerType = 'APS0'  Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(120));
- If USC_ServerType = 'APS1'  Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(121));
- If USC_ServerType = 'APS2'  Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(122));
- If USC_ServerType = 'APS3'  Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(123));
-
- If USC_ServerType = 'MYS0'  Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(130));
- If USC_ServerType = 'MYS1'  Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(131));
- If USC_ServerType = 'MYS2'  Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(132));
- If USC_ServerType = 'MYS3'  Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(133));
-
- If USC_ServerType = 'WAMP0' Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(140));
- If USC_ServerType = 'WAMP1' Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(141));
- If USC_ServerType = 'WAMP2' Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(142));
- If USC_ServerType = 'WAMP3' Then Application.Icon.Handle := LoadIcon(hInstance, MAKEINTRESOURCE(143));
+ //--Window/taskbar icon: intentionally NOT touched. The exe's MAINICON
+ //(Reload branding) stays; overriding Application.Icon with the state
+ //icons 120-143 put the old upstream icon on the taskbar. Server type
+ //and state are signalled by the tray icon below and the main window.
 
  //TrayIcon
  If USC_TrayIconEnabled Then
