@@ -146,7 +146,7 @@ mkdir -p "$CONF_DIR"
 
 # --- Package -----------------------------------------------------------------
 mkdir -p "$OUT_DIR"
-ZIP_NAME="ZeroXV_${SHORT}_module.zip"
+ZIP_NAME="UniServer-Reload_${SHORT}_module.zip"
 (cd "$WORK/module" && zip -qr9 "$OLDPWD/$OUT_DIR/$ZIP_NAME" core)
 echo "PHP $VERSION ($SHORT)" >> "$OUT_DIR/module-versions.txt"
 echo "==> Created $OUT_DIR/$ZIP_NAME (PHP $VERSION)"

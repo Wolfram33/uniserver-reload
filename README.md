@@ -44,9 +44,9 @@ Every push triggers a build that updates the rolling release with fixed download
 | `UniServer-Reload.zip` | The same all-in-one package as a plain zip — for setups where antivirus software blocks the unsigned self-extracting exe; extract it and start `UniServerZ\UniController.exe` |
 | `UniController.exe` | Controller only — for updating an existing `UniServerZ` installation |
 | `UniService.exe` | Windows service module — for updating an existing installation |
-| `ZeroXV_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
-| `ZeroXV_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
-| `ZeroXV_mariadb_module.zip` | Latest MariaDB LTS as database engine — fresh installs only: delete `core\mysql` first, then unzip into the `UniServerZ` root |
+| `UniServer-Reload_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
+| `UniServer-Reload_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
+| `UniServer-Reload_mariadb_module.zip` | Latest MariaDB LTS as database engine — fresh installs only: delete `core\mysql` first, then unzip into the `UniServerZ` root |
 
 The single-file downloads exist only for users who want to upgrade an existing Uniform Server installation piece by piece; with `UniServer-Reload.exe` none of them are needed.
 

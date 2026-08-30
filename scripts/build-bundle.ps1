@@ -4,7 +4,7 @@
 # Expects (as laid out by actions/download-artifact):
 #   artifacts/uniserver-binaries/UniController/UniController.exe
 #   artifacts/uniserver-binaries/UniService/UniService.exe
-#   artifacts/php-module-*/ZeroXV_php8*_module.zip
+#   artifacts/php-module-*/UniServer-Reload_php8*_module.zip
 #
 # Produces: dist/UniServer-Reload.exe (7-Zip GUI self-extractor, same
 # format as the upstream 15_0_2_ZeroXV.exe)
@@ -123,7 +123,7 @@ if ((Get-Content $cfg -Raw) -notmatch '(?m)^php85=14\.44') { throw 'us_config.in
 Set-Content "$root\home\version.txt" -Value "UniServer Reload $reloadVersion (base package Uniform Server ZeroXV $baseVersion)"
 
 # --- Merge the PHP modules ---------------------------------------------------
-$modules = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'ZeroXV_php8*_module.zip'
+$modules = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'UniServer-Reload_php8*_module.zip'
 if ($modules.Count -eq 0) { throw 'No PHP module ZIPs found in artifacts' }
 foreach ($m in $modules) {
   Write-Host "==> Merging $($m.Name)"

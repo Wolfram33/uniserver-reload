@@ -256,9 +256,9 @@ jobs:
             echo "| ${BUNDLE_ZIP_NAME} | Same all-in-one package as a plain zip (for setups where antivirus blocks the unsigned self-extracting exe): extract, then start \`UniServerZ\\UniController.exe\` |"
             echo "| UniController.exe | Controller only (replaces the one in an existing UniServerZ folder) |"
             echo "| UniService.exe | Windows service module |"
-            echo "| ZeroXV_php84_module.zip | PHP 8.4 module - unzip into an existing UniServerZ root folder |"
-            echo "| ZeroXV_php85_module.zip | PHP 8.5 module - unzip into an existing UniServerZ root folder |"
-            echo "| ZeroXV_mariadb_module.zip | Latest MariaDB LTS as database engine - fresh installs only: delete \`core\\mysql\` first, then unzip into the UniServerZ root |"
+            echo "| UniServer-Reload_php84_module.zip | PHP 8.4 module - unzip into an existing UniServerZ root folder |"
+            echo "| UniServer-Reload_php85_module.zip | PHP 8.5 module - unzip into an existing UniServerZ root folder |"
+            echo "| UniServer-Reload_mariadb_module.zip | Latest MariaDB LTS as database engine - fresh installs only: delete \`core\\mysql\` first, then unzip into the UniServerZ root |"
             echo
             echo "## Packaged component versions"
             echo

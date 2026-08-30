@@ -81,6 +81,6 @@ if (Test-Path "$dist\COPYING") { Copy-Item "$dist\COPYING" "$m\docs\licenses\mar
 
 # --- Package -----------------------------------------------------------------
 New-Item -ItemType Directory -Force $OutDir | Out-Null
-Compress-Archive -Path "$m\core", "$m\htpasswd", "$m\docs" -DestinationPath "$OutDir\ZeroXV_mariadb_module.zip" -Force
+Compress-Archive -Path "$m\core", "$m\htpasswd", "$m\docs" -DestinationPath "$OutDir\UniServer-Reload_mariadb_module.zip" -Force
 Add-Content "$OutDir\module-versions.txt" "MariaDB $ver (module)"
-Write-Host "==> Created $OutDir\ZeroXV_mariadb_module.zip (MariaDB $ver)"
+Write-Host "==> Created $OutDir\UniServer-Reload_mariadb_module.zip (MariaDB $ver)"
