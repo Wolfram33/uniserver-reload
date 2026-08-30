@@ -130,17 +130,25 @@ All values remain editable: PHP via *PHP > Edit selected configuration file*, My
 * [x] Remove dead upstream services from the controller: the DtDNS updater and the *Server Internet status* window relied on services (dtdns.com, uniformserver.com version file) that no longer exist or are unmaintained
 * [ ] Work through the open issues of the upstream repository (see below)
 
-## Upstream issue triage
+## Bugs & feature requests (this fork)
 
-Status of the [open upstream issues](https://github.com/iamola/uniserver/issues) in this fork:
+Found a problem in UniServer Reload, or missing a feature? Please use **this repository's issue tracker**:
+
+**➡ [Known issues and reports](https://github.com/Wolfram33/uniserver-reload/issues)** — every currently known problem of the fork lives there.
+
+Please do not report fork problems to the original project; its tracker is unmaintained.
+
+## Upstream issue triage (original project)
+
+For reference — what this fork did about the issues that remain [open in the original repository](https://github.com/iamola/uniserver/issues):
 
 | Issue | Status | Notes |
 |---|---|---|
-| [#18](https://github.com/iamola/uniserver/issues/18) PHP 8.4 & 8.5 modules | **Controller side done** | UniController and UniService now recognise `core\php84` and `core\php85`. Packaging the actual PHP builds as modules is a separate release task. |
-| [#20](https://github.com/iamola/uniserver/issues/20) Future PHP versions | **Partially addressed** | php84/php85 added following the existing per-version pattern; a fully dynamic version discovery remains future work. |
-| [#21](https://github.com/iamola/uniserver/issues/21) Host editor rejects TLDs > 3 letters | **Fixed in controller** | Server-name and e-mail validation now accepts TLDs of 2–63 letters (`.test`, `.online`, `.museum`, …). Note: the separate `EdHost.exe` utility shipped with releases is not part of this source repository and still needs the same fix. |
-| [#14](https://github.com/iamola/uniserver/issues/14) Command console customization | Open | Feature request, candidate for future work. |
-| [#17](https://github.com/iamola/uniserver/issues/17) Update modules/plugins | Open | Release/packaging task, not part of the controller source. |
+| [#18](https://github.com/iamola/uniserver/issues/18) PHP 8.4 & 8.5 modules | **Done** | PHP 8.4 and 8.5 ship preinstalled in the all-in-one bundle and as standalone modules, built by CI from the official windows.php.net releases. |
+| [#20](https://github.com/iamola/uniserver/issues/20) Future PHP versions | **Partially addressed** | php84/php85 added following the existing per-version pattern, and CI packages new PHP releases automatically; a fully dynamic version discovery in the controller remains future work. |
+| [#21](https://github.com/iamola/uniserver/issues/21) Host editor rejects TLDs > 3 letters | **Fixed** | Server-name and e-mail validation accepts TLDs of 2–63 letters (`.test`, `.online`, `.museum`, …), and the controller no longer depends on EdHost for vhosts — it writes the Windows hosts file itself. The bundled stand-alone `EdHost.exe` utility is unchanged upstream code. |
+| [#14](https://github.com/iamola/uniserver/issues/14) Command console customization | **Partially addressed** | Console windows were restyled (white on black instead of black on aqua); user-configurable colours remain future work. |
+| [#17](https://github.com/iamola/uniserver/issues/17) Update modules/plugins | **Partially addressed** | The bundle ships the latest Apache Lounge build, current PHP versions and a MariaDB LTS module via CI; further module refreshes (e.g. phpMyAdmin) are ongoing release tasks. |
 | [#19](https://github.com/iamola/uniserver/issues/19) Forum captcha broken | Not applicable | Concerns the upstream project's forum infrastructure, not this code base. |
 
 ---
