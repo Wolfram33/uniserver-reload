@@ -64,6 +64,7 @@ procedure mysql_restore_root_password;                      // Restore MySQL ser
 
 
 //=== Display Server Console ===
+procedure us_open_console(const ATitle, AWorkDir: String; const ACommand: array of String); // Interactive console in Reload look (Windows Terminal, translucent), classic cmd fallback
 procedure us_display_server_console;   // Display console at root folder
 procedure us_display_uniservice;       // Launch UniService (Windows service module, UAC prompt)
 
@@ -1162,45 +1163,21 @@ end;
 {--- ENd mysql_indicator ----------------------------------------------------}
 
 {*****************************************************************************
-Disply MySQl Command Prompt
-Opens a dos window. Path selected is the MySQL root folder
-
-Runs command:
-  mysql.exe -h127.0.0.1 -P3306 -uroot -proot
+Display MySQL Command Prompt
+Opens a console in the MySQL bin folder and starts the mysql client
+(Reload look, see us_open_console). Runs:
+  mysql.exe --host=127.0.0.1 --port=3306 --user=root --password=root
 =============================================================================}
 procedure us_display_mysql_prompt;
-Var
- AProcess: TProcess;
 begin
-
- AProcess := TProcess.Create(nil); // Create process
-
- AProcess.Executable := 'cmd';                             // Executable to run
- AProcess.Parameters.Add('/T:0F');                         // Set background colour
- AProcess.Parameters.Add('/K');                            // Keep open
-
- AProcess.Parameters.Add('title');                         // A title is required
- AProcess.Parameters.Add('SERVER MySQL Command Console');  // Title
-
- AProcess.Parameters.Add('&&');                            // Start a new command line
- AProcess.Parameters.Add('cd');                            // Change directory
- AProcess.Parameters.Add(US_MYSQL_BIN + '\');              // Path to MySQL binary folder
-
- {Set environment variable}
- AProcess.Parameters.Add('&&');                            // Start a new command line
- AProcess.Parameters.Add('SET');                           // Set envior
- AProcess.Parameters.Add('MYSQL_HOME='+US_MYSQL);          // Path to MySQL my.ini folder
-
- AProcess.Parameters.Add('&&');                            // Start a new command line
- AProcess.Parameters.Add('mysql.exe');                     // run mysql.exe
- AProcess.Parameters.Add('--host=' + US_DB_HOST);          // Parameter server
- AProcess.Parameters.Add('--port=' + UENV_MYSQL_TCP_PORT); // Parameter mysql server port
- AProcess.Parameters.Add('--user=root');                   // Parameter root user
- AProcess.Parameters.Add('--password=' + MY_PWD);          // Parameter root user password
-
- AProcess.Execute; // execute detatched process command window remains visible
- AProcess.Free;    // free memory
-
+ us_open_console('SERVER MySQL Command Console', US_MYSQL_BIN,
+   ['SET', 'MYSQL_HOME=' + US_MYSQL,                        // Path to MySQL my.ini folder
+    '&&',
+    'mysql.exe',
+    '--host=' + US_DB_HOST,                                 // Server
+    '--port=' + UENV_MYSQL_TCP_PORT,                        // MySQL server port
+    '--user=root',
+    '--password=' + MY_PWD]);                               // root user password
 end;
 {--- End us_display_mysql_prompt -----------------------------------}
 
@@ -1577,30 +1554,212 @@ end;
 //=== Display Server Console ===
 
 {*****************************************************************************
+Console windows in Reload look
+
+Windows 11 hosts new cmd windows in Windows Terminal. Windows Terminal has no
+command line switch for transparency, but it reads profile "fragments" that
+applications may place in
+  %LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\<app>\<file>.json
+(a documented extension point). The controller keeps one such fragment with
+the profile "UniServer Reload Console" (black acrylic background, opacity
+from CONSOLE_OPACITY in us_user.ini, Reload icon) and opens its interactive
+consoles with that profile. The profile also shows up in the Windows Terminal
+dropdown, so a Reload console can be opened from there as well.
+
+Fallback: without Windows Terminal (wt.exe not found), when the fragment
+cannot be written, or with CONSOLE_OPACITY=100 the classic cmd window opens
+(white on black), exactly as before.
+=============================================================================}
+const
+ US_CONSOLE_PROFILE      = 'UniServer Reload Console';                              // Profile name: fragment and wt -p
+ US_CONSOLE_FRAGMENT_DIR = '\Microsoft\Windows Terminal\Fragments\UniServer Reload'; // Below %LOCALAPPDATA%
+ US_CONSOLE_FRAGMENT     = 'console.json';
+
+{ Escape a string for use inside a JSON string literal (paths) }
+function us_json_escape(const S: String): String;
+begin
+ Result := StringReplace(S, '\', '\\', [rfReplaceAll]);
+ Result := StringReplace(Result, '"', '\"', [rfReplaceAll]);
+end;
+
+{ Full path of wt.exe (Windows Terminal launcher), '' when not installed.
+  The launcher is an "app execution alias", a reparse point FPC's FileExists
+  cannot follow - hence FollowLink=False. }
+function us_find_windows_terminal: String;
+var
+ localAppData, pathEntry: String;
+ dirs: TStringList;
+ i: Integer;
+begin
+ localAppData := SysUtils.GetEnvironmentVariable('LOCALAPPDATA');
+ if localAppData <> '' then
+  begin
+   Result := localAppData + '\Microsoft\WindowsApps\wt.exe';   // Store / packaged install
+   if FileExists(Result, False) then Exit;
+  end;
+
+ dirs := TStringList.Create;                                   // Other installs put wt.exe on the PATH
+ try
+  dirs.Delimiter       := ';';
+  dirs.StrictDelimiter := True;
+  dirs.DelimitedText   := SysUtils.GetEnvironmentVariable('PATH');
+  for i := 0 to dirs.Count - 1 do
+   begin
+    pathEntry := Trim(dirs[i]);
+    if pathEntry = '' then Continue;
+    Result := IncludeTrailingPathDelimiter(pathEntry) + 'wt.exe';
+    if FileExists(Result, False) then Exit;
+   end;
+ finally
+  dirs.Free;
+ end;
+ Result := '';
+end;
+
+{ Write or refresh the Windows Terminal fragment with the Reload console
+  profile. Rewritten only when the content changed (opacity, install path);
+  us_user.ini is the single source of truth, edits of the file are not kept.
+  Returns False when it cannot be written (no LOCALAPPDATA, no permission);
+  the caller then falls back to the classic console. }
+function us_write_console_fragment(opacity: Integer): Boolean;
+var
+ localAppData, dir, fileName: String;
+ wanted, existing: TStringList;
+begin
+ Result := False;
+ localAppData := SysUtils.GetEnvironmentVariable('LOCALAPPDATA');
+ if localAppData = '' then Exit;
+ dir      := localAppData + US_CONSOLE_FRAGMENT_DIR;
+ fileName := dir + '\' + US_CONSOLE_FRAGMENT;
+
+ wanted   := TStringList.Create;
+ existing := TStringList.Create;
+ try
+  wanted.Add('{');
+  wanted.Add('  "profiles": [');
+  wanted.Add('    {');
+  wanted.Add('      "name": "' + US_CONSOLE_PROFILE + '",');
+  wanted.Add('      "commandline": "cmd.exe",');
+  wanted.Add('      "startingDirectory": "' + us_json_escape(UniConPath) + '",');
+  wanted.Add('      "icon": "' + us_json_escape(Application.ExeName) + '",');   // Tab icon: the controller's own icon
+  wanted.Add('      "colorScheme": "Campbell",');
+  wanted.Add('      "foreground": "#FFFFFF",');
+  wanted.Add('      "background": "#000000",');
+  wanted.Add('      "opacity": ' + IntToStr(opacity) + ',');
+  wanted.Add('      "useAcrylic": true');
+  wanted.Add('    }');
+  wanted.Add('  ]');
+  wanted.Add('}');
+
+  try
+   if FileExists(fileName) then
+    begin
+     existing.LoadFromFile(fileName);
+     if existing.Text = wanted.Text then Exit(True);              // Up to date
+    end;
+   if not ForceDirectories(dir) then Exit;
+   wanted.SaveToFile(fileName);
+   Result := True;
+  except
+   Result := False;                                              // e.g. read-only profile folder
+  end;
+ finally
+  existing.Free;
+  wanted.Free;
+ end;
+end;
+
+{*****************************************************************************
+us_open_console
+ Opens an interactive console (cmd /K) in Reload look, classic fallback.
+  ATitle   - window / tab title
+  AWorkDir - folder the console starts in (controller root when missing)
+  ACommand - command line tokens cmd runs after start, e.g. mysql.exe and its
+             parameters; empty = plain prompt. TProcess quotes tokens that
+             contain spaces.
+=============================================================================}
+procedure us_open_console(const ATitle, AWorkDir: String; const ACommand: array of String);
+var
+ AProcess   : TProcess;
+ wtExe      : String;
+ workDir    : String;
+ words      : TStringList;
+ i          : Integer;
+ useTerminal: Boolean;
+begin
+ workDir := ExcludeTrailingPathDelimiter(AWorkDir);      // "dir\" before a closing quote breaks the argument
+ if not DirectoryExists(workDir) then
+   workDir := UniConPath;
+
+ wtExe       := '';
+ useTerminal := USUC_CONSOLE_OPACITY < 100;               // 100 = user wants the classic window
+ if useTerminal then
+  begin
+   wtExe       := us_find_windows_terminal;
+   useTerminal := (wtExe <> '') and us_write_console_fragment(USUC_CONSOLE_OPACITY);
+  end;
+
+ AProcess := TProcess.Create(nil);
+ try
+  if useTerminal then
+   begin
+    AProcess.Executable := wtExe;
+    AProcess.Parameters.Add('-w');                         // Own window, like the classic console
+    AProcess.Parameters.Add('new');
+    AProcess.Parameters.Add('-p');
+    AProcess.Parameters.Add(US_CONSOLE_PROFILE);           // Profile from the fragment: transparency, icon
+    AProcess.Parameters.Add('-d');
+    AProcess.Parameters.Add(workDir);
+    AProcess.Parameters.Add('--title');
+    AProcess.Parameters.Add(ATitle);
+    AProcess.Parameters.Add('--suppressApplicationTitle'); // Keep our title; cmd would show the running
+                                                           // command line instead (MySQL password!)
+    AProcess.Parameters.Add('cmd.exe');
+    AProcess.Parameters.Add('/K');                         // Keep open
+   end
+  else
+   begin
+    AProcess.Executable := 'cmd';
+    AProcess.Parameters.Add('/T:0F');                      // White on black
+    AProcess.Parameters.Add('/K');                         // Keep open
+    AProcess.Parameters.Add('cd');
+    AProcess.Parameters.Add('/d');                         // Also switch the drive
+    AProcess.Parameters.Add(workDir);
+    AProcess.Parameters.Add('&&');
+    AProcess.Parameters.Add('title');                      // title takes the rest of the line verbatim: pass the
+    words := TStringList.Create;                           // words one by one - a single quoted parameter
+    try                                                    // would put the quotes into the title
+     words.Delimiter       := ' ';
+     words.StrictDelimiter := True;
+     words.DelimitedText   := ATitle;
+     for i := 0 to words.Count - 1 do
+      if words[i] <> '' then AProcess.Parameters.Add(words[i]);
+    finally
+     words.Free;
+    end;
+   end;
+
+  if Length(ACommand) > 0 then
+   begin
+    if not useTerminal then AProcess.Parameters.Add('&&');
+    for i := 0 to High(ACommand) do
+     AProcess.Parameters.Add(ACommand[i]);
+   end;
+
+  AProcess.Execute;                                        // Detached: the window stays open
+ finally
+  AProcess.Free;
+ end;
+end;
+{--- End us_open_console ----------------------------------------------------}
+
+{*****************************************************************************
 Display Server Command Console
-Opens a CMD (dos) window.
+Opens a console at the server root folder (Reload look, see us_open_console).
 =============================================================================}
 procedure us_display_server_console;
-Var
- AProcess: TProcess;
 begin
- AProcess := TProcess.Create(nil); // Create process
-
- AProcess.Executable := 'cmd';                              // Executable to run
- AProcess.Parameters.Add('/T:0F');                          // Set background colour
- AProcess.Parameters.Add('/K');                             // Keep open
-
- AProcess.Parameters.Add('title');                          // A title is required
- AProcess.Parameters.Add('SERVER Command Console');         // Title
-
- AProcess.Parameters.Add('&&');                             // Start a new command line
- AProcess.Parameters.Add('cd');                             // Change directory
- AProcess.Parameters.Add(UniConPath);                       // to server root e.g C:\UniServer
-
- //Execute command
- AProcess.Execute; // execute detatched process command window remains visible
- AProcess.Free;    // free memory
-
+ us_open_console('SERVER Command Console', UniConPath, []);
 end;
 {----------------------------------------------------------------------------}
 

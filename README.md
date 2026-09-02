@@ -113,6 +113,8 @@ All values remain editable: PHP via *PHP > Edit selected configuration file*, My
 
 **Extensions enabled by default in every PHP version** (all ini variants **including `php-cli.ini`**, so CLI scripts and cron jobs get the same set): on top of the stock set (`gd`, `mbstring`, `exif`, `mysqli`, `openssl`, `pdo_mysql`) this fork also enables `pdo_sqlite`, `sqlite3`, `fileinfo` and `curl` — the ones small PHP apps most often need but that upstream ships commented out. Every build's smoke test starts Apache once per installed PHP version and fails unless PHP executes and all of these extensions actually load, so a version switch in UniController can never silently drop them.
 
+**Consoles in Reload look:** *Server Console* and *MySQL Console* open in Windows Terminal with a translucent black acrylic background and the Reload icon in the tab (Windows Terminal ships with Windows 11; on Windows 10 install it from the Microsoft Store). The opacity is set in `home\us_config\us_user.ini`: `CONSOLE_OPACITY=50` (50–100; `100` restores the classic opaque cmd window, which is also used automatically when Windows Terminal is not installed). The controller registers the profile *UniServer Reload Console* as a Windows Terminal fragment in `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\UniServer Reload\`, so the profile also appears in the terminal's own dropdown; delete that folder to remove it.
+
 ## Development goals
 
 * [x] Support for current PHP versions (8.4 / 8.5) in the controller's version switching

@@ -32,6 +32,7 @@ Var
   //==== User Config and Enironment variables
    ORIGINAL_ENV_PATH         :string;  //Original environment path when controller started
    USUC_RUN_CONSOLE          :string;  //Run console yes/no
+   USUC_CONSOLE_OPACITY      :Integer; //Console window opacity in percent, 50..100 (100 = classic opaque window)
    USUC_DISPLAY_PAGE_1       :string;  //Display page 1 yes/no
    USUC_PAGE_1               :string;  //Page to display
    USUC_DISPLAY_PAGE_2       :string;  //Display page 2 yes/no
@@ -826,6 +827,15 @@ begin
    UENV_PHP_INI_SELECT := Ini2.ReadString('USER','PHP_INI_SELECT','php_test.ini');
 
    USUC_RUN_CONSOLE    := Ini2.ReadString('USER','RUN_CONSOLE','yes');
+
+   //Reload: server/MySQL consoles open in Windows Terminal with a translucent
+   //acrylic background (see us_open_console). A non-numeric value yields the default.
+   //Floor 50: below that white text over a bright desktop drops under the
+   //WCAG AA contrast ratio. 100 keeps the classic opaque cmd window.
+   USUC_CONSOLE_OPACITY := Ini2.ReadInteger('USER','CONSOLE_OPACITY',50);
+   If USUC_CONSOLE_OPACITY < 50  Then USUC_CONSOLE_OPACITY := 50;
+   If USUC_CONSOLE_OPACITY > 100 Then USUC_CONSOLE_OPACITY := 100;
+
    USUC_DISPLAY_PAGE_1 := Ini2.ReadString('USER','DISPLAY_PAGE_1','yes');
    USUC_PAGE_1         := Ini2.ReadString('USER','PAGE_1','http://' + UENV_US_SERVERNAME + ':' + UENV_AP_PORT + '/us_splash/index.php');
    USUC_DISPLAY_PAGE_2 := Ini2.ReadString('USER','DISPLAY_PAGE_2','yes');

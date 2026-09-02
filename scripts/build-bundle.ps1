@@ -245,6 +245,14 @@ $userIni = "$root\home\us_config\us_user.ini"
 (Get-Content $userIni -Raw) -replace 'US_ROOTF_SSL=\./ssl', 'US_ROOTF_SSL=./www' | Set-Content $userIni -NoNewline
 if ((Get-Content $userIni -Raw) -notmatch [regex]::Escape('US_ROOTF_SSL=./www')) { throw 'us_user.ini SSL root patch failed' }
 
+# --- Console look -------------------------------------------------------------
+# Server Console / MySQL Console open in Windows Terminal with a translucent
+# acrylic background (UniController reads CONSOLE_OPACITY, default 50).
+# Document the knob in the shipped ini right next to RUN_CONSOLE.
+$consoleDoc = 'RUN_CONSOLE=yes$1;$1;--Console windows (Server Console, MySQL Console): opacity in percent, 50-100. 100 = classic opaque cmd window$1CONSOLE_OPACITY=50$1'
+(Get-Content $userIni -Raw) -replace 'RUN_CONSOLE=yes(\r?\n)', $consoleDoc | Set-Content $userIni -NoNewline
+if ((Get-Content $userIni -Raw) -notmatch 'CONSOLE_OPACITY=50') { throw 'us_user.ini console opacity patch failed' }
+
 # --- Default SSL vhost -------------------------------------------------------
 # The stock httpd-vhosts.conf only carries a default vhost for the http port.
 # Once user vhosts exist, requests with unknown host names (e.g. access by IP)
