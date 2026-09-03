@@ -103,9 +103,10 @@ begin
        //-- Logs rotate through rotatelogs like the main logs (same scheme as
        //   scripts/tune-server-config.ps1): logs/<name> stays the current
        //   file (hard link), logs/rotated/ keeps the ring of older parts,
-       //   so a vhost's logs can never fill the disk.
-       sList.Add(' ErrorLog "|bin/rotatelogs.exe -n 5 -D -L logs/'+In_ServerName+'-error.log logs/rotated/'+In_ServerName+'-error.log 10M"');
-       sList.Add(' CustomLog "|bin/rotatelogs.exe -n 10 -D -L logs/'+In_ServerName+'-access.log logs/rotated/'+In_ServerName+'-access.log 20M" common');
+       //   so a vhost's logs can never fill the disk. rotatelogs_z.exe is
+       //   the windowless copy us_prepare_rotatelogs creates at Apache start.
+       sList.Add(' ErrorLog "|bin/rotatelogs_z.exe -n 5 -D -L logs/'+In_ServerName+'-error.log logs/rotated/'+In_ServerName+'-error.log 10M"');
+       sList.Add(' CustomLog "|bin/rotatelogs_z.exe -n 10 -D -L logs/'+In_ServerName+'-access.log logs/rotated/'+In_ServerName+'-access.log 20M" common');
        sList.Add(' <Directory "'+In_DirPath+'">');
        sList.Add('   Options Indexes Includes FollowSymLinks');
        sList.Add('   AllowOverride All   ');
@@ -123,8 +124,8 @@ begin
        sList.Add(' DocumentRoot '+In_DocRoot);
        sList.Add(' ServerName '+ In_ServerName);
        sList.Add(' ServerAlias www.'+IN_ServerName+ ' *.'+In_ServerName);
-       sList.Add(' ErrorLog "|bin/rotatelogs.exe -n 5 -D -L logs/'+In_ServerName+'-ssl-error.log logs/rotated/'+In_ServerName+'-ssl-error.log 10M"');
-       sList.Add(' CustomLog "|bin/rotatelogs.exe -n 10 -D -L logs/'+In_ServerName+'-ssl-access.log logs/rotated/'+In_ServerName+'-ssl-access.log 20M" common');
+       sList.Add(' ErrorLog "|bin/rotatelogs_z.exe -n 5 -D -L logs/'+In_ServerName+'-ssl-error.log logs/rotated/'+In_ServerName+'-ssl-error.log 10M"');
+       sList.Add(' CustomLog "|bin/rotatelogs_z.exe -n 10 -D -L logs/'+In_ServerName+'-ssl-access.log logs/rotated/'+In_ServerName+'-ssl-access.log 20M" common');
        sList.Add(' SSLEngine on');
        sList.Add(' SSLCertificateFile "${US_ROOTF}/core/apache2/server_certs/server.crt"');
        sList.Add(' SSLCertificateKeyFile "${US_ROOTF}/core/apache2/server_certs/server.key"');

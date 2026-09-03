@@ -274,6 +274,9 @@ jobs:
             echo "MySQL/MariaDB 512M InnoDB pool (raise it on a server, see README) /"
             echo "256M max_allowed_packet. Existing installations get the same tuning"
             echo "with \`scripts\\tune-server-config.ps1\` from the repository."
+            echo "1.3.3 opened a terminal window per log writer on every Apache start;"
+            echo "since 1.3.4 the logs are written by the windowless \`rotatelogs_z.exe\`,"
+            echo "and the controller converts a 1.3.3 configuration at the next Apache start."
             echo
             echo "Real e-mail from PHP mail(): enter your SMTP account in"
             echo "\`core\\msmtp\\msmtprc.ini\` (templates included). TLS certificate checks are"

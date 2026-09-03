@@ -350,18 +350,19 @@ $httpd = "$rootAbs\core\apache2\bin\httpd_z.exe"
 & $httpd -t -f "$rootAbs\core\apache2\conf\httpd.conf" -d "$rootAbs\core\apache2"
 if ($LASTEXITCODE -ne 0) { throw 'Apache configuration syntax check failed' }
 
-# Stops the test Apache. Its piped log writers (rotatelogs.exe) must exit on
+# Stops the test Apache. Its piped log writers (rotatelogs_z.exe) must exit on
 # their own once httpd closes the pipe - an orphan here would mean an orphan
 # after every controller stop as well.
 function Stop-SmokeApache {
   & taskkill /F /IM httpd_z.exe 2>$null | Out-Null
   foreach ($i in 1..40) {
-    if (-not (Get-Process -Name rotatelogs -ErrorAction SilentlyContinue)) { break }
+    if (-not (Get-Process -Name rotatelogs, rotatelogs_z -ErrorAction SilentlyContinue)) { break }
     Start-Sleep -Milliseconds 250
   }
-  if (Get-Process -Name rotatelogs -ErrorAction SilentlyContinue) {
+  if (Get-Process -Name rotatelogs, rotatelogs_z -ErrorAction SilentlyContinue) {
+    & taskkill /F /IM rotatelogs_z.exe 2>$null | Out-Null
     & taskkill /F /IM rotatelogs.exe 2>$null | Out-Null
-    throw 'Smoke test: rotatelogs.exe did not exit after Apache was stopped'
+    throw 'Smoke test: rotatelogs_z.exe did not exit after Apache was stopped'
   }
 }
 
@@ -394,7 +395,12 @@ $accessLog = "$rootAbs\core\apache2\logs\access.log"
 if (-not (Test-Path $accessLog)) { throw 'Smoke test: logs\access.log was not created by rotatelogs' }
 if (-not (Test-Path "$rootAbs\core\apache2\logs\rotated\access.log")) { throw 'Smoke test: logs\rotated\access.log (rotation ring) is missing' }
 if ((Get-Content $accessLog -Raw) -notmatch '_ci_probe\.php') { throw 'Smoke test: probe requests are missing from the rotated access log' }
-Write-Host '   log rotation OK - access log written through rotatelogs'
+# The writer must be the windowless copy (GUI subsystem), or every log opens
+# a terminal window on the user's desktop (1.3.3)
+$rz = [IO.File]::ReadAllBytes("$rootAbs\core\apache2\bin\rotatelogs_z.exe")
+$peOff = [BitConverter]::ToInt32($rz, 0x3C)
+if ([BitConverter]::ToUInt16($rz, $peOff + 4 + 20 + 68) -ne 2) { throw 'Smoke test: bin\rotatelogs_z.exe is not a GUI-subsystem executable' }
+Write-Host '   log rotation OK - access log written through the windowless rotatelogs_z.exe'
 
 # Splash page and www test page render (fork content) under the default version
 $env:PHP_SELECT = ($versions | Select-Object -First 1)

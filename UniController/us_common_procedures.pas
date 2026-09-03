@@ -31,6 +31,7 @@ uses
  procedure us_warn_if_vcruntime_too_old(php_sel:string);   // Warn when selected PHP needs a newer VC++ runtime
 
  //=== Apache ===
+procedure us_prepare_rotatelogs;          // Windowless log writer bin\rotatelogs_z.exe + 1.3.3 config migration
 procedure us_start_apache_program;        // Start Apache as a standard program
 procedure us_kill_apache_program;         // Kills Apache running as a standard program
 procedure us_apache_syntax_check;         // Runs Apache with -t performs a syntax check
@@ -700,6 +701,100 @@ Start Apache as a program
   strCmd := usapache + '\bin\httpd.exe' + ' -f ' + usapache + '\conf\httpd.conf -d ' + usapache;
 Note: Uses Process
 =============================================================================}
+{*****************************************************************************
+Windowless rotatelogs: core\apache2\bin\rotatelogs_z.exe
+
+The Apache logs rotate through piped rotatelogs processes. Apache spawns its
+piped log programs without any console flag; when Apache itself runs without
+a console (as this controller starts it), every console rotatelogs.exe gets
+a console window of its own - on Windows 11 a Windows Terminal window per
+log, respawned by Apache whenever one is closed (that was 1.3.3). A copy of
+rotatelogs.exe with the PE subsystem set to GUI never gets a console and
+still reads the log pipe.
+
+Creates that copy when it is missing (bundles get it from
+scripts/tune-server-config.ps1, controller-only upgrades from here) and moves
+1.3.3 configuration lines, user vhosts included, to it. Runs before every
+Apache start; does nothing when everything is in place.
+=============================================================================}
+procedure us_prepare_rotatelogs;
+const
+  IMAGE_SUBSYSTEM_WINDOWS_GUI = 2;
+  IMAGE_SUBSYSTEM_WINDOWS_CUI = 3;
+  CONSOLE_PIPE    = '|bin/rotatelogs.exe ';
+  WINDOWLESS_PIPE = '|bin/rotatelogs_z.exe ';
+
+  procedure move_pipes(const conf: String);
+  var
+    sList   : TStringList;
+    i       : Integer;
+    changed : Boolean;
+  begin
+    If Not FileExists(conf) Then Exit;
+    sList := TStringList.Create;
+    try
+      sList.LoadFromFile(conf);
+      changed := False;
+      for i := 0 to sList.Count-1 do
+        If Pos(CONSOLE_PIPE, sList[i]) > 0 Then
+          begin
+            sList[i] := StringReplace(sList[i], CONSOLE_PIPE, WINDOWLESS_PIPE, [rfReplaceAll]);
+            changed  := True;
+          end;
+      If changed And FileIsWritable(conf) Then sList.SaveToFile(conf);
+    finally
+      sList.Free;
+    end;
+  end;
+
+var
+  src, dst     : String;
+  fs           : TFileStream;
+  data         : array of Byte;
+  peOffset     : LongInt;
+  subsysOffset : LongInt;
+begin
+  src := US_APACHE_BIN + '\rotatelogs.exe';
+  dst := US_APACHE_BIN + '\rotatelogs_z.exe';
+  If FileExists(src) And Not FileExists(dst) Then
+    begin
+      fs := TFileStream.Create(src, fmOpenRead or fmShareDenyNone);
+      try
+        SetLength(data, fs.Size);
+        If Length(data) > 0 Then fs.ReadBuffer(data[0], Length(data));
+      finally
+        fs.Free;
+      end;
+      // 'MZ' header; e_lfanew at 0x3C points to 'PE\0\0'; the optional
+      // header follows the 20-byte COFF header and Subsystem is the WORD at
+      // optional header + 68
+      If (Length(data) > $40) And (data[0] = Ord('M')) And (data[1] = Ord('Z')) Then
+        begin
+          peOffset     := PLongInt(@data[$3C])^;
+          subsysOffset := peOffset + 4 + 20 + 68;
+          If (peOffset > 0) And (subsysOffset + 2 <= Length(data))
+             And (data[peOffset] = Ord('P')) And (data[peOffset+1] = Ord('E'))
+             And (PWord(@data[subsysOffset])^ = IMAGE_SUBSYSTEM_WINDOWS_CUI) Then
+            begin
+              PWord(@data[subsysOffset])^ := IMAGE_SUBSYSTEM_WINDOWS_GUI;
+              fs := TFileStream.Create(dst, fmCreate);
+              try
+                fs.WriteBuffer(data[0], Length(data));
+              finally
+                fs.Free;
+              end;
+            end;
+        end;
+    end;
+  // Only once the copy exists may the pipes point at it
+  If FileExists(dst) Then
+    begin
+      move_pipes(USF_APACHE_CNF);
+      move_pipes(USF_APACHE_SSL_CNF);
+      move_pipes(USF_APACHE_VHOST_CNF);
+    end;
+end;
+
 procedure us_start_apache_program;
 Var
  AProcess: TProcess;
@@ -709,6 +804,7 @@ begin
  if not ApacheRunning() then
   begin
    saftey_loop :=0;
+   us_prepare_rotatelogs;   // windowless log writer, 1.3.3 config migration
 
    //--Run command string.
   AProcess := TProcess.Create(nil);                         // Create new process

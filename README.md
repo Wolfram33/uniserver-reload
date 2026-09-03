@@ -69,6 +69,7 @@ There is no in-place updater — the package is portable by design. Two paths:
   ```
 
   It changes only what is not in place yet, keeps existing logs, and stops with a clear message if a file does not look as expected.
+* **Coming from 1.3.3** (a terminal window per log writer on every Apache start): replace `UniController.exe` with the 1.3.4 build and start Apache once, the controller converts the configuration itself. Running the tuning script does the same.
 
 ## Versioning
 
@@ -126,7 +127,7 @@ All values remain editable: PHP via *PHP > Edit selected configuration file*, My
 Beyond the developer limits above, every bundle is tuned so a whole team can work on it all day. The same tuning goes onto an existing installation with `scripts/tune-server-config.ps1` (see [Upgrading](#upgrading)); it is idempotent and verifies every change.
 
 * **OPcache is on in every PHP version** (256M cache, 20000 files; file changes are picked up within 2 s, immediately with `php_development.ini`). Without OPcache PHP recompiles every file on every request, the classic bottleneck once several people click at the same time. Upstream shipped it off, and for the 8.4 module the *PHP > Accelerator > Zend OpCache* toggle could not even switch it on: the ini line used a short form the controller does not recognise. PHP 8.5 has OPcache built in; the menu shows that instead of a mute disabled entry.
-* **Apache logs can no longer fill the disk.** Every log goes through Apache's `rotatelogs`: `logs\access.log`, `logs\error.log`, the SSL logs and every vhost log always show the current file, while `logs\rotated\` keeps a ring of older parts (10 x 20 MB for access logs, 5 x 10 MB for error logs). *Apache > Delete all logs* clears the ring too. Existing logs are carried over as the first part of their ring when the tuning script runs.
+* **Apache logs can no longer fill the disk.** Every log goes through Apache's `rotatelogs`: `logs\access.log`, `logs\error.log`, the SSL logs and every vhost log always show the current file, while `logs\rotated\` keeps a ring of older parts (10 x 20 MB for access logs, 5 x 10 MB for error logs). *Apache > Delete all logs* clears the ring too. Existing logs are carried over as the first part of their ring when the tuning script runs. The writer is `bin\rotatelogs_z.exe`, a copy of `rotatelogs.exe` with the PE subsystem set to GUI: Apache spawns log writers without console flags, so the console version opens a terminal window per log when Apache runs without a console (1.3.3 did exactly that). The controller creates the copy at Apache start when it is missing and moves 1.3.3 configurations to it.
 * **Apache** serves 400 concurrent connections (was 150; chat apps that keep a long-polling request open per user eat them fast) with 8 MB thread stacks, the PHP-on-Windows recommendation. **MySQL/MariaDB** accept 500 connections, keep larger table and thread caches, a 256M redo log and, on MySQL, 7 days of binlogs instead of 30.
 
 What stays yours to size is the **InnoDB buffer pool** (`innodb_buffer_pool_size` in `core\mysql\my.ini`): it should hold the data the apps touch every day. The bundle default of 512M suits a laptop; on a server give it a share of the RAM:

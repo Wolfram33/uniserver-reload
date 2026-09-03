@@ -11,9 +11,17 @@
 # the script stops with a clear message when a file does not look as expected.
 #
 # What it changes
+#   core\apache2\bin\rotatelogs_z.exe
+#       Copy of Apache's rotatelogs.exe with the PE subsystem set to GUI.
+#       Apache spawns piped log programs without console flags, so when it
+#       runs without a console (as started by UniController) every console
+#       rotatelogs gets a window of its own - a Windows Terminal window per
+#       log on Windows 11 (1.3.3 shipped that). A GUI-subsystem process never
+#       gets a console and still reads the log pipe. UniController creates
+#       the same file at Apache start when it is missing.
 #   core\apache2\conf\httpd.conf, extra\httpd-ssl.conf, extra\httpd-vhosts.conf
-#       ErrorLog/CustomLog go through bin\rotatelogs.exe: logs\<name> stays the
-#       current file (hard link), logs\rotated\ holds a ring of older parts
+#       ErrorLog/CustomLog go through bin\rotatelogs_z.exe: logs\<name> stays
+#       the current file (hard link), logs\rotated\ holds a ring of older parts
 #       (access: 10 x 20M, error: 5 x 10M) - the logs can never fill the disk.
 #   core\apache2\conf\extra\httpd-mpm.conf
 #       400 worker threads (was 150) and an 8 MB thread stack for PHP.
@@ -43,7 +51,36 @@ function Get-Newline([string]$text) { if ($text -match "`r`n") { "`r`n" } else {
 # Piped log program for one log file: keeps logs\<name> as the current file
 # (-L hard link) and rotates through logs\rotated\<name>[.1 .. .N-1].
 function Get-RotatingLog([string]$name, [int]$files, [string]$size) {
-  "|bin/rotatelogs.exe -n $files -D -L logs/$name logs/rotated/$name $size"
+  "|bin/rotatelogs_z.exe -n $files -D -L logs/$name logs/rotated/$name $size"
+}
+
+# PE subsystem field of an exe (3 = console, 2 = GUI): the optional header
+# follows the 4-byte PE signature and the 20-byte COFF header, Subsystem is
+# the WORD at optional header + 68.
+function Get-PeSubsystemOffset([byte[]]$b) {
+  if ($b.Length -lt 0x40 -or $b[0] -ne 0x4D -or $b[1] -ne 0x5A) { throw 'not an executable (no MZ header)' }
+  $pe = [BitConverter]::ToInt32($b, 0x3C)
+  if ($pe -le 0 -or $pe + 96 -gt $b.Length -or [BitConverter]::ToUInt32($b, $pe) -ne 0x4550) { throw 'not a PE executable' }
+  return $pe + 4 + 20 + 68
+}
+
+# Writes bin\rotatelogs_z.exe: rotatelogs.exe with the subsystem set to GUI so
+# it never opens a console window (see the header). Idempotent.
+function New-WindowlessRotatelogs([string]$bin) {
+  $src = Join-Path $bin 'rotatelogs.exe'
+  $dst = Join-Path $bin 'rotatelogs_z.exe'
+  if (Test-Path $dst) {
+    $d = [IO.File]::ReadAllBytes($dst)
+    if ([BitConverter]::ToUInt16($d, (Get-PeSubsystemOffset $d)) -eq 2) { return }
+  }
+  $b = [IO.File]::ReadAllBytes($src)
+  $off = Get-PeSubsystemOffset $b
+  $sub = [BitConverter]::ToUInt16($b, $off)
+  if ($sub -ne 3 -and $sub -ne 2) { throw "rotatelogs.exe: unexpected PE subsystem $sub" }
+  $b[$off] = 2; $b[$off + 1] = 0
+  [IO.File]::WriteAllBytes($dst, $b)
+  $d = [IO.File]::ReadAllBytes($dst)
+  if ([BitConverter]::ToUInt16($d, (Get-PeSubsystemOffset $d)) -ne 2) { throw 'rotatelogs_z.exe: subsystem patch failed' }
 }
 
 # Replaces the first match of $pattern (one whole line) with $replacement and
@@ -82,7 +119,7 @@ function Assert-IniLine([string]$text, [string]$line, [string]$file) {
 }
 
 # --- Servers must be stopped: the files below are open while they run ---------
-foreach ($p in 'httpd_z', 'mysqld_z', 'rotatelogs') {
+foreach ($p in 'httpd_z', 'mysqld_z', 'rotatelogs', 'rotatelogs_z') {
   if (Get-Process -Name $p -ErrorAction SilentlyContinue) { throw "$p.exe is running - stop Apache and MySQL (UniController or the Windows services) before running this script" }
 }
 
@@ -90,8 +127,19 @@ foreach ($p in 'httpd_z', 'mysqld_z', 'rotatelogs') {
 # Apache: rotating logs
 # =============================================================================
 if (-not (Test-Path (Join-Path $apache 'bin\rotatelogs.exe'))) { throw 'core\apache2\bin\rotatelogs.exe is missing - the Apache build in this installation has no rotatelogs, log rotation cannot be enabled' }
+New-WindowlessRotatelogs (Join-Path $apache 'bin')
 $logs = Join-Path $apache 'logs'
 New-Item -ItemType Directory -Force (Join-Path $logs 'rotated') | Out-Null
+
+# 1.3.3 pointed the pipes at the console rotatelogs.exe (a terminal window per
+# log): move every such line, including user vhosts, to the windowless copy.
+foreach ($c in 'conf\httpd.conf', 'conf\extra\httpd-ssl.conf', 'conf\extra\httpd-vhosts.conf') {
+  $f = Join-Path $apache $c
+  if (-not (Test-Path $f)) { continue }
+  $t = Read-Text $f
+  $u = $t.Replace('|bin/rotatelogs.exe ', '|bin/rotatelogs_z.exe ')
+  if ($u -ne $t) { Write-Text $f $u; Write-Host "   $c`: log pipes moved to rotatelogs_z.exe" }
+}
 
 # Existing plain log files become part 0 of their ring so no history is lost
 # (rotatelogs appends to an existing part 0 and would otherwise delete the
@@ -116,11 +164,14 @@ $errorPipe  = Get-RotatingLog 'error.log'  $ERROR_FILES  $ERROR_SIZE
 $conf = Join-Path $apache 'conf\httpd.conf'
 $t = Read-Text $conf
 $nl = Get-Newline $t
-$note = "# UniServer Reload: logs rotate in place through bin\rotatelogs.exe. logs\<name> is$nl" +
-        "# always the current file (hard link); logs\rotated\ keeps a ring of older parts$nl" +
-        "# ($ACCESS_FILES x $ACCESS_SIZE access, $ERROR_FILES x $ERROR_SIZE error), so the logs can never fill the disk.$nl"
+$note = "# UniServer Reload: logs rotate in place through bin\rotatelogs_z.exe (rotatelogs$nl" +
+        "# without a console window). logs\<name> is always the current file (hard link);$nl" +
+        "# logs\rotated\ keeps a ring of older parts ($ACCESS_FILES x $ACCESS_SIZE access, $ERROR_FILES x $ERROR_SIZE error),$nl" +
+        "# so the logs can never fill the disk.$nl"
 $t = $t -replace '(?m)^ErrorLog "logs/error\.log"(\r?)$', ('ErrorLog "' + $errorPipe + '"$1')
 $t = $t -replace '(?m)^([\t ]*)CustomLog "logs/access\.log" combined(\r?)$', ('$1CustomLog "' + $accessPipe + '" combined$2')
+# The 1.3.3 note still named the console rotatelogs.exe: swap the whole note
+$t = $t -replace '(?m)^# UniServer Reload: logs rotate in place through bin\\rotatelogs\.exe\..*\r?\n(#.*\r?\n){2}', ''
 if ($t -notmatch 'UniServer Reload: logs rotate in place') { $t = $t -replace '(?m)^(ErrorLog ")', ($note + '$1') }
 Write-Text $conf $t
 $t = Read-Text $conf
@@ -149,7 +200,10 @@ Write-Text $sconf $t
 $t = Read-Text $sconf
 if ($t -notmatch ('(?m)^ErrorLog "' + [regex]::Escape($sslErrorPipe) + '"'))       { throw 'httpd-ssl.conf: ErrorLog rotation patch failed' }
 if ($t -notmatch ('(?m)^TransferLog "' + [regex]::Escape($sslAccessPipe) + '"'))   { throw 'httpd-ssl.conf: TransferLog rotation patch failed' }
-Write-Host "==> Apache logs rotate: logs\<name> current, logs\rotated\ ring ($ACCESS_FILES x $ACCESS_SIZE access, $ERROR_FILES x $ERROR_SIZE error)"
+foreach ($c in 'conf\httpd.conf', 'conf\extra\httpd-ssl.conf', 'conf\extra\httpd-vhosts.conf') {
+  if ((Read-Text (Join-Path $apache $c)) -match '\|bin/rotatelogs\.exe ') { throw "$c`: a log pipe still uses the console rotatelogs.exe" }
+}
+Write-Host "==> Apache logs rotate: logs\<name> current, logs\rotated\ ring ($ACCESS_FILES x $ACCESS_SIZE access, $ERROR_FILES x $ERROR_SIZE error), writer bin\rotatelogs_z.exe (no console window)"
 
 # =============================================================================
 # Apache: worker threads for server load
