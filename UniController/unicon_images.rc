@@ -12,3 +12,5 @@
 141 ICON "unicon_images/main_icon2_u1.ico"
 142 ICON "unicon_images/main_icon2_u2.ico"
 143 ICON "unicon_images/main_icon2_u3.ico"
+
+MEDALLION RCDATA "unicon_images/medaillon.png"

@@ -44,3 +44,37 @@ on Windows. It is registered at runtime, so `lazbuild` and the CI build work
 unchanged. The Lazarus **form designer** however does not know the class:
 to edit `main_unit.lfm` visually you must first add `us_buttons.pas` to a
 design-time package, or simply edit the `.lfm` as text.
+
+### The medallion window
+
+The main window is the 3D "Reload" medallion itself (`us_medallion.pas`):
+
+- The artwork is the `MEDALLION` RCDATA resource in `unicon_images.rc`
+  (`unicon_images/medaillon.png`, 2000 x 2000, PNG with alpha). Any change to
+  that file needs a clean build (`lazbuild -B`), an incremental build keeps
+  the old resource.
+- At start-up and after every DPI change the coin is scaled to the form size
+  (alpha-aware supersampling), dark translucent pads are baked in under the
+  text rows for contrast, and the window is clipped to the coin with
+  `SetWindowRgn`. The form stays an ordinary opaque window, so all native
+  controls keep working; only its outline is round. Clicks outside the coin
+  fall through to whatever is behind it.
+- `TUsButton` copies its corner area from that background bitmap
+  (`UsButtonBackground`), so the rounding shows metal, not a flat colour.
+  `FillOpacity` lets a little of the metal shimmer through the fills.
+- There is no title bar: dragging any free spot of the coin moves the
+  window (`FormMouseDown` sends `WM_NCLBUTTONDOWN`/`HTCAPTION`), and the
+  small `-` / `x` buttons minimize and close. Alt+F4 still works.
+- The menu bar is replaced by text tabs (`TUsButton` with `Style = ubsTab`).
+  A tab opens its `TMainMenu` top-level item as a popup with
+  `TrackPopupMenuEx(... TPM_RETURNCMD)` and dispatches the chosen command
+  through `MainMenu1.FindItem(cmd, fkCommand).Click`: the form has no menu
+  attached, so the LCL could not route `WM_COMMAND` itself. All menu items,
+  handlers, icons and enable/disable logic in `us_server_state.pas` are
+  untouched; `TMain.SyncMenuTabs` mirrors caption and enabled state of the
+  top-level items onto the tabs (and explains a greyed tab in its hint).
+- Layout is defined at `DesignTimePPI = 120` on an 800 x 800 form; the
+  usable area is the inner disc (radius about 340 design units), so keep
+  new controls inside that circle.
+- If the resource is missing or unreadable the window falls back to a plain
+  dark disc, so a broken artwork never takes the controller down.

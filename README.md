@@ -1,4 +1,4 @@
-<p align="center"><img src="bundle/branding/logo-256.png" alt="Uniform Server Reload" width="200"></p>
+<p align="center"><img src="bundle/branding/medaillon-512.png" alt="UniServer Reload medallion" width="280"></p>
 
 # Uniform Server Reload
 
@@ -112,6 +112,10 @@ The stock configuration is extremely conservative (2 MB PHP uploads, 1 MB MySQL 
 All values remain editable: PHP via *PHP > Edit selected configuration file*, MySQL/MariaDB via `core\mysql\my.ini`.
 
 **Extensions enabled by default in every PHP version** (all ini variants **including `php-cli.ini`**, so CLI scripts and cron jobs get the same set): on top of the stock set (`gd`, `mbstring`, `exif`, `mysqli`, `openssl`, `pdo_mysql`) this fork also enables `pdo_sqlite`, `sqlite3`, `fileinfo` and `curl` — the ones small PHP apps most often need but that upstream ships commented out. Every build's smoke test starts Apache once per installed PHP version and fails unless PHP executes and all of these extensions actually load, so a version switch in UniController can never silently drop them.
+
+**The controller is the medallion:** the main window is the round 3D Reload medallion itself, with the start buttons, utilities and status LEDs sitting on the metal. There is no title bar: drag the window by any free spot of the coin, use the small `–` / `×` buttons (or Alt+F4) to minimize and close, and open the menus from the tab row (*General*, *Extra*, *Apache*, ...). All menu entries are the same as before, only their home moved from a menu bar to the tabs.
+
+<p align="center"><img src="bundle/branding/controller-medallion.png" alt="UniServer Reload controller: the medallion is the window" width="480"></p>
 
 **Consoles in Reload look:** *Server Console* and *MySQL Console* open in Windows Terminal with a translucent black acrylic background and the Reload icon in the tab (Windows Terminal ships with Windows 11; on Windows 10 install it from the Microsoft Store). The opacity is set in `home\us_config\us_user.ini`: `CONSOLE_OPACITY=50` (50–100; `100` restores the classic opaque cmd window, which is also used automatically when Windows Terminal is not installed). The controller registers the profile *UniServer Reload Console* as a Windows Terminal fragment in `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\UniServer Reload\`, so the profile also appears in the terminal's own dropdown; delete that folder to remove it.
 

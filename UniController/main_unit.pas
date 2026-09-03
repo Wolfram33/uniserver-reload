@@ -14,6 +14,7 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
   ExtCtrls, Menus,
   us_buttons,
+  us_medallion,
   default_config_vars,
   us_common_procedures,
   us_common_functions,
@@ -55,9 +56,18 @@ type
     Btn_view_www: TUsButton;
     Btn_view_ssl: TUsButton;
     Btn_documentation: TUsButton;
+    Btn_minimize: TUsButton;
+    Btn_close: TUsButton;
+    Tab_general: TUsButton;
+    Tab_extra: TUsButton;
+    Tab_apache: TUsButton;
+    Tab_mysql: TUsButton;
+    Tab_php: TUsButton;
+    Tab_perl: TUsButton;
+    Tab_about: TUsButton;
     Lbl_apache_utilities: TLabel;
     Lbl_mysql_utilities: TLabel;
-    Image1: TImage;
+    Lbl_version: TLabel;
     apache_img: TImage;
     menuImageList: TImageList;
     MenuItem1: TMenuItem;
@@ -185,7 +195,14 @@ type
     procedure Btn_opt2Click(Sender: TObject);
     procedure Btn_opt3Click(Sender: TObject);
     procedure Btn_documentationClick(Sender: TObject);
+    procedure Btn_minimizeClick(Sender: TObject);
+    procedure Btn_closeClick(Sender: TObject);
+    procedure TabClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure FormDestroy(Sender: TObject);
+    procedure FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure FormPaint(Sender: TObject);
+    procedure FormResize(Sender: TObject);
     procedure FormWindowStateChange(Sender: TObject);
     procedure MMSS_display_at_startup_page1Click(Sender: TObject);
     procedure MMSS_display_at_startup_page2Click(Sender: TObject);
@@ -274,8 +291,14 @@ type
   private
     { private declarations }
     state_refresh_tick: integer; // Timer divider for the periodic server-state refresh
+    FMedallion     : TUsMedallion;     // coin artwork + window region builder
+    FBackground    : Graphics.TBitmap; // coin rendered at the current window size
+    FBackgroundSize: Integer;          // edge length FBackground was rendered for
+    procedure RenderBackground;
+    function MenuItemForTab(ATab: TUsButton): TMenuItem;
   public
     { public declarations }
+    procedure SyncMenuTabs; // Mirror caption/enabled state of the top-level menu items onto the tabs
   end;
 
 var
@@ -287,6 +310,175 @@ implementation
 {$R unicon_images.rc}  // Add image resource for tray icon -> Added into the Project Resources
 
 { TMain }
+
+{====================================================================
+Medallion window (see us_medallion.pas): render the coin at the current
+window size with dark pads under the text rows, hand it to the buttons
+for their corner areas and clip the window to the coin's outline.
+--------------------------------------------------------------------}
+procedure TMain.RenderBackground;
+var
+  size, pad, padY, radius, gap: Integer;
+  bands : array[0..3] of TRect;
+  rgn   : HRGN;
+begin
+  size := ClientWidth;
+  if (size <= 0) or (FMedallion = nil) then Exit;
+  if FBackground = nil then FBackground := Graphics.TBitmap.Create;
+
+  pad    := ScaleDesignToForm(8);
+  padY   := ScaleDesignToForm(6);
+  gap    := ScaleDesignToForm(4);
+  radius := ScaleDesignToForm(10);
+  // Pads: menu row, the two column headings, the version line
+  bands[0] := Classes.Rect(Tab_general.Left - pad, Tab_general.Top - padY,
+                   Tab_about.Left + Tab_about.Width + pad,
+                   Tab_general.Top + Tab_general.Height + padY);
+  bands[1] := Classes.Rect(Btn_server_console.Left - gap,
+                   Lbl_apache_utilities.Top - gap,
+                   Btn_server_console.Left + Btn_server_console.Width + gap,
+                   Btn_server_console.Top - gap);
+  bands[2] := Classes.Rect(Btn_mysql_console.Left - gap,
+                   Lbl_mysql_utilities.Top - gap,
+                   Btn_mysql_console.Left + Btn_mysql_console.Width + gap,
+                   Btn_mysql_console.Top - gap);
+  bands[3] := Classes.Rect(Lbl_version.Left - pad, Lbl_version.Top - padY,
+                   Lbl_version.Left + Lbl_version.Width + pad,
+                   Lbl_version.Top + Lbl_version.Height + padY);
+
+  if FMedallion.Render(size, FBackground, bands, radius, 190) then
+    rgn := FMedallion.CreateRegion
+  else
+  begin
+    // Artwork missing or unreadable: a plain dark disc keeps the window usable
+    FBackground.SetSize(size, size);
+    FBackground.Canvas.Brush.Color := Color;
+    FBackground.Canvas.FillRect(0, 0, size, size);
+    FBackground.Canvas.Brush.Color := USB_GRAPHITE;
+    FBackground.Canvas.Pen.Color   := USB_GRAPHITE;
+    FBackground.Canvas.Ellipse(0, 0, size, size);
+    rgn := CreateEllipticRgn(0, 0, size, size);
+  end;
+  FBackgroundSize    := size;
+  UsButtonBackground := FBackground;
+  SetWindowRgn(Handle, rgn, True); // the window owns rgn from here on
+  Invalidate;
+end;
+
+procedure TMain.FormPaint(Sender: TObject);
+begin
+  if FBackground <> nil then
+    Canvas.Draw(0, 0, FBackground);
+end;
+
+procedure TMain.FormResize(Sender: TObject);
+begin
+  // DPI change or monitor move: the LCL rescaled the controls, redo the coin
+  if (FMedallion <> nil) and (ClientWidth <> FBackgroundSize) then
+    RenderBackground;
+end;
+
+procedure TMain.FormDestroy(Sender: TObject);
+begin
+  UsButtonBackground := nil;
+  FreeAndNil(FBackground);
+  FreeAndNil(FMedallion);
+end;
+
+procedure TMain.FormMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  // No title bar: dragging any free spot of the coin moves the window
+  if Button = mbLeft then
+  begin
+    ReleaseCapture;
+    SendMessage(Handle, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+  end;
+end;
+
+procedure TMain.Btn_minimizeClick(Sender: TObject);
+begin
+  WindowState := wsMinimized; // FormWindowStateChange applies the tray option
+end;
+
+procedure TMain.Btn_closeClick(Sender: TObject);
+begin
+  Close;
+end;
+
+function TMain.MenuItemForTab(ATab: TUsButton): TMenuItem;
+begin
+  Result := nil;
+  if ATab = Tab_general then Result := MM_general
+  else if ATab = Tab_extra then Result := MenuItem1   // "Extra"
+  else if ATab = Tab_apache then Result := MM_apache
+  else if ATab = Tab_mysql then Result := MM_mysql
+  else if ATab = Tab_php then Result := MM_php
+  else if ATab = Tab_perl then Result := MM_perl
+  else if ATab = Tab_about then Result := MM_about;
+end;
+
+{====================================================================
+Menu tabs replace the menu bar, which a borderless window cannot show.
+A tab opens its top-level item's submenu as a popup below the tab. The
+form has no menu attached, so the LCL cannot route WM_COMMAND for these
+items: TrackPopupMenu returns the chosen command and it is dispatched here.
+--------------------------------------------------------------------}
+procedure TMain.TabClick(Sender: TObject);
+var
+  tab         : TUsButton;
+  item, chosen: TMenuItem;
+  p           : TPoint;
+  cmd         : LongInt;
+begin
+  tab  := Sender as TUsButton;
+  item := MenuItemForTab(tab);
+  if item = nil then Exit;
+
+  if item.Count = 0 then      // plain entry such as About
+  begin
+    item.Click;
+    Exit;
+  end;
+
+  p   := tab.ClientToScreen(Classes.Point(0, tab.Height)); // Point() alone would be the Windows type
+  cmd := LongInt(TrackPopupMenuEx(item.Handle,
+           TPM_LEFTALIGN or TPM_TOPALIGN or TPM_LEFTBUTTON or TPM_RETURNCMD,
+           p.X, p.Y, Handle, nil));
+  tab.ResetVisualState;       // the popup swallowed the mouse-up
+  if cmd <> 0 then
+  begin
+    chosen := MainMenu1.FindItem(cmd, fkCommand);
+    if chosen <> nil then chosen.Click;
+  end;
+end;
+
+procedure TMain.SyncMenuTabs;
+
+  procedure Sync(ATab: TUsButton; AItem: TMenuItem);
+  begin
+    ATab.Caption := AItem.Caption;
+    ATab.Enabled := AItem.Enabled;
+  end;
+
+begin
+  Sync(Tab_general, MM_general);
+  Sync(Tab_extra,   MenuItem1);
+  Sync(Tab_apache,  MM_apache);
+  Sync(Tab_mysql,   MM_mysql);
+  Sync(Tab_php,     MM_php);
+  Sync(Tab_perl,    MM_perl);
+  Sync(Tab_about,   MM_about);
+  // Say why a menu is greyed out instead of leaving the user guessing
+  if MM_php.Enabled then
+    Tab_php.Hint := ''
+  else
+    Tab_php.Hint := 'PHP menu unavailable: no PHP version selected';
+  if MM_perl.Enabled then
+    Tab_perl.Hint := ''
+  else
+    Tab_perl.Hint := 'Perl menu unavailable: Perl is not installed in ' + US_PERL;
+end;
 
 procedure TMain.Btn_start_apacheClick(Sender: TObject);
 var
@@ -1129,6 +1321,13 @@ var
 begin
   new_mysql_pwd:='';
   Timer1.Enabled := False;          // Disable timer
+
+  //--- Medallion window: the coin artwork is the form (see us_medallion.pas).
+  //    Outline and background must exist before the window is first shown.
+  DoubleBuffered := True;
+  FMedallion     := TUsMedallion.Create;
+  RenderBackground;
+  Lbl_version.Caption := 'Uniform Server Reload ' + US_RELOAD_VERSION;
 
 If us_application_is_runable Then   // A draconian check. If a space found in path
                                     // or incorrect location UniController is terminated.

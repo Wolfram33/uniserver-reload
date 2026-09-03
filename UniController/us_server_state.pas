@@ -805,6 +805,9 @@ begin
    Else
      Main.MMS_perl_view_test_pl.Enabled := False;  // Disable button
 
+   //---Menu tabs on the medallion mirror the top-level menu items
+   Main.SyncMenuTabs;
+
 end;
 {----------------------------------------------------------------------------}
 end.
