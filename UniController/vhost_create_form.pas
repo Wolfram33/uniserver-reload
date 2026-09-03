@@ -100,13 +100,15 @@ begin
        sList.Add(' DocumentRoot '+In_DocRoot);
        sList.Add(' ServerName '+ In_ServerName);
        sList.Add(' ServerAlias www.'+IN_ServerName+ ' *.'+In_ServerName);
-       //-- Logs rotate through rotatelogs like the main logs (same scheme as
-       //   scripts/tune-server-config.ps1): logs/<name> stays the current
-       //   file (hard link), logs/rotated/ keeps the ring of older parts,
-       //   so a vhost's logs can never fill the disk. rotatelogs_z.exe is
-       //   the windowless copy us_prepare_rotatelogs creates at Apache start.
+       //-- One rotated error log per vhost, shared by the http and the https
+       //   block below (Apache runs one writer per identical ErrorLog pipe,
+       //   but one per CustomLog line - so the vhost gets no access log of
+       //   its own: its requests go to logs/access.log tagged host:port,
+       //   vhost_combined format). Same scheme as scripts/tune-server-config.ps1;
+       //   rotatelogs_z.exe is the windowless copy us_prepare_rotatelogs
+       //   creates at Apache start.
        sList.Add(' ErrorLog "|bin/rotatelogs_z.exe -n 5 -D -L logs/'+In_ServerName+'-error.log logs/rotated/'+In_ServerName+'-error.log 10M"');
-       sList.Add(' CustomLog "|bin/rotatelogs_z.exe -n 10 -D -L logs/'+In_ServerName+'-access.log logs/rotated/'+In_ServerName+'-access.log 20M" common');
+       sList.Add(' # Access lines of this host go to logs/access.log, tagged "host:port" (vhost_combined)');
        sList.Add(' <Directory "'+In_DirPath+'">');
        sList.Add('   Options Indexes Includes FollowSymLinks');
        sList.Add('   AllowOverride All   ');
@@ -124,8 +126,8 @@ begin
        sList.Add(' DocumentRoot '+In_DocRoot);
        sList.Add(' ServerName '+ In_ServerName);
        sList.Add(' ServerAlias www.'+IN_ServerName+ ' *.'+In_ServerName);
-       sList.Add(' ErrorLog "|bin/rotatelogs_z.exe -n 5 -D -L logs/'+In_ServerName+'-ssl-error.log logs/rotated/'+In_ServerName+'-ssl-error.log 10M"');
-       sList.Add(' CustomLog "|bin/rotatelogs_z.exe -n 10 -D -L logs/'+In_ServerName+'-ssl-access.log logs/rotated/'+In_ServerName+'-ssl-access.log 20M" common');
+       sList.Add(' ErrorLog "|bin/rotatelogs_z.exe -n 5 -D -L logs/'+In_ServerName+'-error.log logs/rotated/'+In_ServerName+'-error.log 10M"');
+       sList.Add(' # Access lines of this host go to logs/access.log, tagged "host:port" (vhost_combined)');
        sList.Add(' SSLEngine on');
        sList.Add(' SSLCertificateFile "${US_ROOTF}/core/apache2/server_certs/server.crt"');
        sList.Add(' SSLCertificateKeyFile "${US_ROOTF}/core/apache2/server_certs/server.key"');

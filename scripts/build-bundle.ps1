@@ -266,12 +266,12 @@ if ($v -notmatch '_default_:\$\{AP_SSL_PORT\}') {
 
 # Same shallow duplicate for the SSL port: keeps requests with unknown host
 # names on https in the main document root instead of the first user vhost.
+# No log lines: the block inherits the main logs (tune-server-config.ps1
+# strips them from the stock http block as well).
 <IfModule ssl_module>
 <VirtualHost _default_:${AP_SSL_PORT}>
   DocumentRoot ${US_ROOTF_SSL}
   ServerName ${US_SERVERNAME}
-  ErrorLog "logs/error.log"
-  CustomLog "logs/access.log" common
   SSLEngine on
   SSLCertificateFile "${US_ROOTF}/core/apache2/server_certs/server.crt"
   SSLCertificateKeyFile "${US_ROOTF}/core/apache2/server_certs/server.key"

@@ -23,6 +23,13 @@
 #       ErrorLog/CustomLog go through bin\rotatelogs_z.exe: logs\<name> stays
 #       the current file (hard link), logs\rotated\ holds a ring of older parts
 #       (access: 10 x 20M, error: 5 x 10M) - the logs can never fill the disk.
+#       Every writer runs twice (Apache's parent and worker process open all
+#       logs), so pipes are kept to a minimum: vhosts get one error log shared
+#       by their http and https block (Apache shares error-log pipes with the
+#       same command, but never access-log pipes) and no access log of their
+#       own - their requests go to logs\access.log tagged "host:port"
+#       (vhost_combined format). The default vhost blocks inherit the main
+#       logs instead of opening the same pipes a second time.
 #   core\apache2\conf\extra\httpd-mpm.conf
 #       400 worker threads (was 150) and an 8 MB thread stack for PHP.
 #   core\php8x\php_production.ini, php_development.ini, php_test.ini
@@ -160,34 +167,61 @@ foreach ($name in 'access.log', 'error.log', 'access_ssl.log', 'error_ssl.log') 
 $accessPipe = Get-RotatingLog 'access.log' $ACCESS_FILES $ACCESS_SIZE
 $errorPipe  = Get-RotatingLog 'error.log'  $ERROR_FILES  $ERROR_SIZE
 
-# httpd.conf: main error log and access log
+# httpd.conf: main error log and access log. The access log carries the
+# vhost name and port in front of every line (vhost_combined) because the
+# vhosts have no access log of their own (see the header).
+$VHOST_FORMAT = 'LogFormat "%v:%p %h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" vhost_combined'
 $conf = Join-Path $apache 'conf\httpd.conf'
 $t = Read-Text $conf
 $nl = Get-Newline $t
 $note = "# UniServer Reload: logs rotate in place through bin\rotatelogs_z.exe (rotatelogs$nl" +
         "# without a console window). logs\<name> is always the current file (hard link);$nl" +
         "# logs\rotated\ keeps a ring of older parts ($ACCESS_FILES x $ACCESS_SIZE access, $ERROR_FILES x $ERROR_SIZE error),$nl" +
-        "# so the logs can never fill the disk.$nl"
+        "# so the logs can never fill the disk. The access log takes the requests of every$nl" +
+        "# vhost too, tagged host:port (vhost_combined); vhosts only keep their own error log.$nl"
 $t = $t -replace '(?m)^ErrorLog "logs/error\.log"(\r?)$', ('ErrorLog "' + $errorPipe + '"$1')
-$t = $t -replace '(?m)^([\t ]*)CustomLog "logs/access\.log" combined(\r?)$', ('$1CustomLog "' + $accessPipe + '" combined$2')
-# The 1.3.3 note still named the console rotatelogs.exe: swap the whole note
-$t = $t -replace '(?m)^# UniServer Reload: logs rotate in place through bin\\rotatelogs\.exe\..*\r?\n(#.*\r?\n){2}', ''
+$t = $t -replace '(?m)^([\t ]*)CustomLog "logs/access\.log" combined(\r?)$', ('$1CustomLog "' + $accessPipe + '" vhost_combined$2')
+# 1.3.3/1.3.4 wrote the pipe with the plain combined format
+$t = $t -replace ('(?m)^([\t ]*)CustomLog "' + [regex]::Escape($accessPipe) + '" combined(\r?)$'), ('$1CustomLog "' + $accessPipe + '" vhost_combined$2')
+if ($t -notmatch '(?m)^[\t ]*LogFormat .* vhost_combined[\t ]*\r?$') {
+  # right after the stock "combined" format line, same indentation
+  $t = $t -replace '(?m)^([\t ]*)(LogFormat .* combined)(\r?)$', ('$1$2$3' + $nl + '$1' + $VHOST_FORMAT.Replace('$', '$$') + '$3')
+}
+# Replace the whole note (earlier versions described the previous layout):
+# it sits directly above the ErrorLog line, so every comment line that
+# follows its first line belongs to it
+$t = $t -replace '(?m)^# UniServer Reload: logs rotate in place through bin\\rotatelogs(_z)?\.exe[^\r\n]*\r?\n(#[^\r\n]*\r?\n)*', ''
 if ($t -notmatch 'UniServer Reload: logs rotate in place') { $t = $t -replace '(?m)^(ErrorLog ")', ($note + '$1') }
 Write-Text $conf $t
 $t = Read-Text $conf
-if ($t -notmatch ('(?m)^ErrorLog "' + [regex]::Escape($errorPipe) + '"'))                 { throw 'httpd.conf: ErrorLog rotation patch failed' }
-if ($t -notmatch ('(?m)^\s*CustomLog "' + [regex]::Escape($accessPipe) + '" combined'))   { throw 'httpd.conf: CustomLog rotation patch failed' }
+if ($t -notmatch ('(?m)^ErrorLog "' + [regex]::Escape($errorPipe) + '"'))                        { throw 'httpd.conf: ErrorLog rotation patch failed' }
+if ($t -notmatch ('(?m)^\s*CustomLog "' + [regex]::Escape($accessPipe) + '" vhost_combined'))    { throw 'httpd.conf: CustomLog rotation patch failed' }
+if ($t -notmatch '(?m)^[\t ]*LogFormat "%v:%p .* vhost_combined[\t ]*\r?$')                       { throw 'httpd.conf: vhost_combined LogFormat missing' }
+if (([regex]::Matches($t, '(?m)^[\t ]*LogFormat .* vhost_combined[\t ]*\r?$')).Count -ne 1)      { throw 'httpd.conf: vhost_combined LogFormat duplicated' }
 
-# httpd-vhosts.conf: the default vhosts log to the main files (same pipe
-# command - Apache shares one rotatelogs process per identical command)
+# httpd-vhosts.conf
+#  - the default vhost blocks (unknown host names) inherit the main logs:
+#    their own ErrorLog/CustomLog lines only opened the same pipes again
+#  - user vhosts: one rotated error log shared by the http and https block
+#    (1.3.3/1.3.4 gave the https block its own -ssl- pair, older versions
+#    plain files), no access log of their own - the requests are in
+#    logs\access.log tagged host:port
 $vconf = Join-Path $apache 'conf\extra\httpd-vhosts.conf'
 $t = Read-Text $vconf
-$t = $t -replace '(?m)^([\t ]*)ErrorLog "logs/error\.log"(\r?)$',          ('$1ErrorLog "' + $errorPipe + '"$2')
-$t = $t -replace '(?m)^([\t ]*)CustomLog "logs/access\.log" common(\r?)$', ('$1CustomLog "' + $accessPipe + '" common$2')
+$nl = Get-Newline $t
+$t = [regex]::Replace($t, '(?m)^[\t ]*(ErrorLog|CustomLog|TransferLog) "?(\|bin/rotatelogs(_z)?\.exe [^"\r\n]*)?logs/(error|access)\.log[^\r\n]*\r?\n', '')
+$t = [regex]::Replace($t, '(?m)^[\t ]*CustomLog [^\r\n]*logs/[^\s"/]+-(ssl-)?access\.log[^\r\n]*\r?\n', '')
+$t = $t -replace '-ssl-error\.log', '-error.log'
+$t = $t -replace '(?m)^([\t ]*)ErrorLog "?\|bin/rotatelogs\.exe ([^\r\n]*-error\.log)', '$1ErrorLog "|bin/rotatelogs_z.exe $2'
+$t = [regex]::Replace($t, '(?m)^([\t ]*)ErrorLog "?logs/([^\s"/]+-error\.log)"?[\t ]*(?=\r?$)', ('$1ErrorLog "|bin/rotatelogs_z.exe -n ' + $ERROR_FILES + ' -D -L logs/$2 logs/rotated/$2 ' + $ERROR_SIZE + '"'))
+# Say where the access lines went, once per ErrorLog line that has no such note yet
+$accessNote = '# Access lines of this host go to logs/access.log, tagged "host:port" (vhost_combined)'
+$t = [regex]::Replace($t, '(?m)^([\t ]*)(ErrorLog "\|bin/rotatelogs_z\.exe [^\r\n]*-error\.log[^\r\n]*)(\r?)$(?!\r?\n[\t ]*# Access lines of this host)', ('$1$2$3' + $nl + '$1' + $accessNote + '$3'))
 Write-Text $vconf $t
 $t = Read-Text $vconf
-if ($t -match '(?m)^\s*(ErrorLog|CustomLog) "logs/') { throw 'httpd-vhosts.conf: plain log files remain after the rotation patch' }
-if ($t -notmatch ('(?m)^\s*CustomLog "' + [regex]::Escape($accessPipe) + '" common')) { throw 'httpd-vhosts.conf: CustomLog rotation patch failed' }
+if ($t -match '(?m)^[\t ]*(CustomLog|TransferLog)\b')          { throw 'httpd-vhosts.conf: a CustomLog line survived - vhosts must inherit the main access log' }
+if ($t -match '(?m)^[\t ]*ErrorLog "?logs/')                   { throw 'httpd-vhosts.conf: a plain error log file survived the rotation patch' }
+if ($t -match '\|bin/rotatelogs\.exe |-ssl-error\.log')         { throw 'httpd-vhosts.conf: a console rotatelogs.exe pipe or an -ssl- log name survived' }
 
 # httpd-ssl.conf: the SSL default host keeps its own log names
 $sconf = Join-Path $apache 'conf\extra\httpd-ssl.conf'
