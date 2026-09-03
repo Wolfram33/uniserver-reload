@@ -63,6 +63,14 @@ mv "$PHP_ROOT/ext" "$PHP_ROOT/extensions"
 # --- Generate the four ini files the UniController expects -------------------
 # ${US_ROOTF} and ${PHP_INI_SELECT} are environment variables set by the
 # UniController at runtime; they must remain literal in the generated files.
+#
+# OPcache: php.ini-production carries ";zend_extension=opcache". That short
+# form is enabled here in the php_opcache.dll path form, for two reasons:
+# without OPcache every request recompiles every file, and the controller's
+# PHP > Accelerator toggle only recognises lines that name php_opcache.dll
+# (it never worked for this module before). PHP 8.5+ has OPcache built in
+# and ships no such line - nothing to do there. The cache sizes are tuned
+# for the bundle by scripts/tune-server-config.ps1.
 patch_ini() { # $1=source $2=dest-name $3=variant label
   local dest="$PHP_ROOT/$2"
   cp "$1" "$dest"
@@ -85,6 +93,7 @@ patch_ini() { # $1=source $2=dest-name $3=variant label
     -e 's|^;extension=sqlite3|extension=sqlite3|' \
     -e 's|^;extension=fileinfo|extension=fileinfo|' \
     -e 's|^;extension=curl|extension=curl|' \
+    -e 's|^;zend_extension=opcache$|zend_extension=${US_ROOTF}/core/'"$SHORT"'/extensions/php_opcache.dll|' \
     -e 's|^memory_limit = .*|memory_limit = 512M|' \
     -e 's|^upload_max_filesize = .*|upload_max_filesize = 256M|' \
     -e 's|^post_max_size = .*|post_max_size = 256M|' \

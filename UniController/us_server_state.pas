@@ -51,6 +51,7 @@ Var
  eaccelerator_file      :boolean; // File exists in selected php ini file
  xcache_file            :boolean; // Filee exists in selected php ini file
  zendopcache_file       :boolean; // File exists in selected php ini file
+ zendopcache_builtin    :boolean; // OPcache compiled into PHP (8.5+): no DLL, always on
 
 begin
 
@@ -132,6 +133,7 @@ begin
        Or FileExists(USF_APACHE_ACCESS_LOG)
        Or FileExists(USF_APACHE_SSL_ERROR_LOG)
        Or FileExists(USF_APACHE_SSL_ACCESS_LOG)
+       Or DirectoryExists(USF_APACHE_ROTATED_LOGS)   // rotation rings, incl. vhost logs
      Then
        Main.MMSS_apache_delete_all_logs.Enabled := True   // Enable Apache Log delete menu item
      Else
@@ -740,6 +742,14 @@ begin
    //--Check file exists in extensions folder
    If FileExists(US_CORE+'\'+UENV_PHP_SELECT+'\extensions\'+ZENDOPCACHE_DLL) Then
       zendopcache_file:=true Else zendopcache_file:=False;
+   zendopcache_code := False;   // stays false when the selected ini is missing
+
+   //--PHP 8.5 and later compile OPcache into the engine: no DLL, no
+   //  zend_extension line in the ini, on by default. The toggle has nothing
+   //  to switch there, so the menu shows that state instead of a mute
+   //  disabled entry (folder name php85 -> 85).
+   zendopcache_builtin := (Not zendopcache_file) And
+                          (StrToIntDef(Copy(UENV_PHP_SELECT, 4, Length(UENV_PHP_SELECT)), 0) >= 85);
 
    //--Check code exists in selected configuration file
    selected_ini_file :=US_CORE+'\'+UENV_PHP_SELECT+'\'+UENV_PHP_INI_SELECT;     // Full path selected php config file
@@ -774,15 +784,25 @@ begin
    //--Enable/Disable buttons
 
      // Zend OpCache code
-     If  zendopcache_file and zendopcache_code Then
+     If zendopcache_builtin Then
        begin
-         If AP Then
-           Main.MMSS_php_acc_zop.Enabled:=false
-         Else
-           Main.MMSS_php_acc_zop.Enabled:=true;
+         Main.MMSS_php_acc_zop.Checked := True;   // always on
+         Main.MMSS_php_acc_zop.Enabled := False;  // nothing to switch
+         Main.MMSS_php_acc_zop.Caption := 'Zend OpCache Accelerator (built into '+UENV_PHP_SELECT+', always on)';
        end
      Else
-       Main.MMSS_php_acc_zop.Enabled:=false;
+       begin
+         Main.MMSS_php_acc_zop.Caption := 'Enable/Disable Zend OpCache Accelerator';
+         If  zendopcache_file and zendopcache_code Then
+           begin
+             If AP Then
+               Main.MMSS_php_acc_zop.Enabled:=false
+             Else
+               Main.MMSS_php_acc_zop.Enabled:=true;
+           end
+         Else
+           Main.MMSS_php_acc_zop.Enabled:=false;
+       end;
 
    //---View PHP Accelerator control panel. Enable disable
    If (AP) And (Main.MMSS_php_acc_zop.Checked) Then

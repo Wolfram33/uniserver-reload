@@ -214,6 +214,7 @@ Var
  USF_APACHE_ACCESS_LOG     : String; // Apache access log
  USF_APACHE_SSL_ERROR_LOG  : String; // Apache SSL error log
  USF_APACHE_SSL_ACCESS_LOG : String; // Apache SSL access log
+ USF_APACHE_ROTATED_LOGS   : String; // Folder with the rotation rings of all Apache logs
 
  USF_CERT                  : String; // Server certificate
  USF_CERT_CA               : String; // CA Server
@@ -477,6 +478,7 @@ begin
   USF_APACHE_ACCESS_LOG     := US_APACHE + '\logs\access.log';               // Apache access log
   USF_APACHE_SSL_ERROR_LOG  := US_APACHE + '\logs\error_ssl.log';            // Apache SSL error log
   USF_APACHE_SSL_ACCESS_LOG := US_APACHE + '\logs\access_ssl.log' ;          // Apache SSL access log
+  USF_APACHE_ROTATED_LOGS   := US_APACHE + '\logs\rotated';                  // Rotation rings (rotatelogs); the files above are hard links to the current part
 
   USF_CERT                  := US_APACHE + '\server_certs\server.crt';       // Server certificate
   USF_CERT_CA               := US_APACHE + '\server_certs\ca.crt';           // CA Server

@@ -267,9 +267,13 @@ jobs:
             echo "The bundle is smoke-tested on every build: Apache is started on the CI"
             echo "runner and must serve a PHP-rendered page before the release is updated."
             echo
-            echo "Development-friendly limits are preconfigured: PHP 512M memory / 256M"
-            echo "uploads / 120s execution time; MySQL/MariaDB 512M InnoDB pool / 256M"
-            echo "max_allowed_packet and raised buffers."
+            echo "Sized for a team, not just a laptop: OPcache is on in every PHP version,"
+            echo "Apache logs rotate in place (\`logs\\rotated\\\` ring, bounded disk use),"
+            echo "400 Apache worker threads, 500 MySQL/MariaDB connections. Developer"
+            echo "limits stay: PHP 512M memory / 256M uploads / 120s execution time;"
+            echo "MySQL/MariaDB 512M InnoDB pool (raise it on a server, see README) /"
+            echo "256M max_allowed_packet. Existing installations get the same tuning"
+            echo "with \`scripts\\tune-server-config.ps1\` from the repository."
             echo
             echo "Real e-mail from PHP mail(): enter your SMTP account in"
             echo "\`core\\msmtp\\msmtprc.ini\` (templates included). TLS certificate checks are"

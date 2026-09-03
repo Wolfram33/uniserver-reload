@@ -62,6 +62,13 @@ There is no in-place updater — the package is portable by design. Two paths:
 
 * **Controller-only upgrade** (e.g. 1.2.0 → 1.2.1): replace `UniController.exe` (server folder) and `UniService.exe` (its `utils` subfolder) with the single-file downloads from the release page — that is exactly what they are published for. Your `www` content, databases and configuration stay untouched. (The version shown on the splash and test pages comes from `AppVersion=` in `home\us_config\us_config.ini`; update it by hand if you want the pages to match.)
 * **Full upgrade** (new Apache/PHP/MySQL builds): unpack the new bundle into a fresh folder and move over your `www` content, your databases (`core\mysql\data`) and any configuration you changed (e.g. `home\us_config\us_user.ini`, `core\msmtp\msmtprc.ini`, certificates in `core\apache2\server_certs`).
+* **Server tuning for an existing installation** (log rotation, OPcache, load limits, see [Sized for a small-business server](#sized-for-a-small-business-server)): with Apache and MySQL stopped, run from a checkout of this repository
+
+  ```
+  powershell -ExecutionPolicy Bypass -File scripts\tune-server-config.ps1 -Root C:\UniServer-Reload
+  ```
+
+  It changes only what is not in place yet, keeps existing logs, and stops with a clear message if a file does not look as expected.
 
 ## Versioning
 
@@ -108,8 +115,29 @@ The stock configuration is extremely conservative (2 MB PHP uploads, 1 MB MySQL 
 | MySQL/MariaDB `max_allowed_packet` | 1M | **256M** |
 | MySQL/MariaDB `innodb_buffer_pool_size` | 32M | **512M** |
 | MySQL/MariaDB `table_open_cache`, buffers, `tmp_table_size` | minimal | **raised accordingly** |
+| PHP OPcache | off | **on** (256M, 20000 files) |
+| Apache `ThreadsPerChild` (concurrent connections) | 150 | **400** |
+| MySQL/MariaDB `max_connections` | 151 | **500** |
 
 All values remain editable: PHP via *PHP > Edit selected configuration file*, MySQL/MariaDB via `core\mysql\my.ini`.
+
+## Sized for a small-business server
+
+Beyond the developer limits above, every bundle is tuned so a whole team can work on it all day. The same tuning goes onto an existing installation with `scripts/tune-server-config.ps1` (see [Upgrading](#upgrading)); it is idempotent and verifies every change.
+
+* **OPcache is on in every PHP version** (256M cache, 20000 files; file changes are picked up within 2 s, immediately with `php_development.ini`). Without OPcache PHP recompiles every file on every request, the classic bottleneck once several people click at the same time. Upstream shipped it off, and for the 8.4 module the *PHP > Accelerator > Zend OpCache* toggle could not even switch it on: the ini line used a short form the controller does not recognise. PHP 8.5 has OPcache built in; the menu shows that instead of a mute disabled entry.
+* **Apache logs can no longer fill the disk.** Every log goes through Apache's `rotatelogs`: `logs\access.log`, `logs\error.log`, the SSL logs and every vhost log always show the current file, while `logs\rotated\` keeps a ring of older parts (10 x 20 MB for access logs, 5 x 10 MB for error logs). *Apache > Delete all logs* clears the ring too. Existing logs are carried over as the first part of their ring when the tuning script runs.
+* **Apache** serves 400 concurrent connections (was 150; chat apps that keep a long-polling request open per user eat them fast) with 8 MB thread stacks, the PHP-on-Windows recommendation. **MySQL/MariaDB** accept 500 connections, keep larger table and thread caches, a 256M redo log and, on MySQL, 7 days of binlogs instead of 30.
+
+What stays yours to size is the **InnoDB buffer pool** (`innodb_buffer_pool_size` in `core\mysql\my.ini`): it should hold the data the apps touch every day. The bundle default of 512M suits a laptop; on a server give it a share of the RAM:
+
+| Server RAM | Shared box (Apache + PHP + database) | Dedicated database server |
+|---|---|---|
+| 8 GB | 1G to 2G | 4G to 5G |
+| 16 GB | 2G to 4G | 8G to 10G |
+| 32 GB | 4G to 8G | 16G to 20G |
+
+A CRM with a few hundred customers, tickets, chats and a document archive is a few gigabytes of data after years; 2G to 4G keeps that working set in memory. If documents are stored in the database as BLOBs, count them separately and prefer the file system for them.
 
 **Extensions enabled by default in every PHP version** (all ini variants **including `php-cli.ini`**, so CLI scripts and cron jobs get the same set): on top of the stock set (`gd`, `mbstring`, `exif`, `mysqli`, `openssl`, `pdo_mysql`) this fork also enables `pdo_sqlite`, `sqlite3`, `fileinfo` and `curl` — the ones small PHP apps most often need but that upstream ships commented out. Every build's smoke test starts Apache once per installed PHP version and fails unless PHP executes and all of these extensions actually load, so a version switch in UniController can never silently drop them.
 

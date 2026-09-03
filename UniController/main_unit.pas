@@ -887,6 +887,12 @@ begin
   If FileExists(USF_APACHE_SSL_ACCESS_LOG) Then
      DeleteFile(pchar(USF_APACHE_SSL_ACCESS_LOG));
 
+  // The files above are only hard links to the current part of their
+  // rotation ring; the rings themselves (and those of the vhost logs) live
+  // in logs\rotated - clear that folder too, or nothing is freed.
+  If DirectoryExists(USF_APACHE_ROTATED_LOGS) Then
+     DeleteDirectory(USF_APACHE_ROTATED_LOGS, True);   // True: contents only, keep the folder
+
   us_update_server_state; // Update menus
 end;
 

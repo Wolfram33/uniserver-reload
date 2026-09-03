@@ -286,6 +286,13 @@ if ($v -notmatch '_default_:\$\{AP_SSL_PORT\}') {
 if ((Get-Content $vhostConf -Raw) -notmatch '_default_:\$\{AP_SSL_PORT\}') { throw 'httpd-vhosts.conf SSL default vhost patch failed' }
 Write-Host '==> Default SSL vhost added to httpd-vhosts.conf'
 
+# --- Server tuning: rotating logs, OPcache, load limits ----------------------
+# One script for the bundle and for existing installations (see README):
+# Apache logs rotate with bounded disk use, OPcache is on in every PHP
+# version, Apache/MySQL limits are sized for a small-business server. Runs
+# after the vhost/SSL patches above because it rewrites their log lines.
+& "$PSScriptRoot\tune-server-config.ps1" -Root $root
+
 # --- Install fork splash page ------------------------------------------------
 # Replaces the stock splash page (stale version list, upstream download links)
 # with the fork's version-aware page. The stock static index.html must go:
@@ -332,16 +339,31 @@ $env:US_ROOTF_WWW    = "$env:US_ROOTF/www"
 $env:US_SERVERNAME   = 'localhost'
 $env:AP_PORT         = '8088'
 $env:PHP_INI_SELECT  = 'php_test.ini'
-$REQUIRED_EXT = @('pdo_sqlite', 'sqlite3', 'fileinfo', 'curl', 'mbstring', 'gd', 'openssl')
+$REQUIRED_EXT = @('pdo_sqlite', 'sqlite3', 'fileinfo', 'curl', 'mbstring', 'gd', 'openssl', 'Zend OPcache')
 
-# Probe page: prints a marker plus the loaded extensions
+# Probe page: prints a marker, the OPcache switch and the loaded extensions
 @'
-<?php echo "USR-PROBE ", PHP_VERSION, " EXT:", implode(",", get_loaded_extensions());
+<?php echo "USR-PROBE ", PHP_VERSION, " OPC:", ini_get("opcache.enable"), " EXT:", implode(",", get_loaded_extensions());
 '@ | Set-Content "$root\www\_ci_probe.php" -NoNewline
 
 $httpd = "$rootAbs\core\apache2\bin\httpd_z.exe"
 & $httpd -t -f "$rootAbs\core\apache2\conf\httpd.conf" -d "$rootAbs\core\apache2"
 if ($LASTEXITCODE -ne 0) { throw 'Apache configuration syntax check failed' }
+
+# Stops the test Apache. Its piped log writers (rotatelogs.exe) must exit on
+# their own once httpd closes the pipe - an orphan here would mean an orphan
+# after every controller stop as well.
+function Stop-SmokeApache {
+  & taskkill /F /IM httpd_z.exe 2>$null | Out-Null
+  foreach ($i in 1..40) {
+    if (-not (Get-Process -Name rotatelogs -ErrorAction SilentlyContinue)) { break }
+    Start-Sleep -Milliseconds 250
+  }
+  if (Get-Process -Name rotatelogs -ErrorAction SilentlyContinue) {
+    & taskkill /F /IM rotatelogs.exe 2>$null | Out-Null
+    throw 'Smoke test: rotatelogs.exe did not exit after Apache was stopped'
+  }
+}
 
 $versions = Get-ChildItem "$root\core" -Directory -Filter 'php8*' | ForEach-Object { $_.Name } | Sort-Object
 foreach ($ver in $versions) {
@@ -353,18 +375,26 @@ foreach ($ver in $versions) {
     $resp = & curl.exe -fsS 'http://localhost:8088/_ci_probe.php' 2>$null
     if ($LASTEXITCODE -eq 0 -and $resp) { break }
   }
-  & taskkill /F /IM httpd_z.exe 2>$null | Out-Null
-  Start-Sleep -Milliseconds 500
+  Stop-SmokeApache
   $text = ($resp -join "`n")
   if ($text -match '<\?php') { throw "Smoke test ($ver): PHP served as source instead of executing" }
   if ($text -notmatch 'USR-PROBE') { throw "Smoke test ($ver): Apache did not serve the PHP probe" }
+  if ($text -notmatch ' OPC:1 ') { throw "Smoke test ($ver): opcache.enable is not 1" }
   $loaded = @()
   if ($text -match 'EXT:(.*)$') { $loaded = $Matches[1] -split ',' }
   $missing = $REQUIRED_EXT | Where-Object { $_ -notin $loaded }
   if ($missing) { throw "Smoke test ($ver): required extensions not loaded: $($missing -join ', ')" }
-  Write-Host "   $ver OK - PHP executes, extensions loaded"
+  Write-Host "   $ver OK - PHP executes, OPcache on, extensions loaded"
 }
 Remove-Item "$root\www\_ci_probe.php" -Force
+
+# Piped logging works: rotatelogs wrote the access log (hard link in logs\,
+# ring part in logs\rotated\) and the probe requests are in it
+$accessLog = "$rootAbs\core\apache2\logs\access.log"
+if (-not (Test-Path $accessLog)) { throw 'Smoke test: logs\access.log was not created by rotatelogs' }
+if (-not (Test-Path "$rootAbs\core\apache2\logs\rotated\access.log")) { throw 'Smoke test: logs\rotated\access.log (rotation ring) is missing' }
+if ((Get-Content $accessLog -Raw) -notmatch '_ci_probe\.php') { throw 'Smoke test: probe requests are missing from the rotated access log' }
+Write-Host '   log rotation OK - access log written through rotatelogs'
 
 # Splash page and www test page render (fork content) under the default version
 $env:PHP_SELECT = ($versions | Select-Object -First 1)
@@ -372,10 +402,16 @@ Start-Process -FilePath $httpd -ArgumentList '-f', "$rootAbs\core\apache2\conf\h
 $resp = $null
 foreach ($i in 1..30) { Start-Sleep -Seconds 1; $resp = & curl.exe -fsS 'http://localhost:8088/us_splash/index.php' 2>$null; if ($LASTEXITCODE -eq 0 -and $resp) { break } }
 $respWww = & curl.exe -fsS 'http://localhost:8088/index.php' 2>$null
-& taskkill /F /IM httpd_z.exe 2>$null | Out-Null
+Stop-SmokeApache
 if (($resp -join "`n") -notmatch 'Uniform Server Reload') { throw 'Smoke test: splash page did not render fork content' }
 if (($respWww -join "`n") -notmatch 'Uniform Server Reload') { throw 'Smoke test: www test page did not render fork content' }
-Write-Host "==> Smoke test passed: Apache $apVer, all PHP versions execute with required extensions"
+Write-Host "==> Smoke test passed: Apache $apVer, all PHP versions execute with OPcache and required extensions"
+
+# The smoke test's logs must not ship: empty log folder, rotation ring gone
+Remove-Item "$root\core\apache2\logs\rotated" -Recurse -Force -ErrorAction SilentlyContinue
+foreach ($f in 'access.log', 'error.log', 'access_ssl.log', 'error_ssl.log', 'httpd.pid') {
+  Remove-Item "$root\core\apache2\logs\$f" -Force -ErrorAction SilentlyContinue
+}
 
 # --- Pack as self-extracting exe ---------------------------------------------
 # Flat layout (since 1.3.0): the archives carry the server files at their
