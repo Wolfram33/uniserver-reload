@@ -361,8 +361,10 @@ jobs:
             echo "Since 1.3.2 the controller's main window is the round 3D Reload medallion"
             echo "itself: start buttons, utilities and status LEDs sit on the metal, the menus"
             echo "open from a tab row, and the window is dragged by any free spot of the coin."
-            echo "Minimize and close with the small \`-\` / \`x\` buttons or Alt+F4. Since 1.3.1"
-            echo "*Server Console* and *MySQL Console* open in Windows Terminal with a"
+            echo "Minimize and close with the small \`-\` / \`x\` buttons or Alt+F4. The tray icon"
+            echo "has a right-click menu (*Show* / *Exit*) since 1.3.6, and *Extra > Edit Win"
+            echo "hosts file* no longer hides the controller when the editor opens. Since 1.3.1"
+            echo "*Server Console* and *MariaDB Console* open in Windows Terminal with a"
             echo "translucent black background (opacity via \`CONSOLE_OPACITY\` in us_user.ini)."
             echo
             echo "## Multiple virtual hosts - finally working"

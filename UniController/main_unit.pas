@@ -294,9 +294,13 @@ type
     FMedallion     : TUsMedallion;     // coin artwork + window region builder
     FBackground    : Graphics.TBitmap; // coin rendered at the current window size
     FBackgroundSize: Integer;          // edge length FBackground was rendered for
+    FTrayMenu      : TPopupMenu;       // right-click menu of the notification area icon
     procedure RenderBackground;
     function MenuItemForTab(ATab: TUsButton): TMenuItem;
     procedure ApplyDatabaseEngineName; // 'MySQL' in the design becomes the installed engine's name (MariaDB)
+    procedure CreateTrayMenu;          // Show / Exit for the notification area icon
+    procedure TrayShowClick(Sender: TObject);
+    procedure TrayExitClick(Sender: TObject);
   public
     { public declarations }
     procedure SyncMenuTabs; // Mirror caption/enabled state of the top-level menu items onto the tabs
@@ -1365,6 +1369,7 @@ begin
   FMedallion     := TUsMedallion.Create;
   RenderBackground;
   Lbl_version.Caption := 'Uniform Server Reload ' + US_RELOAD_VERSION;
+  CreateTrayMenu;                   // Right-click menu of the notification area icon (Show / Exit)
 
 If us_application_is_runable Then   // A draconian check. If a space found in path
                                     // or incorrect location UniController is terminated.
@@ -1663,8 +1668,10 @@ end;
 
 procedure TMain.MMS_hostsClick(Sender: TObject);
 begin
-  us_launch_edit_hosts_utility; // Run Uniform Server Utility
-  Application.Minimize;         // Hide main application
+  us_launch_edit_hosts_utility; // Run Uniform Server Utility (asks for administrator rights)
+  // The controller stays on screen. Upstream minimized here, and with the
+  // tray icon enabled "minimized" means hidden into the notification area:
+  // the window seemed to have vanished the moment the menu entry was clicked.
 end;
 
 procedure TMain.MMS_uniserviceClick(Sender: TObject);
@@ -1858,6 +1865,47 @@ procedure TMain.SystrayIconClick(Sender: TObject);
 begin
    Main.Show;              //Show main form
    us_update_server_state; //State may have changed while hidden in the tray
+end;
+
+{====================================================================
+Notification area icon: right-click menu. While the controller is
+minimized into the tray the medallion is hidden and has no taskbar
+entry, so without this menu the only way to quit was to click the
+icon, wait for the window and close that. The menu is built in code
+(no designer entry) and attached to SystrayIcon at start-up.
+--------------------------------------------------------------------}
+procedure TMain.CreateTrayMenu;
+var
+  item: TMenuItem;
+begin
+  FTrayMenu := TPopupMenu.Create(Self);
+
+  item := TMenuItem.Create(FTrayMenu);
+  item.Caption := 'Show UniServer Reload';
+  item.Default := True;                       // bold: what a left click does
+  item.OnClick := @TrayShowClick;
+  FTrayMenu.Items.Add(item);
+
+  item := TMenuItem.Create(FTrayMenu);
+  item.Caption := '-';
+  FTrayMenu.Items.Add(item);
+
+  item := TMenuItem.Create(FTrayMenu);
+  item.Caption := 'Exit UniServer Reload';
+  item.OnClick := @TrayExitClick;
+  FTrayMenu.Items.Add(item);
+
+  SystrayIcon.PopUpMenu := FTrayMenu;
+end;
+
+procedure TMain.TrayShowClick(Sender: TObject);
+begin
+  SystrayIconClick(Sender);
+end;
+
+procedure TMain.TrayExitClick(Sender: TObject);
+begin
+  Close;                  // same path as the medallion's x button
 end;
 
 

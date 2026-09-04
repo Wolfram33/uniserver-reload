@@ -105,6 +105,7 @@ procedure us_proxy_file_port_update(old_port:string;new_port:string); //Update P
 
 //=== HOSTS ===
 procedure us_launch_edit_hosts_utility;            // Launches - Uniform Server Windows hosts file utility
+function  us_hosts_file_path:string;               // Full path of the Windows hosts file
 procedure us_add_to_hosts_file(host:string);       // Add new host - domain name/IP to hosts file
 procedure us_delete_from_hosts_file(host:string);  // Remove host  - domain name/IP from hosts file
 
@@ -2989,36 +2990,53 @@ end;
 
 {****************************************************************************
 us_launch_edit_hosts_utility
- Launches the Uniform Server Windows hosts file utility
+ Launches the Uniform Server Windows hosts file utility (utils\EdHost.exe).
  Uses a seperate cmd window forces user to confirm changes to hosts file.
+ EdHost asks Windows for administrator rights (UAC prompt): the hosts file
+ is system protected. When the utility is switched off or missing the user
+ is told why, instead of a menu click that does nothing.
 =============================================================================}
 procedure us_launch_edit_hosts_utility;
 Var
  AProcess: TProcess;
 begin
- If USC_EditHostsFileEnabled Then          // Check user has enabled Edit Windows hosts file
+ If Not USC_EditHostsFileEnabled Then      // User has disabled Edit Windows hosts file
   begin
-   If FileExists(USF_EDHOST_UTILITY) Then  // Check edit host utility EdHost.exe exists
-   begin
-    AProcess := TProcess.Create(nil); // Create process
-
-    AProcess.Executable := 'cmd';                           // Executable to run
-    AProcess.Parameters.Add('/T:0F');                       // Set background colour
-    AProcess.Parameters.Add('/C');                          // Close on exit
-
-    AProcess.Parameters.Add('title');                       // A title is required
-    AProcess.Parameters.Add('Edit hosts');                  // Title
-
-    AProcess.Parameters.Add('&&');                          // Start a new command line
-    AProcess.Parameters.Add('start');                       // Command to run
-    AProcess.Parameters.Add(USF_EDHOST_UTILITY);            // Run EdHost utility
-
-    AProcess.Options := AProcess.Options + [poNoConsole];   // Set option no console
-    AProcess.Execute;                                       // execute detatched process
-    AProcess.Free;                                          // free memory
-
-   end;
+   us_MessageDlg('Edit Windows hosts file',
+     'Editing the hosts file is switched off in this installation.'  + sLineBreak + sLineBreak +
+     'To enable it, set EditHostsFileEnabled=True in section [HOSTS] of' + sLineBreak +
+     USF_US_CONF_INI                                                  + sLineBreak +
+     'and restart UniController.', mtInformation, [mbOk], 0);
+   Exit;
   end;
+
+ If Not FileExists(USF_EDHOST_UTILITY) Then // Edit host utility EdHost.exe missing
+  begin
+   us_MessageDlg('Edit Windows hosts file',
+     'The hosts file editor was not found:'                            + sLineBreak +
+     USF_EDHOST_UTILITY                                                + sLineBreak + sLineBreak +
+     'Restore utils\EdHost.exe from the UniServer Reload package, or edit' + sLineBreak +
+     us_hosts_file_path                                                + sLineBreak +
+     'with an editor started as administrator.', mtWarning, [mbOk], 0);
+   Exit;
+  end;
+
+ AProcess := TProcess.Create(nil); // Create process
+
+ AProcess.Executable := 'cmd';                           // Executable to run
+ AProcess.Parameters.Add('/T:0F');                       // Set background colour
+ AProcess.Parameters.Add('/C');                          // Close on exit
+
+ AProcess.Parameters.Add('title');                       // A title is required
+ AProcess.Parameters.Add('Edit hosts');                  // Title
+
+ AProcess.Parameters.Add('&&');                          // Start a new command line
+ AProcess.Parameters.Add('start');                       // Command to run
+ AProcess.Parameters.Add(USF_EDHOST_UTILITY);            // Run EdHost utility
+
+ AProcess.Options := AProcess.Options + [poNoConsole];   // Set option no console
+ AProcess.Execute;                                       // execute detatched process
+ AProcess.Free;                                          // free memory
 end;
 {--- End us_launch_edit_hosts_utility ----------------------------------------}
 
