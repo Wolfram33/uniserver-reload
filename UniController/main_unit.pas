@@ -301,6 +301,8 @@ type
     procedure CreateTrayMenu;          // Show / Exit for the notification area icon
     procedure TrayShowClick(Sender: TObject);
     procedure TrayExitClick(Sender: TObject);
+    procedure CreateEngineSwitchMenuItem; // "Switch to MySQL instead..." at the end of the database menu
+    procedure EngineSwitchInfoClick(Sender: TObject);
   public
     { public declarations }
     procedure SyncMenuTabs; // Mirror caption/enabled state of the top-level menu items onto the tabs
@@ -1378,6 +1380,7 @@ If us_application_is_runable Then   // A draconian check. If a space found in pa
 
   us_main_init;                     // Set initial values for variables, paths and environment variables.
   ApplyDatabaseEngineName;          // Menus and buttons name the installed engine (us_opt.ini), not 'MySQL'
+  CreateEngineSwitchMenuItem;       // How to get the other engine (MySQL module / MariaDB module)
   us_auto_generate_ssl_cert;        // First start: generate localhost certificate and enable SSL
 
   //--- First interactive start: proactively offer to trust the certificate
@@ -1906,6 +1909,68 @@ end;
 procedure TMain.TrayExitClick(Sender: TObject);
 begin
   Close;                  // same path as the medallion's x button
+end;
+
+{====================================================================
+Since 1.3.6 the bundle ships MariaDB; MySQL is a separate module (and
+vice versa). Someone who needs the other engine looks in the database
+menu first, so that is where the explanation lives: the last entry
+describes the switch and offers to open the download page. Built in
+code after ApplyDatabaseEngineName, so its captions are its own.
+--------------------------------------------------------------------}
+procedure TMain.CreateEngineSwitchMenuItem;
+var
+  item: TMenuItem;
+begin
+  item := TMenuItem.Create(MM_mysql);
+  item.Caption := '-';
+  MM_mysql.Add(item);
+
+  item := TMenuItem.Create(MM_mysql);
+  if US_MYMAR_TXT = 'MariaDB' then
+    item.Caption := 'Switch to MySQL instead...'
+  else
+    item.Caption := 'Switch to MariaDB instead...';
+  item.OnClick := @EngineSwitchInfoClick;
+  MM_mysql.Add(item);
+end;
+
+procedure TMain.EngineSwitchInfoClick(Sender: TObject);
+const
+  RELEASES_URL = 'https://github.com/Wolfram33/uniserver-reload/releases/tag/latest';
+var
+  other, module, installed, str: string;
+begin
+  if US_MYMAR_TXT = 'MariaDB' then
+  begin
+    other  := 'MySQL 8.4 LTS';
+    module := 'UniServer-Reload_mysql_module.zip';
+  end
+  else
+  begin
+    other  := 'MariaDB LTS';
+    module := 'UniServer-Reload_mariadb_module.zip';
+  end;
+  installed := us_ini_get(USF_US_CONF_INI, 'APP', 'DatabaseVersion'); // stamped by the bundle build
+  if installed = '' then installed := US_MYMAR_TXT + ' ' + MY_SQL_VER;
+
+  str := 'This installation runs ' + installed + '.'                                       + sLineBreak +
+         'Apps, phpMyAdmin and PHP (mysqli, PDO) work the same with either engine.'         + sLineBreak +
+         'If an application needs ' + other + ' itself, the ' + other + ' module'           + sLineBreak +
+         'replaces the engine - the data folders of the two are not compatible,'            + sLineBreak +
+         'so the databases travel as dumps:'                                                + sLineBreak + sLineBreak +
+         '1. ' + US_MYMAR_TXT + ' > Database backup for every database you need.'            + sLineBreak +
+         '2. Stop ' + US_MYMAR_TXT + ' and delete the folder core\mysql completely.'         + sLineBreak +
+         '3. Unzip ' + module + ' into the server folder'                                   + sLineBreak +
+         '   (' + UniConPath + ').'                                                          + sLineBreak +
+         '4. Restart UniController - the menus then say ' + Copy(other, 1, Pos(' ', other) - 1) +
+         ' - and import the dumps'                                                          + sLineBreak +
+         '   with Database restore. Recreate restricted users afterwards.'                  + sLineBreak + sLineBreak +
+         'The module is on the releases page, next to the bundle.'                          + sLineBreak + sLineBreak +
+         'Open the releases page in the browser now?';
+
+  if us_MessageDlg('Switch to ' + other, str, mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+    browser_display_url(RELEASES_URL);
 end;
 
 

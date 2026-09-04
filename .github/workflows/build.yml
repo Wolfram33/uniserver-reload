@@ -305,6 +305,16 @@ jobs:
             echo "there (*MariaDB > Database restore*). Copying \`core\\mysql\\data\` across"
             echo "does not work."
             echo
+            echo "## I want MySQL, not MariaDB"
+            echo
+            echo "Take \`UniServer-Reload_mysql_module.zip\` (MySQL 8.4 LTS) from this release:"
+            echo "export your databases (*MariaDB > Database backup*), stop MariaDB, delete"
+            echo "\`core\\mysql\` completely, unzip the module into the server folder, restart"
+            echo "the controller (its menus then say *MySQL*) and import the dumps with"
+            echo "*MySQL > Database restore*. Apps, phpMyAdmin and PHP work the same with"
+            echo "either engine. The controller shows these steps under *MariaDB > Switch to"
+            echo "MySQL instead...*; the bundled documentation has them under *Databases*."
+            echo
             echo "Sized for a team, not just a laptop: OPcache is on in every PHP version,"
             echo "Apache logs rotate in place (\`logs\\rotated\\\` ring, bounded disk use),"
             echo "400 Apache worker threads, 500 MySQL/MariaDB connections. Developer"

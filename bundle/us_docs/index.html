@@ -152,9 +152,17 @@
         <div class="card"><b>Admin</b>phpMyAdmin via the <b>phpMyAdmin</b> button. Default login <code>root</code> / <code>root</code>.</div>
         <div class="card"><b>Host</b>Use <code>127.0.0.1</code> as the DB host in your apps (not <code>localhost</code>) for a reliable IPv4 connection.</div>
         <div class="card"><b>Hot backups</b><code>core\mysql\bin\mariadb-backup.exe --backup --target-dir=...</code> copies a running server without locking it (MariaDB only).</div>
-        <div class="card"><b>Switch engine</b>Stop the database, export your data (<b>MariaDB &gt; Database backup</b> or <code>mysqldump</code>), delete <code>core\mysql</code>, unzip the other engine's module into the server folder, import the dump (<b>… &gt; Database restore</b>). The two engines cannot read each other's data folders.</div>
         <div class="card"><b>Coming from 1.3.5 or older</b>Those bundles ran MySQL 8.2. Export the databases there first (<b>MySQL &gt; Database backup</b>), then import the dumps into MariaDB (<b>MariaDB &gt; Database restore</b>). Copying <code>core\mysql\data</code> across does not work.</div>
       </div>
+      <h3 id="mysql">I want MySQL, not MariaDB</h3>
+      <p>No problem: <b>MySQL 8.4 LTS</b> ships as the module <code>UniServer-Reload_mysql_module.zip</code> on the <a href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">releases page</a>, built by the same CI from Oracle's download. It replaces the engine in place; apps, phpMyAdmin, <code>mysqli</code>/PDO and every controller function work the same. In the controller, <b>MariaDB &gt; Switch to MySQL instead…</b> shows these steps as well.</p>
+      <ol class="steps">
+        <li>Export the databases you need: <b>MariaDB &gt; Database backup</b> (or <code>core\mysql\bin\mysqldump.exe</code>). The two engines cannot read each other's data folder.</li>
+        <li>Stop MariaDB and delete the folder <code>core\mysql</code> <b>completely</b> - a mix of both engines' files corrupts the data folder.</li>
+        <li>Unzip the module into the server folder (the folder with <code>UniController.exe</code>). It brings a fresh <code>core\mysql</code>: root password <code>root</code>, phpMyAdmin control user and tables included.</li>
+        <li>Restart the controller - the menus now say <b>MySQL</b> - and import the dumps via <b>MySQL &gt; Database restore</b>. Recreate restricted users (<b>MySQL &gt; Create restricted MySQL user</b>); single-database dumps do not carry them.</li>
+      </ol>
+      <div class="note">MySQL 8.4 uses the <code>caching_sha2_password</code> login by default. The bundled PHP handles it; very old external tools may not. Switching back to MariaDB works the same way with <code>UniServer-Reload_mariadb_module.zip</code>.</div>
     </section>
 
     <section id="mail">

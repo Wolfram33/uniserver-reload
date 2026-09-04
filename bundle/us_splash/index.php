@@ -105,6 +105,7 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
         <h3>Database</h3>
         <ul>
           <li><strong><?php print us_h($db_ver); ?></strong></li>
+          <li>Need MySQL instead? MySQL 8.4 LTS is available as a module &mdash; see <a href="/us_docs/manual/index.html#mysql">Databases</a> in the documentation</li>
         </ul>
         <h3>Database Admin</h3>
         <ul>

@@ -109,7 +109,7 @@ Since 1.3.6 the bundle ships **MariaDB** as its database engine instead of MySQL
 
 **Which MariaDB**: the packaging script picks the stable long-term-support series with the **longest remaining support** (MariaDB's REST API publishes the end-of-life dates), at its newest patch level, and moves to a newer series only once its support outlasts the current one. The exact version is on the splash page (`http://localhost/us_splash/`) and in the release notes.
 
-**MySQL 8.4 LTS** remains available as `UniServer-Reload_mysql_module.zip` for apps that rely on MySQL-only features (binary JSON type, multi-valued indexes, the X DevAPI).
+**I want MySQL, not MariaDB:** MySQL 8.4 LTS remains available as `UniServer-Reload_mysql_module.zip` on every release, for apps that rely on MySQL-only features (binary JSON type, multi-valued indexes, the X DevAPI) or simply because MySQL is what you know. The switch is the four steps below; the controller shows them under *MariaDB > Switch to MySQL instead…* and offers to open the download page, and the bundled documentation has them under *Databases*.
 
 **Switching engines** (also from a 1.3.5-or-older bundle, which ran MySQL 8.2): the two engines cannot open each other's data folder, so the data travels as SQL dumps.
 
