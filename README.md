@@ -7,7 +7,7 @@
 
 **A community fork of [The Uniform Server](https://github.com/iamola/uniserver) — continued as an independent project with its own version line.**
 
-**No external dependencies, no installation, no configuration:** the complete WAMP stack — Apache, MySQL, PHP 8.3/8.4/8.5, phpMyAdmin and the updated controller — ships as a **single self-extracting 7-Zip archive** ([`UniServer-Reload.exe`](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)). Unpack it anywhere and everything is immediately ready to run. Nothing needs to be downloaded from SourceForge or windows.php.net, no modules need to be added, no settings need to be changed. Portable as ever: no installer, no registry entries.
+**No external dependencies, no installation, no configuration:** the complete WAMP stack — Apache, MariaDB, PHP 8.3/8.4/8.5, phpMyAdmin and the updated controller — ships as a **single self-extracting 7-Zip archive** ([`UniServer-Reload.exe`](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)). Unpack it anywhere and everything is immediately ready to run. Nothing needs to be downloaded from SourceForge or windows.php.net, no modules need to be added, no settings need to be changed. Portable as ever: no installer, no registry entries.
 
 > ### ⚡ Current PHP versions — upstream never made it past 8.3
 > The original server is stuck on PHP 8.3 (no updates since November 2023) — a dealbreaker for modern apps and frameworks. This fork ships **PHP 8.3, 8.4 and 8.5 preinstalled and switchable** in the controller (*PHP > Select PHP version*), repackaged from the official windows.php.net builds. CI packages new PHP releases automatically, so future versions reach the bundle quickly — and every build is smoke-tested with each installed PHP version before it is published.
@@ -30,7 +30,7 @@ This repository contains the **source code of the controllers only**, written in
 * **[UniController](UniController/)** — the main GUI that starts, stops and configures Apache, MySQL/MariaDB and PHP (see its [README](UniController/README.md) for build instructions)
 * **[UniService](UniService/)** — a plugin that runs the servers as a Windows service (see its [README](UniService/README.md))
 
-The actual server binaries (Apache, PHP, MySQL, phpMyAdmin, …) are not part of this repository; they are packaged in the Uniform Server ZeroXV releases on SourceForge.
+The actual server binaries are not part of this repository. Apache, PHP, MariaDB and MySQL are fetched from their vendors by the packaging scripts in [scripts/](scripts/) on every CI build; phpMyAdmin, the Apache configuration and the remaining pieces come from the Uniform Server ZeroXV 15.0.2 base package.
 
 ## Downloads
 
@@ -40,13 +40,14 @@ Every push triggers a build that updates the rolling release with fixed download
 
 | File | Description |
 |---|---|
-| **`UniServer-Reload.exe`** | **All-in-one, zero-setup package: the complete server (Apache, MySQL, phpMyAdmin, PHP 8.3/8.4/8.5, updated controller) in one self-extracting 7-Zip archive — unpack and it runs, no further downloads or configuration** |
+| **`UniServer-Reload.exe`** | **All-in-one, zero-setup package: the complete server (Apache, MariaDB, phpMyAdmin, PHP 8.3/8.4/8.5, updated controller) in one self-extracting 7-Zip archive — unpack and it runs, no further downloads or configuration** |
 | `UniServer-Reload.zip` | The same all-in-one package as a plain zip — for setups where antivirus software blocks the unsigned self-extracting exe; extract it into an empty folder and start `UniController.exe` |
 | `UniController.exe` | Controller only — for updating an existing installation |
-| `UniService.exe` | Windows service module — replaces `utils\UniService.exe` in an existing installation; started from the controller via *Extra > Run Apache/MySQL as Windows service* |
+| `UniService.exe` | Windows service module — replaces `utils\UniService.exe` in an existing installation; started from the controller via *Extra > Run Apache/MariaDB as Windows service* |
 | `UniServer-Reload_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
 | `UniServer-Reload_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
-| `UniServer-Reload_mariadb_module.zip` | Latest MariaDB LTS as database engine — fresh installs only: delete `core\mysql` first, then unzip into the server folder |
+| `UniServer-Reload_mariadb_module.zip` | The bundle's database engine (MariaDB LTS) as a separate module — for installations from 1.3.5 or older, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
+| `UniServer-Reload_mysql_module.zip` | MySQL 8.4 LTS as the alternative engine — same switching procedure, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
 
 The single-file downloads exist only for users who want to upgrade an existing Uniform Server installation piece by piece; with `UniServer-Reload.exe` none of them are needed.
 
@@ -61,8 +62,8 @@ UniServer Reload is free and open source. If it saves you time, you can support 
 There is no in-place updater — the package is portable by design. Two paths:
 
 * **Controller-only upgrade** (e.g. 1.2.0 → 1.2.1): replace `UniController.exe` (server folder) and `UniService.exe` (its `utils` subfolder) with the single-file downloads from the release page — that is exactly what they are published for. Your `www` content, databases and configuration stay untouched. (The version shown on the splash and test pages comes from `AppVersion=` in `home\us_config\us_config.ini`; update it by hand if you want the pages to match.)
-* **Full upgrade** (new Apache/PHP/MySQL builds): unpack the new bundle into a fresh folder and move over your `www` content, your databases (`core\mysql\data`) and any configuration you changed (e.g. `home\us_config\us_user.ini`, `core\msmtp\msmtprc.ini`, certificates in `core\apache2\server_certs`).
-* **Server tuning for an existing installation** (log rotation, OPcache, load limits, see [Sized for a small-business server](#sized-for-a-small-business-server)): with Apache and MySQL stopped, run from a checkout of this repository
+* **Full upgrade** (new Apache/PHP/database builds): unpack the new bundle into a fresh folder and move over your `www` content, your databases and any configuration you changed (e.g. `home\us_config\us_user.ini`, `core\msmtp\msmtprc.ini`, certificates in `core\apache2\server_certs`). Databases move as a folder (`core\mysql\data`) only between installations with the **same engine**; from a 1.3.5-or-older bundle (MySQL) into 1.3.6+ (MariaDB) they move as dumps, see [Databases](#databases-mariadb-by-default-mysql-as-a-module).
+* **Server tuning for an existing installation** (log rotation, OPcache, load limits, see [Sized for a small-business server](#sized-for-a-small-business-server)): with Apache and the database stopped, run from a checkout of this repository
 
   ```
   powershell -ExecutionPolicy Bypass -File scripts\tune-server-config.ps1 -Root C:\UniServer-Reload
@@ -96,6 +97,28 @@ The certificate covers `localhost`, `127.0.0.1` and `::1`, is valid for 10 years
 **Firefox:** unlike Chrome and Edge, Firefox ignores the Windows certificate store by default and keeps warning even after the certificate is trusted. When Firefox is installed, the controller therefore offers (once, after trusting) to enable Mozilla's official `ImportEnterpriseRoots` policy for the current user, which makes Firefox use the Windows store too — undo any time by deleting the value under `HKCU\Software\Policies\Mozilla\Firefox\Certificates`. Alternatively import the certificate manually in Firefox's certificate settings.
 
 **Note:** In this fork HTTP and HTTPS serve the **same** `www` folder — apps placed in `www` work on both `http://localhost/...` and `https://localhost/...`. (Upstream serves HTTPS from a separate `ssl` folder, which makes apps 404 over HTTPS.) To restore the classic split set `US_ROOTF_SSL=./ssl` in `home\us_config\us_user.ini`. With virtual hosts both ports also behave identically: requests with unknown host names (e.g. access by IP address) fall back to `www` on http **and** https instead of landing in the first vhost.
+
+## Databases: MariaDB by default, MySQL as a module
+
+Since 1.3.6 the bundle ships **MariaDB** as its database engine instead of MySQL 8.2. It sits where MySQL sat (`core\mysql`, port 3306, root password `root`), the controller menus and buttons say *MariaDB*, and phpMyAdmin, `mysqli`/`pdo_mysql` and the command line tools (`mysql.exe`, `mysqldump.exe`) work as before. Why the switch:
+
+* **Everything is in the free build**: thread pool, audit plugin (`lib\plugin\server_audit.dll`), encryption at rest, and hot physical backups with `core\mysql\bin\mariadb-backup.exe --backup --target-dir=...`. MySQL keeps these in its paid Enterprise edition.
+* **Lighter on Windows**: about a third of MySQL 8's size, faster start, less memory at rest.
+* **No password-plugin trouble**: MySQL 8.4 switched off `mysql_native_password` by default, which breaks older tools and drivers. MariaDB stays compatible with them.
+* **Owned by a foundation** with an open-source guarantee, no Community/Enterprise split.
+
+**Which MariaDB**: the packaging script picks the stable long-term-support series with the **longest remaining support** (MariaDB's REST API publishes the end-of-life dates), at its newest patch level, and moves to a newer series only once its support outlasts the current one. The exact version is on the splash page (`http://localhost/us_splash/`) and in the release notes.
+
+**MySQL 8.4 LTS** remains available as `UniServer-Reload_mysql_module.zip` for apps that rely on MySQL-only features (binary JSON type, multi-valued indexes, the X DevAPI).
+
+**Switching engines** (also from a 1.3.5-or-older bundle, which ran MySQL 8.2): the two engines cannot open each other's data folder, so the data travels as SQL dumps.
+
+1. Export every database you need: *MySQL > Database backup* (in 1.3.6+: *MariaDB > Database backup*) in the controller, or `core\mysql\bin\mysqldump.exe --user=root --password=root --databases <name> > <name>.sql` per database.
+2. Stop the database. Delete `core\mysql` completely (mixing the two engines' files corrupts the data folder).
+3. Unzip the engine module (`UniServer-Reload_mariadb_module.zip` or `UniServer-Reload_mysql_module.zip`) into the server folder. It brings `core\mysql` with a fresh data folder, root password `root` and the phpMyAdmin control user.
+4. Start the database and import the dumps: *MariaDB > Database restore* (or *MySQL > Database restore*) in the controller, or `core\mysql\bin\mysql.exe --user=root --password=root < <name>.sql`. Recreate application users (*… > Create restricted … user*) - dumps of single databases do not carry them.
+
+Both modules are built by CI from the vendors' downloads (`scripts\package-mariadb-module.ps1`, `scripts\package-mysql-module.ps1`) and are the same files the bundle uses; the data folder they ship went through a first start with the phpMyAdmin control user `pma` and its storage tables, then a clean shutdown.
 
 ## E-mail: PHP `mail()` with a real SMTP account
 
@@ -159,7 +182,7 @@ A CRM with a few hundred customers, tickets, chats and a document archive is a f
 * [x] Automated builds via CI (Lazarus build on Windows runners)
 * [x] Package current PHP versions as ready-to-use modules (built by CI, see Downloads)
 * [x] Automatic rolling GitHub release with fixed download links
-* [x] Package current Apache / MariaDB versions (bundle ships the latest Apache Lounge 2.4.x build; MariaDB LTS available as a module) — every bundle is smoke-tested in CI: Apache is started on the runner and must serve a PHP-rendered page
+* [x] Package current Apache / MariaDB / MySQL versions (bundle ships the latest Apache Lounge 2.4.x build and the MariaDB LTS with the longest support; MySQL 8.4 LTS as a module) — every bundle is smoke-tested in CI: Apache is started on the runner and must serve a PHP-rendered page, MariaDB is started and PHP and phpMyAdmin must log in to it
 * [x] Command-line control of the servers: start/stop/restart/status/version with exit codes, safe for unattended scripts (see the bundled manual page *Command line parameters*)
 * [x] Own version line with tagged stable releases (see [Versioning](#versioning))
 * [x] Reduce build-time dependencies on upstream infrastructure: the ZeroXV base package is mirrored automatically into the `base-package` release on first CI build; builds prefer the mirror and fall back to SourceForge
@@ -184,7 +207,7 @@ For reference — what this fork did about the issues that remain [open in the o
 | [#20](https://github.com/iamola/uniserver/issues/20) Future PHP versions | **Partially addressed** | php84/php85 added following the existing per-version pattern, and CI packages new PHP releases automatically; a fully dynamic version discovery in the controller remains future work. |
 | [#21](https://github.com/iamola/uniserver/issues/21) Host editor rejects TLDs > 3 letters | **Fixed** | Server-name and e-mail validation accepts TLDs of 2–63 letters (`.test`, `.online`, `.museum`, …), and the controller no longer depends on EdHost for vhosts — it writes the Windows hosts file itself. The bundled stand-alone `EdHost.exe` utility is unchanged upstream code. |
 | [#14](https://github.com/iamola/uniserver/issues/14) Command console customization | **Partially addressed** | Console windows were restyled (white on black instead of black on aqua); user-configurable colours remain future work. |
-| [#17](https://github.com/iamola/uniserver/issues/17) Update modules/plugins | **Partially addressed** | The bundle ships the latest Apache Lounge build, current PHP versions and a MariaDB LTS module via CI; further module refreshes (e.g. phpMyAdmin) are ongoing release tasks. |
+| [#17](https://github.com/iamola/uniserver/issues/17) Update modules/plugins | **Partially addressed** | The bundle ships the latest Apache Lounge build, current PHP versions, MariaDB LTS as the database engine and a MySQL 8.4 LTS module via CI; further module refreshes (e.g. phpMyAdmin) are ongoing release tasks. |
 | [#19](https://github.com/iamola/uniserver/issues/19) Forum captcha broken | Not applicable | Concerns the upstream project's forum infrastructure, not this code base. |
 
 ---

@@ -36,7 +36,8 @@
 #       OPcache enabled with 256M cache / 20000 files, realpath cache on.
 #       The zend_extension line uses the php_opcache.dll form the controller's
 #       PHP > Accelerator toggle understands.
-#   core\mysql\my.ini (MySQL flavour; the MariaDB module ships its own)
+#   core\mysql\my.ini (MySQL flavour, i.e. bundles up to 1.3.5 and the MySQL
+#       module; the MariaDB engine's my.ini ships tuned and is left alone)
 #       connections, caches, redo log and binlog retention for server load.
 param([Parameter(Mandatory = $true)][string]$Root)
 $ErrorActionPreference = 'Stop'

@@ -14,6 +14,7 @@ function us_h($text){                             // escape for HTML output
 }
 
 $file="$root\home\us_config\us_config.ini" ;     // Name and path of configuration file
+$settings=false;
 
 if (file_exists($file) && is_readable($file)){   // Check file
   $settings=parse_ini_file($file,true);          // parse file into an array
@@ -21,6 +22,22 @@ if (file_exists($file) && is_readable($file)){   // Check file
     $version=$settings["APP"]["AppVersion"];     // get parameter
   }
 }
+
+// Database engine: the bundle build stamps DatabaseVersion (e.g. "MariaDB 11.8.9")
+// into us_config.ini. Without it (engine module installed by hand) fall back to
+// the flavour file the controller reads, so the page never names the wrong engine.
+$db_ver = "";
+if ($settings !== false && isset($settings["APP"]["DatabaseVersion"])){
+  $db_ver = trim((string)$settings["APP"]["DatabaseVersion"]);
+}
+if ($db_ver === ""){
+  $opt = @parse_ini_file("$root/core/mysql/us_opt.ini", true);
+  if ($opt !== false && isset($opt["USER"]["text"])){
+    $db_ver = trim((string)$opt["USER"]["text"]);
+    if (isset($opt["USER"]["version"])) $db_ver .= " " . trim((string)$opt["USER"]["version"]);
+  }
+}
+if ($db_ver === "") $db_ver = "Database engine not installed";
 
 // Installed PHP versions: scan core/php* folders so this list can never go stale
 $php_installed = array();
@@ -41,7 +58,7 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Uniform Server Reload - Splash page</title>
 <meta name="Description" content="Uniform Server Reload - a maintained fork of The Uniform Server ZeroXV" />
-<meta name="Keywords" content="Uniform Server Reload,The Uniform Server,ZeroXV,WAMP,Apache,MySQL,PHP" />
+<meta name="Keywords" content="Uniform Server Reload,The Uniform Server,ZeroXV,WAMP,Apache,MariaDB,MySQL,PHP" />
 <link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" type="text/css" href="css/style.css" media="screen" />
 </head>
@@ -58,7 +75,7 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
     <div class="server-info">
       <strong>Reload<?php if ($version !== ""){ print " - ".us_h($version); } ?></strong><br />
       <?php print us_h($apache_ver); ?><br />
-      MySQL 8.2.0<br />
+      <?php print us_h($db_ver); ?><br />
       <?php
         if (count($php_installed) !== 0){
           print "PHP ".us_h(implode(" / ", $php_installed))." (active: ".us_h($php_active).")";
@@ -85,14 +102,13 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
           <li><strong>Mail client for PHP - msmtp</strong></li>
           <li><strong>Cron - Scheduler</strong></li>
         </ul>
-        <h3>Databases</h3>
+        <h3>Database</h3>
         <ul>
-          <li><strong>MySQL 8.2.0-community</strong></li>
+          <li><strong><?php print us_h($db_ver); ?></strong></li>
         </ul>
-        <h3>Database Admin and Backup</h3>
+        <h3>Database Admin</h3>
         <ul>
           <li><strong>phpMyAdmin 5.2.1</strong></li>
-          <li>MySQL Autobackup 1.0.2</li>
         </ul>
       </section>
 

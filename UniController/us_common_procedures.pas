@@ -1585,8 +1585,11 @@ begin
   Else
    Begin
     str1 := 'use mysql;';
-    str2 := 'INSERT IGNORE INTO global_priv (Host, User, Priv) VALUES (''localhost'', ''root'', ''{"access":0,"plugin":"caching_sha2_password","authentication_string":"","password_last_changed":0}'');';
-    str3 := 'INSERT IGNORE INTO global_priv (Host, User, Priv) VALUES (''localhost'', ''pma'', ''{"access":0,"plugin":"caching_sha2_password","authentication_string":"","password_last_changed":0}'');';
+    // mysql_native_password: MariaDB's own default; caching_sha2_password is
+    // a MySQL 8 plugin MariaDB does not ship as a server plugin, a row naming
+    // it would leave a user account that cannot log in
+    str2 := 'INSERT IGNORE INTO global_priv (Host, User, Priv) VALUES (''localhost'', ''root'', ''{"access":0,"plugin":"mysql_native_password","authentication_string":"","password_last_changed":0}'');';
+    str3 := 'INSERT IGNORE INTO global_priv (Host, User, Priv) VALUES (''localhost'', ''pma'', ''{"access":0,"plugin":"mysql_native_password","authentication_string":"","password_last_changed":0}'');';
     str4 := 'FLUSH PRIVILEGES;';
     str5 := 'ALTER USER ''root''@''localhost'' IDENTIFIED BY ''root'';';
     str6 := 'ALTER USER ''pma''@''localhost'' IDENTIFIED BY ''root'';';

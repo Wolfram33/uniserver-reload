@@ -53,7 +53,7 @@ if (!ctype_digit((string)$server_port) || (int)$server_port < 1 || 65535 < (int)
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Uniform Server Reload - test page</title>
 <meta name="Description" content="Uniform Server Reload - a maintained fork of The Uniform Server ZeroXV" />
-<meta name="Keywords" content="Uniform Server Reload,The Uniform Server,ZeroXV,WAMP,Apache,MySQL,PHP" />
+<meta name="Keywords" content="Uniform Server Reload,The Uniform Server,ZeroXV,WAMP,Apache,MariaDB,MySQL,PHP" />
 <link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" type="text/css" href="css/style.css" media="screen" />
 </head>

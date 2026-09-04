@@ -125,7 +125,9 @@ jobs:
 
   bundle:
     name: Build all-in-one bundle
-    needs: [build, package-php-modules]
+    # The MariaDB module is the bundle's database engine, so it is built
+    # first and merged like the PHP modules
+    needs: [build, package-php-modules, package-mariadb-module]
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -189,10 +191,28 @@ jobs:
           path: dist/
           if-no-files-found: error
 
+  package-mysql-module:
+    name: Package MySQL module
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build module
+        shell: pwsh
+        run: ./scripts/package-mysql-module.ps1 -OutDir dist
+
+      - name: Upload module
+        uses: actions/upload-artifact@v4
+        with:
+          name: mysql-module
+          path: dist/
+          if-no-files-found: error
+
   release:
     name: Publish release
     if: github.event_name == 'push'
-    needs: [build, package-php-modules, bundle, package-mariadb-module]
+    needs: [build, package-php-modules, bundle, package-mariadb-module, package-mysql-module]
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.build.outputs.version }}
@@ -252,20 +272,38 @@ jobs:
             echo
             echo "| File | Description |"
             echo "|---|---|"
-            echo "| **${BUNDLE_NAME}** | **All-in-one package: complete server with current Apache, MySQL and PHP 8.3/8.4/8.5 - just run it, no further setup** |"
+            echo "| **${BUNDLE_NAME}** | **All-in-one package: complete server with current Apache, MariaDB and PHP 8.3/8.4/8.5 - just run it, no further setup** |"
             echo "| ${BUNDLE_ZIP_NAME} | Same all-in-one package as a plain zip (for setups where antivirus blocks the unsigned self-extracting exe): extract into an empty folder, then start \`UniController.exe\` |"
             echo "| UniController.exe | Controller only (replaces the one in your existing server folder) |"
-            echo "| UniService.exe | Windows service module - goes to \`utils\\UniService.exe\`; start it via *Extra > Run Apache/MySQL as Windows service* in the controller |"
+            echo "| UniService.exe | Windows service module - goes to \`utils\\UniService.exe\`; start it via *Extra > Run Apache/MariaDB as Windows service* in the controller |"
             echo "| UniServer-Reload_php84_module.zip | PHP 8.4 module - unzip into your server folder (the folder with UniController.exe) |"
             echo "| UniServer-Reload_php85_module.zip | PHP 8.5 module - unzip into your server folder (the folder with UniController.exe) |"
-            echo "| UniServer-Reload_mariadb_module.zip | Latest MariaDB LTS as database engine - fresh installs only: delete \`core\\mysql\` first, then unzip into your server folder |"
+            echo "| UniServer-Reload_mariadb_module.zip | The bundle's database engine (MariaDB LTS) as a separate module - for installations from 1.3.5 or older: export your databases, delete \`core\\mysql\`, unzip into your server folder, import again |"
+            echo "| UniServer-Reload_mysql_module.zip | MySQL 8.4 LTS as the alternative engine - same procedure: export, delete \`core\\mysql\`, unzip, import (the two engines cannot read each other's data folder) |"
             echo
             echo "## Packaged component versions"
             echo
             sed 's/^/- /' release-versions.txt
             echo
             echo "The bundle is smoke-tested on every build: Apache is started on the CI"
-            echo "runner and must serve a PHP-rendered page before the release is updated."
+            echo "runner and must serve a PHP-rendered page, MariaDB is started and PHP"
+            echo "and phpMyAdmin must log in to it, before the release is updated."
+            echo
+            echo "## MariaDB is the database engine (since 1.3.6)"
+            echo
+            echo "The bundle ships MariaDB instead of MySQL: the long-term-support release"
+            echo "with the longest remaining support, everything included in the free build"
+            echo "(thread pool, audit plugin, hot backups with \`mariadb-backup\`), lighter"
+            echo "on Windows and without the MySQL 8 password-plugin trouble with older"
+            echo "clients. It lives in \`core\\mysql\` on port 3306 as before, the controller"
+            echo "menus now say *MariaDB*, phpMyAdmin and PHP's mysqli/PDO work unchanged."
+            echo "**MySQL 8.4 LTS stays available** as \`UniServer-Reload_mysql_module.zip\`."
+            echo
+            echo "**Coming from 1.3.5 or older (MySQL 8.2)?** The data folders are not"
+            echo "compatible. Export your databases in the old installation (*MySQL >"
+            echo "Database backup* or \`mysqldump\`), unpack the new bundle, import them"
+            echo "there (*MariaDB > Database restore*). Copying \`core\\mysql\\data\` across"
+            echo "does not work."
             echo
             echo "Sized for a team, not just a laptop: OPcache is on in every PHP version,"
             echo "Apache logs rotate in place (\`logs\\rotated\\\` ring, bounded disk use),"
@@ -289,7 +327,7 @@ jobs:
             echo "   (e.g. \`C:\\UniServer-Reload\`) - the server extracts directly into it, without the old"
             echo "   \`UniServerZ\` subfolder (Uniform Server ZeroXV 15.0.2 base with the fork controller"
             echo "   and the PHP 8.4/8.5 modules already integrated)."
-            echo "2. Start \`UniController.exe\` and start Apache/MySQL."
+            echo "2. Start \`UniController.exe\` and start Apache and MariaDB."
             echo "3. To switch the PHP version: stop Apache first, then *PHP > Select PHP version*, then start Apache again."
             echo
             echo "Upgrading from an install with the old \`UniServerZ\` layout? Everything is fully"

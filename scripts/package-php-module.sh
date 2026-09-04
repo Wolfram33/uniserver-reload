@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Package an official PHP Windows build as a Uniform Server ZeroXV module.
+# Package an official PHP Windows build as a UniServer Reload PHP module.
 #
 # Usage: package-php-module.sh <branch> [output-dir]
 #   e.g. package-php-module.sh 8.4 dist
 #
 # Downloads the latest thread-safe x64 build of the given PHP branch from
-# windows.php.net and repacks it in the layout the UniController expects
-# (replicates the structure of the upstream ZeroXV_php_8_3_x modules):
+# windows.php.net and repacks it in the core\php8X layout the UniController
+# expects (the structure the original Uniform Server used for its PHP modules):
 #
 #   core/php8X/                  PHP files, ext/ renamed to extensions/
 #   core/php8X/php_test.ini      from php.ini-production

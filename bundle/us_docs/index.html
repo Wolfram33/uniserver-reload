@@ -102,7 +102,7 @@
       <ol class="steps">
         <li>Download <b>UniServer-Reload.exe</b> from the <a href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">releases page</a> and run it.</li>
         <li>Choose an empty target folder (no spaces in the path, not under <code>C:\Program Files</code>), e.g. <code>C:\UniServer-Reload</code>. The server extracts directly into it.</li>
-        <li>Start <code>UniController.exe</code> from that folder, then click <b>Start Apache</b> and <b>Start MySQL</b>.</li>
+        <li>Start <code>UniController.exe</code> from that folder, then click <b>Start Apache</b> and <b>Start MariaDB</b>.</li>
         <li>Put your site into the <code>www</code> subfolder — or point a Vhost straight at your project folder (see <a href="#vhosts">Virtual hosts</a>).</li>
       </ol>
       <div class="note">Everything below is preconfigured. This page describes the fork; the original ZeroXV reference manual is linked at the bottom.</div>
@@ -147,11 +147,13 @@
 
     <section id="db">
       <h2><span class="ico">🗄️</span> Databases</h2>
-      <p>MySQL 8.2 ships by default; a current MariaDB LTS is available as a module (<code>UniServer-Reload_mariadb_module.zip</code>).</p>
+      <p><b>MariaDB</b> is the database engine since 1.3.6 (the long-term-support release with the longest remaining support, see the splash page for the exact version). It lives in <code>core\mysql</code> and answers on port 3306 like MySQL did, so apps, phpMyAdmin and the controller menus work unchanged. <b>MySQL 8.4 LTS</b> remains available as a module (<code>UniServer-Reload_mysql_module.zip</code>).</p>
       <div class="grid">
         <div class="card"><b>Admin</b>phpMyAdmin via the <b>phpMyAdmin</b> button. Default login <code>root</code> / <code>root</code>.</div>
         <div class="card"><b>Host</b>Use <code>127.0.0.1</code> as the DB host in your apps (not <code>localhost</code>) for a reliable IPv4 connection.</div>
-        <div class="card"><b>Switch to MariaDB</b>Stop MySQL, export your data, delete <code>core\mysql</code>, unzip the MariaDB module into the server folder. Fresh installs only.</div>
+        <div class="card"><b>Hot backups</b><code>core\mysql\bin\mariadb-backup.exe --backup --target-dir=...</code> copies a running server without locking it (MariaDB only).</div>
+        <div class="card"><b>Switch engine</b>Stop the database, export your data (<b>MariaDB &gt; Database backup</b> or <code>mysqldump</code>), delete <code>core\mysql</code>, unzip the other engine's module into the server folder, import the dump (<b>… &gt; Database restore</b>). The two engines cannot read each other's data folders.</div>
+        <div class="card"><b>Coming from 1.3.5 or older</b>Those bundles ran MySQL 8.2. Export the databases there first (<b>MySQL &gt; Database backup</b>), then import the dumps into MariaDB (<b>MariaDB &gt; Database restore</b>). Copying <code>core\mysql\data</code> across does not work.</div>
       </div>
     </section>
 
@@ -163,7 +165,7 @@
 
     <section id="tuning">
       <h2><span class="ico">⚙️</span> Development limits</h2>
-      <p>Sensible defaults for development machines — all editable via <b>PHP &gt; Edit selected configuration file</b> and <code>core\mysql\my.ini</code>.</p>
+      <p>Sensible defaults for development machines — all editable via <b>PHP &gt; Edit selected configuration file</b> and <code>core\mysql\my.ini</code> (the MariaDB configuration; the MySQL module brings its own).</p>
       <table>
         <tr><th>Setting</th><th>Value</th></tr>
         <tr><td>PHP <code>memory_limit</code></td><td>512M</td></tr>

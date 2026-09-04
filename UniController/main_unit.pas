@@ -296,6 +296,7 @@ type
     FBackgroundSize: Integer;          // edge length FBackground was rendered for
     procedure RenderBackground;
     function MenuItemForTab(ATab: TUsButton): TMenuItem;
+    procedure ApplyDatabaseEngineName; // 'MySQL' in the design becomes the installed engine's name (MariaDB)
   public
     { public declarations }
     procedure SyncMenuTabs; // Mirror caption/enabled state of the top-level menu items onto the tabs
@@ -451,6 +452,36 @@ begin
     chosen := MainMenu1.FindItem(cmd, fkCommand);
     if chosen <> nil then chosen.Click;
   end;
+end;
+
+{====================================================================
+The form is designed with 'MySQL' in every database caption. Since 1.3.6
+the bundle ships MariaDB (MySQL stays available as a module), and
+core\mysql\us_opt.ini names the installed engine (US_MYMAR_TXT). Rename
+every caption once at start-up so the user sees the engine they actually
+run: menu tree (the tabs mirror it in SyncMenuTabs), utilities label,
+console button. The start/stop button gets its text from START_MY/STOP_MY.
+--------------------------------------------------------------------}
+procedure TMain.ApplyDatabaseEngineName;
+
+  function Renamed(const ACaption: string): string;
+  begin
+    Result := StringReplace(ACaption, 'MySQL', US_MYMAR_TXT, [rfReplaceAll]);
+  end;
+
+  procedure RenameMenu(AItem: TMenuItem);
+  var
+    i: Integer;
+  begin
+    AItem.Caption := Renamed(AItem.Caption);
+    for i := 0 to AItem.Count - 1 do RenameMenu(AItem.Items[i]);
+  end;
+
+begin
+  if (US_MYMAR_TXT = '') or (US_MYMAR_TXT = 'MySQL') then Exit;
+  RenameMenu(MainMenu1.Items);
+  Lbl_mysql_utilities.Caption := Renamed(Lbl_mysql_utilities.Caption);
+  Btn_mysql_console.Caption   := Renamed(Btn_mysql_console.Caption);
 end;
 
 procedure TMain.SyncMenuTabs;
@@ -1341,6 +1372,7 @@ If us_application_is_runable Then   // A draconian check. If a space found in pa
   us_command_line_start_up;         // UniController started with parameters. Process and exit application
 
   us_main_init;                     // Set initial values for variables, paths and environment variables.
+  ApplyDatabaseEngineName;          // Menus and buttons name the installed engine (us_opt.ini), not 'MySQL'
   us_auto_generate_ssl_cert;        // First start: generate localhost certificate and enable SSL
 
   //--- First interactive start: proactively offer to trust the certificate

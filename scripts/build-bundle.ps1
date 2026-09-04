@@ -1,10 +1,12 @@
 # Build the all-in-one self-extracting bundle: Uniform Server ZeroXV base
-# package + freshly built UniController/UniService + PHP 8.4/8.5 modules.
+# package + freshly built UniController/UniService + PHP 8.4/8.5 modules +
+# the MariaDB module as the database engine (replaces the base's MySQL).
 #
 # Expects (as laid out by actions/download-artifact):
 #   artifacts/uniserver-binaries/UniController/UniController.exe
 #   artifacts/uniserver-binaries/UniService/UniService.exe
 #   artifacts/php-module-*/UniServer-Reload_php8*_module.zip
+#   artifacts/mariadb-module/UniServer-Reload_mariadb_module.zip
 #
 # Produces: dist/UniServer-Reload.exe (7-Zip GUI self-extractor). Unlike the
 # upstream 15_0_2_ZeroXV.exe it extracts FLAT: the server files land directly
@@ -105,6 +107,27 @@ New-Item -ItemType Directory -Force "$root\utils" | Out-Null
 Copy-Item 'artifacts\uniserver-binaries\UniService\UniService.exe' "$root\utils\UniService.exe" -Force
 if (Test-Path "$root\UniService.exe") { Remove-Item "$root\UniService.exe" -Force }
 
+# --- Database engine: MariaDB replaces the base package's MySQL (1.3.6) ------
+# The engine is the MariaDB module built by package-mariadb-module.ps1 in the
+# same CI run, so bundle and module are identical. The base's core\mysql
+# (MySQL 8.2 with its data directory) goes completely: the two engines'
+# data formats are incompatible, a mix of files corrupts the data directory.
+$dbModule = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'UniServer-Reload_mariadb_module.zip' | Select-Object -First 1
+if (-not $dbModule) { throw 'MariaDB module ZIP not found in artifacts (package-mariadb-module job)' }
+Write-Host "==> Replacing MySQL with MariaDB ($($dbModule.Name))"
+Remove-Item "$root\core\mysql" -Recurse -Force
+Expand-Archive -Path $dbModule.FullName -DestinationPath $root -Force
+foreach ($f in 'core\mysql\bin\mysqld_z.exe', 'core\mysql\bin\mysql.exe', 'core\mysql\bin\mysqladmin.exe',
+               'core\mysql\bin\mysqldump.exe', 'core\mysql\my.ini', 'core\mysql\us_opt.ini',
+               'core\mysql\data\mysql', 'core\mysql\data\phpmyadmin', 'htpasswd\mysql\passwd.txt') {
+  if (-not (Test-Path "$root\$f")) { throw "MariaDB module incomplete: $f missing after merge" }
+}
+$dbVersionLine = ((& "$root\core\mysql\bin\mysqld_z.exe" --no-defaults --version 2>&1) | ForEach-Object { "$_" }) -join ' '
+if ($dbVersionLine -notmatch '(\d+\.\d+\.\d+)-MariaDB') { throw "core\mysql\bin\mysqld_z.exe is not a MariaDB server: $dbVersionLine" }
+$dbVersion = $Matches[1]
+if ((Get-Content "$root\core\mysql\us_opt.ini" -Raw) -notmatch '(?m)^text = MariaDB') { throw 'core\mysql\us_opt.ini does not name MariaDB' }
+Write-Host "==> Database engine: MariaDB $dbVersion"
+
 # --- Stamp the fork version --------------------------------------------------
 # AppVersion carries the fork version (splash page and controller read it);
 # BaseVersion records the ZeroXV base package the bundle was built from.
@@ -114,6 +137,13 @@ $c = Get-Content $cfg -Raw
 $c = $c -replace '(?m)^AppVersion=.*?(\r?)$', "AppVersion=$reloadVersion`$1"
 if ($c -notmatch '(?m)^BaseVersion=') {
   $c = $c -replace '(?m)^(AppVersion=.*?\r?)$', "`$1`nBaseVersion=$baseVersion"
+}
+# DatabaseVersion: engine and version for the splash page ("MariaDB 11.8.9");
+# without it the page falls back to the flavour file core\mysql\us_opt.ini
+if ($c -match '(?m)^DatabaseVersion=') {
+  $c = $c -replace '(?m)^DatabaseVersion=.*?(\r?)$', "DatabaseVersion=MariaDB $dbVersion`$1"
+} else {
+  $c = $c -replace '(?m)^(BaseVersion=.*?\r?)$', "`$1`nDatabaseVersion=MariaDB $dbVersion"
 }
 # Window title / tray hover text still carries the upstream name in the stock ini
 $c = $c -replace '(?m)^ServerTypeText1=Uniform Server Zero(\r?)$', 'ServerTypeText1=Uniform Server Reload$1'
@@ -125,6 +155,7 @@ if ($c -notmatch '(?m)^\[VCRUNTIME\]') {
 Set-Content $cfg -Value $c -NoNewline
 if ((Get-Content $cfg -Raw) -notmatch "(?m)^AppVersion=$([regex]::Escape($reloadVersion))") { throw 'us_config.ini version stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch '(?m)^ServerTypeText1=Uniform Server Reload') { throw 'us_config.ini ServerTypeText1 stamp failed' }
+if ((Get-Content $cfg -Raw) -notmatch "(?m)^DatabaseVersion=MariaDB $([regex]::Escape($dbVersion))") { throw 'us_config.ini DatabaseVersion stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch '(?m)^php85=14\.44') { throw 'us_config.ini VCRUNTIME stamp failed' }
 Set-Content "$root\home\version.txt" -Value "UniServer Reload $reloadVersion (base package Uniform Server ZeroXV $baseVersion)"
 
@@ -216,26 +247,9 @@ foreach ($ini in Get-ChildItem "$root\core\php83" -Filter 'php*.ini' -ErrorActio
   }
 }
 
-# --- Development-friendly MySQL configuration --------------------------------
-# The stock my.ini uses minimal 1990s-style buffers (key_buffer 16K,
-# max_allowed_packet 1M, innodb pool 32M). Raise them to sensible values
-# for development machines.
-$myIni = "$root\core\mysql\my.ini"
-$my = Get-Content $myIni -Raw
-$my = $my -replace '(?m)^key_buffer_size = .*?(\r?)$',        'key_buffer_size = 32M$1'
-$my = $my -replace '(?m)^max_allowed_packet = 1M(\r?)$',      'max_allowed_packet = 256M$1'
-$my = $my -replace '(?m)^max_allowed_packet = 16M(\r?)$',     'max_allowed_packet = 256M$1'
-$my = $my -replace '(?m)^table_open_cache = .*?(\r?)$',       'table_open_cache = 2000$1'
-$my = $my -replace '(?m)^sort_buffer_size = .*?(\r?)$',       'sort_buffer_size = 2M$1'
-$my = $my -replace '(?m)^read_buffer_size = .*?(\r?)$',       'read_buffer_size = 1M$1'
-$my = $my -replace '(?m)^read_rnd_buffer_size = .*?(\r?)$',   'read_rnd_buffer_size = 1M$1'
-$my = $my -replace '(?m)^net_buffer_length = .*?(\r?)$',      'net_buffer_length = 16K$1'
-$my = $my -replace '(?m)^thread_stack = 256K',                "thread_stack = 256K`ntmp_table_size = 64M`nmax_heap_table_size = 64M"
-$my = $my -replace '(?m)^innodb_buffer_pool_size = .*?(\r?)$','innodb_buffer_pool_size = 512M$1'
-$my = $my -replace '(?m)^innodb_log_buffer_size = .*?(\r?)$', 'innodb_log_buffer_size = 32M$1'
-Set-Content $myIni -Value $my -NoNewline
-if ((Get-Content $myIni -Raw) -notmatch 'innodb_buffer_pool_size = 512M') { throw 'my.ini tuning patch failed' }
-Write-Host '==> MySQL my.ini tuned for development'
+# (The database my.ini needs no patching here: the MariaDB module ships
+# bundle\db\mariadb-my.ini with the development and server-load values
+# already in, and tune-server-config.ps1 below recognises it.)
 
 # --- Serve the same document root over HTTP and HTTPS ------------------------
 # Upstream serves https from a separate ssl folder, which surprises users
@@ -402,6 +416,75 @@ $peOff = [BitConverter]::ToInt32($rz, 0x3C)
 if ([BitConverter]::ToUInt16($rz, $peOff + 4 + 20 + 68) -ne 2) { throw 'Smoke test: bin\rotatelogs_z.exe is not a GUI-subsystem executable' }
 Write-Host '   log rotation OK - access log written through the windowless rotatelogs_z.exe'
 
+# --- Smoke test: MariaDB starts, PHP reaches it, phpMyAdmin logs in ----------
+# Started the way the controller starts it: --defaults-file only, the port
+# in MYSQL_TCP_PORT (server, client tools and phpMyAdmin's config.inc.php
+# all read that variable), data directory implied by the exe location.
+Write-Host '==> Smoke test: database engine'
+$env:MYSQL_TCP_PORT = '33306'
+$mysqld   = "$rootAbs\core\mysql\bin\mysqld_z.exe"
+$mysqladm = "$rootAbs\core\mysql\bin\mysqladmin.exe"
+$dbErrLog = "$rootAbs\core\mysql\data\mysql.err"
+$dbProc = Start-Process -FilePath $mysqld -ArgumentList "--defaults-file=`"$rootAbs\core\mysql\my.ini`"" -PassThru -NoNewWindow
+$dbReady = $false
+foreach ($i in 1..120) {
+  Start-Sleep -Milliseconds 500
+  if ($dbProc.HasExited) { break }
+  $ping = & $mysqladm --host=127.0.0.1 --port=$env:MYSQL_TCP_PORT --user=root --password=root ping 2>&1
+  if ($LASTEXITCODE -eq 0 -and (($ping | ForEach-Object { "$_" }) -join ' ') -match 'alive') { $dbReady = $true; break }
+}
+if (-not $dbReady) {
+  if (-not $dbProc.HasExited) { $dbProc.Kill() }
+  if (Test-Path $dbErrLog) { Get-Content $dbErrLog | Select-Object -Last 40 | ForEach-Object { Write-Host "   mysql.err: $_" } }
+  throw 'Smoke test: MariaDB did not become ready'
+}
+# The error log must be where the controller's "error log" menu looks
+if (-not (Test-Path $dbErrLog)) { throw 'Smoke test: core\mysql\data\mysql.err was not written (log_error in my.ini)' }
+
+# Probe page: connects as root and as the phpMyAdmin control user, the way
+# apps and phpMyAdmin do (TCP to 127.0.0.1, port from MYSQL_TCP_PORT)
+@'
+<?php
+$port  = (int) getenv('MYSQL_TCP_PORT');
+$parts = array();
+mysqli_report(MYSQLI_REPORT_OFF);
+foreach (array('root', 'pma') as $user) {
+  $db = @new mysqli('127.0.0.1', $user, 'root', 'phpmyadmin', $port);
+  if ($db->connect_errno) { echo 'USR-DBPROBE FAIL ', $user, ': ', $db->connect_error; exit; }
+  $version = $db->query('SELECT VERSION()')->fetch_row();
+  $tables  = $db->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'phpmyadmin'")->fetch_row();
+  $parts[] = $user . '=' . $version[0] . '/' . $tables[0];
+  $db->close();
+}
+echo 'USR-DBPROBE OK ', implode(' ', $parts);
+'@ | Set-Content "$root\www\_ci_dbprobe.php" -NoNewline
+$pmaTables = ([regex]::Matches((Get-Content 'bundle\db\phpmyadmin-create_tables.sql' -Raw), 'CREATE TABLE IF NOT EXISTS')).Count
+
+$env:PHP_SELECT = ($versions | Select-Object -First 1)
+Start-Process -FilePath $httpd -ArgumentList '-f', "$rootAbs\core\apache2\conf\httpd.conf", '-d', "$rootAbs\core\apache2" | Out-Null
+$resp = $null
+foreach ($i in 1..30) { Start-Sleep -Seconds 1; $resp = & curl.exe -fsS 'http://localhost:8088/_ci_dbprobe.php' 2>$null; if ($LASTEXITCODE -eq 0 -and $resp) { break } }
+$pmaHtml = & curl.exe -fsS 'http://localhost:8088/us_opt1/index.php' 2>$null
+Stop-SmokeApache
+$text = ($resp -join "`n")
+if ($text -notmatch 'USR-DBPROBE OK') { throw "Smoke test: PHP could not use the database: $text" }
+foreach ($user in 'root', 'pma') {
+  if ($text -notmatch "$user=$([regex]::Escape($dbVersion))-MariaDB/$pmaTables") { throw "Smoke test: unexpected probe result for $user (want MariaDB $dbVersion and $pmaTables phpmyadmin tables): $text" }
+}
+$pmaText = ($pmaHtml -join "`n")
+if ($pmaText -notmatch 'phpMyAdmin') { throw 'Smoke test: phpMyAdmin page did not render' }
+if ($pmaText -match 'mysqli::real_connect|Cannot connect|#1045|#2002') { throw 'Smoke test: phpMyAdmin could not log in to MariaDB' }
+if ($pmaText -notmatch [regex]::Escape($dbVersion)) { throw "Smoke test: phpMyAdmin page does not show server version $dbVersion" }
+
+& $mysqladm --host=127.0.0.1 --port=$env:MYSQL_TCP_PORT --user=root --password=root shutdown
+if ($LASTEXITCODE -ne 0) { throw 'Smoke test: mysqladmin shutdown failed' }
+if (-not $dbProc.WaitForExit(60000)) { $dbProc.Kill(); throw 'Smoke test: MariaDB did not stop within 60 s after shutdown' }
+Remove-Item "$root\www\_ci_dbprobe.php" -Force
+Remove-Item Env:\MYSQL_TCP_PORT
+# The run's error log and pid file must not ship
+foreach ($f in 'mysql.err', 'mysql.pid') { Remove-Item "$root\core\mysql\data\$f" -Force -ErrorAction SilentlyContinue }
+Write-Host "   MariaDB $dbVersion OK - PHP and phpMyAdmin connect as root and pma, clean shutdown"
+
 # Splash page and www test page render (fork content) under the default version
 $env:PHP_SELECT = ($versions | Select-Object -First 1)
 Start-Process -FilePath $httpd -ArgumentList '-f', "$rootAbs\core\apache2\conf\httpd.conf", '-d', "$rootAbs\core\apache2" | Out-Null
@@ -445,8 +528,10 @@ if ($listing -notcontains 'Path = UniController.exe') { throw 'Bundle layout bro
 if ($listing | Where-Object { $_ -like 'Path = UniServerZ*' }) { throw 'Bundle layout broken: unexpected UniServerZ folder in the archive' }
 if ($listing -contains 'Path = UniService.exe') { throw 'Bundle layout broken: UniService.exe must live in utils\, not at the root' }
 if ($listing -notcontains 'Path = utils\UniService.exe') { throw 'Bundle layout broken: utils\UniService.exe is missing' }
+if ($listing -notcontains 'Path = core\mysql\bin\mysqld_z.exe') { throw 'Bundle layout broken: core\mysql\bin\mysqld_z.exe (MariaDB) is missing' }
 
 Add-Content 'dist\module-versions.txt' "UniServer Reload $reloadVersion (base ZeroXV $baseVersion)"
 Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"
+Add-Content 'dist\module-versions.txt' "MariaDB $dbVersion (bundle)"
 
 Get-Item 'dist\UniServer-Reload.exe', 'dist\UniServer-Reload.zip' | Format-List Name, Length
