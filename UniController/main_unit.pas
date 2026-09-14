@@ -522,6 +522,23 @@ var
   url:string;      // Page url displayed in default browser
   url_base:string; // Scheme://server:port prefix (https when SSL is on)
 begin
+   //--Apache installed as a Windows service (UniService): the controller has
+   //  no right to kill the service's process, so the button drives the service
+   //  itself through an elevated sc.exe call (Windows shows the UAC prompt).
+   If (Main.Btn_start_apache.Caption = START_AP_SVC) or
+      (Main.Btn_start_apache.Caption = STOP_AP_SVC) Then
+    begin
+     Btn_start_apache.Enabled := False;                           // No double clicks while sc.exe runs
+     try
+       us_control_windows_service(USC_APACHE_SERVICE_NAME,
+                                  Main.Btn_start_apache.Caption = START_AP_SVC);
+     finally
+       Btn_start_apache.Enabled := True;
+       us_update_server_state;  // Update server state. Set button and indicator state
+     end;
+     Exit;
+    end;
+
    If (Main.Btn_start_apache.Caption  = START_AP) Then
     begin
      us_warn_if_vcruntime_too_old(UENV_PHP_SELECT); // Warn early: selected PHP may need a newer VC++ runtime
@@ -1337,6 +1354,21 @@ end;
 
 procedure TMain.Btn_start_mysqlClick(Sender: TObject);
 begin
+  //--Installed as a Windows service: control the service (UAC), see Apache button
+  If (Main.Btn_start_mysql.Caption = START_MY_SVC) or
+     (Main.Btn_start_mysql.Caption = STOP_MY_SVC) Then
+   begin
+     Btn_start_mysql.Enabled := False;                            // No double clicks while sc.exe runs
+     try
+       us_control_windows_service(USC_MYSQL_SERVICE_NAME,
+                                  Main.Btn_start_mysql.Caption = START_MY_SVC);
+     finally
+       Btn_start_mysql.Enabled := True;
+       us_update_server_state;      // Set button and indicator state
+     end;
+     Exit;
+   end;
+
   If (Main.Btn_start_mysql.Caption  = START_MY) Then
      us_start_mysql_program       // Start MySQL server
   Else

@@ -75,6 +75,11 @@ Var
    USC_ServerTypeText2 : String;  // TrayIcon hover text
    USC_TrayIconEnabled : Boolean; // TrayIcon Enable/Disable Default true
 
+   //[SERVICE] - names of the Windows services UniService installs; the
+   //controller only queries/starts/stops them, it never installs them
+   USC_APACHE_SERVICE_NAME : String;  // e.g. us_apache_1 (base name + '_' + AppNumber)
+   USC_MYSQL_SERVICE_NAME  : String;  // e.g. us_mysql_1
+
    //[PCSTARTUP]
    USC_RunAtPcStartUpEnabled : Boolean;  // Enables running server at PC start up:  true/false
    USC_RunApacheAtStartUp    : Boolean;  // Run Apache server at PC start-up: true/false
@@ -121,6 +126,10 @@ Var
    STOP_AP           : String;  // Stop Apache
    START_MY          : String;  // Start MySQL
    STOP_MY           : String;  // Stop MySQL
+   START_AP_SVC      : String;  // Start Apache Windows service (installed by UniService)
+   STOP_AP_SVC       : String;  // Stop Apache Windows service
+   START_MY_SVC      : String;  // Start MySQL/MariaDB Windows service
+   STOP_MY_SVC       : String;  // Stop MySQL/MariaDB Windows service
 
  //-- Apache Server
  AP_EXE_NAME       :string;   // Apache exe 
@@ -389,6 +398,8 @@ begin
  //Button text
  START_AP            := 'Start Apache';  // Start Apache
  STOP_AP             := 'Stop Apache';   // Stop Apache
+ START_AP_SVC        := 'Start Apache service'; // Apache installed as Windows service
+ STOP_AP_SVC         := 'Stop Apache service';
 
 
  //=== Create Top level folder -root paths. Note: Last slash removed.
@@ -708,6 +719,11 @@ begin
    USC_ServerTypeText2 := Ini1.ReadString('APP','ServerTypeText2','Portable WAMP Server'); // TrayIcon hover text
    USC_TrayIconEnabled := strToBool(Ini1.ReadString('APP','TrayIconEnabled','True'));      // TrayIcon enabled
 
+   //[SERVICE] - same keys and the same "_<AppNumber>" suffix UniService uses,
+   //so both programs address the identical Windows services
+   USC_APACHE_SERVICE_NAME := Ini1.ReadString('SERVICE','ApacheServiceName','us_apache') + '_' + USC_AppNumber;
+   USC_MYSQL_SERVICE_NAME  := Ini1.ReadString('SERVICE','MySQLServiceName','us_mysql')   + '_' + USC_AppNumber;
+
    //[PCSTARTUP]
    USC_RunAtPcStartUpEnabled := strToBool(Ini1.ReadString('PCSTARTUP','RunAtPcStartUpEnabled','False')); // Enables running server at PC start up:  true/false      
    USC_RunApacheAtStartUp    := strToBool(Ini1.ReadString('PCSTARTUP','RunApacheAtStartUp','True'));     // Run Apache server at PC start-up: true/false       
@@ -906,6 +922,8 @@ begin
  //Button text
  START_MY            := 'Start '+US_MYMAR_TXT;   // Start MySQL or Start MariaDB
  STOP_MY             := 'Stop  '+US_MYMAR_TXT;   // Start MySQL or Start MariaDB
+ START_MY_SVC        := 'Start '+US_MYMAR_TXT+' service'; // Installed as Windows service
+ STOP_MY_SVC         := 'Stop '+US_MYMAR_TXT+' service';
 
  //=== SET ENVIRONOMENT VARIABLES =======
 

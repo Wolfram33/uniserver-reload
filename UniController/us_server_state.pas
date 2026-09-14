@@ -17,7 +17,7 @@ uses
   us_buttons,
   Graphics,
   RegExpr,FileUtil,
-  ExtCtrls, LCLType;
+  ExtCtrls, LCLType, Menus;
 
 
 //=== Update server state and indicators ===
@@ -37,6 +37,8 @@ procedure us_update_server_state;
 Var
  AP : Boolean; // Apache running = true
  MY : Boolean; // MySQL running  = true
+ AP_SVC_RUNNING : Boolean; // Apache runs as the Windows service UniService installed
+ MY_SVC_RUNNING : Boolean; // MySQL runs as the Windows service UniService installed
 
  sList                  :TStringList;  // String list
  i                      :integer;      // Loop counter
@@ -52,6 +54,22 @@ Var
  xcache_file            :boolean; // Filee exists in selected php ini file
  zendopcache_file       :boolean; // File exists in selected php ini file
  zendopcache_builtin    :boolean; // OPcache compiled into PHP (8.5+): no DLL, always on
+
+  //--Menu items that edit Apache's configuration or certificate files
+  //  are unavailable while Apache runs; the caption says why (no hidden rules)
+  procedure set_stopped_only_item(item:TMenuItem; const caption:string);
+  begin
+    If AP Then
+     begin
+       item.Caption := caption + '  (stop Apache first)';
+       item.Enabled := False;
+     end
+    Else
+     begin
+       item.Caption := caption;
+       item.Enabled := True;
+     end;
+  end;
 
 begin
 
@@ -83,11 +101,27 @@ begin
  AP := ApacheRunning(); //Set flag if this Apache server running
  MY := MysqlRunning();  //Set flag if this MySQL server running
 
+ //--Service mode: the process belongs to a Windows service (installed via
+ //  Extra > Run as Windows service). The controller cannot kill that process,
+ //  so the start/stop buttons control the service instead (see click handlers).
+ AP_SVC_RUNNING := AP and us_IsServiceRunning(USC_APACHE_SERVICE_NAME);
+ MY_SVC_RUNNING := MY and us_IsServiceRunning(USC_MYSQL_SERVICE_NAME);
+
  //--Apache server
  If AP then   //--AP running
    begin
      apache_indicator('green');                   // Server status running
-     Main.Btn_start_apache.Caption  := STOP_AP;   // Set button text
+     If AP_SVC_RUNNING Then
+      begin
+        Main.Btn_start_apache.Caption := STOP_AP_SVC; // Button stops the Windows service
+        Main.Btn_start_apache.Hint    := 'Apache runs as Windows service "' + USC_APACHE_SERVICE_NAME + '".' + sLineBreak +
+                                         'Stopping asks for administrator permission (UAC).';
+      end
+     Else
+      begin
+        Main.Btn_start_apache.Caption := STOP_AP;   // Set button text
+        Main.Btn_start_apache.Hint    := '';
+      end;
      Main.Btn_start_apache.BaseColor := USB_AMBER; // Stop action = amber
      Main.Btn_view_www.Enabled      := True;      // Enable www button
 
@@ -100,7 +134,6 @@ begin
      Main.MMS_apache_edit_configs.Enabled        := False;  // Disable edit Apache configuration files
      Main.MMS_apache_basic_and_modules.Enabled   := False;  // Disable edit Apache basic and module config
      //Main.MMS_folder_access_passwords.Enabled    := False;  // Disable access password config
-     Main.MMS_apache_ssl.Enabled                 := False;  // Disable SSL keygen and SSL enable
      Main.MMS_apache_vhosts.Enabled              := False;  // Disable Apache Vhost config
 
      Main.MMS_apache_server_info_status.Enabled  := True;  // Enable Apache server info status button
@@ -111,7 +144,19 @@ begin
  Else        //--AP Not running
   begin
      apache_indicator('red');                     // Server status stopped
-     Main.Btn_start_apache.Caption  := START_AP;  // Set button text
+     If us_ServiceInstalled(USC_APACHE_SERVICE_NAME) Then
+      begin
+        Main.Btn_start_apache.Caption := START_AP_SVC; // Button starts the Windows service
+        Main.Btn_start_apache.Hint    := 'Apache is installed as Windows service "' + USC_APACHE_SERVICE_NAME + '".' + sLineBreak +
+                                         'Starting asks for administrator permission (UAC).' + sLineBreak +
+                                         'To run Apache as a normal program again, uninstall the service' + sLineBreak +
+                                         'via Extra > Run Apache/' + US_MYMAR_TXT + ' as Windows service.';
+      end
+     Else
+      begin
+        Main.Btn_start_apache.Caption := START_AP;  // Set button text
+        Main.Btn_start_apache.Hint    := '';
+      end;
      Main.Btn_start_apache.BaseColor := USB_GREEN; // Start action = green
      Main.Btn_view_www.Enabled      := False;     // Disable www button
      Main.Btn_view_ssl.Enabled      := False;     // Disable ssl button
@@ -122,7 +167,6 @@ begin
      Main.MMS_apache_edit_configs.Enabled        := True;  // Enable edit Apache configuration files
      Main.MMS_apache_basic_and_modules.Enabled   := True;  // Enable edit Apache basic and module config
      //Main.MMS_folder_access_passwords.Enabled    := True;  // Enable access password config
-     Main.MMS_apache_ssl.Enabled                 := True;  // Enable SSL keygen and SSL enable
      Main.MMS_apache_vhosts.Enabled              := True;  // Enable Apache Vhost config
 
      Main.MMS_apache_server_info_status.Enabled  := False; // Disable Apache server info status button
@@ -145,14 +189,36 @@ begin
  If MY then   //--My running
    begin
      mysql_indicator('green');                    // Server status running
-     Main.Btn_start_mysql.Caption   := STOP_MY;   // Set button text
+     If MY_SVC_RUNNING Then
+      begin
+        Main.Btn_start_mysql.Caption := STOP_MY_SVC; // Button stops the Windows service
+        Main.Btn_start_mysql.Hint    := US_MYMAR_TXT + ' runs as Windows service "' + USC_MYSQL_SERVICE_NAME + '".' + sLineBreak +
+                                        'Stopping asks for administrator permission (UAC).';
+      end
+     Else
+      begin
+        Main.Btn_start_mysql.Caption := STOP_MY;   // Set button text
+        Main.Btn_start_mysql.Hint    := '';
+      end;
      Main.Btn_start_mysql.BaseColor := USB_AMBER; // Stop action = amber
      Main.Btn_mysql_console.Enabled := True;      // Enable console button
    end
  Else        //--My NOT running
   begin
      mysql_indicator('red');                      // Server status stopped
-     Main.Btn_start_mysql.Caption   := START_MY;  // Set button text
+     If us_ServiceInstalled(USC_MYSQL_SERVICE_NAME) Then
+      begin
+        Main.Btn_start_mysql.Caption := START_MY_SVC; // Button starts the Windows service
+        Main.Btn_start_mysql.Hint    := US_MYMAR_TXT + ' is installed as Windows service "' + USC_MYSQL_SERVICE_NAME + '".' + sLineBreak +
+                                        'Starting asks for administrator permission (UAC).' + sLineBreak +
+                                        'To run it as a normal program again, uninstall the service' + sLineBreak +
+                                        'via Extra > Run Apache/' + US_MYMAR_TXT + ' as Windows service.';
+      end
+     Else
+      begin
+        Main.Btn_start_mysql.Caption := START_MY;  // Set button text
+        Main.Btn_start_mysql.Hint    := '';
+      end;
      Main.Btn_start_mysql.BaseColor := USB_GREEN; // Start action = green
      Main.Btn_mysql_console.Enabled := False;     // Disable console button
   End;
@@ -228,11 +294,18 @@ begin
       Main.Btn_start_apache.Enabled   := true;   // Enable start/stop button
 
 
-      //--Change button text opposite to that set in config.
+      //--Apache SSL submenu: certificate generation and the SSL switch write
+      //  to httpd.conf / the cert files and need Apache stopped. Trusting the
+      //  certificate only touches the Windows certificate store, so it stays
+      //  available while Apache runs (the submenu itself is never disabled).
+      Main.MMS_apache_ssl.Enabled := True;
       If SSL_Enabled Then
-         Main.MMSS_enable_disable_ssl.Caption := Btn_text_disable_ssl //Disable SSL
+         set_stopped_only_item(Main.MMSS_enable_disable_ssl, Btn_text_disable_ssl) //Disable SSL
       Else
-         Main.MMSS_enable_disable_ssl.Caption := Btn_text_enable_ssl; //Enable SSL
+         set_stopped_only_item(Main.MMSS_enable_disable_ssl, Btn_text_enable_ssl); //Enable SSL
+      set_stopped_only_item(Main.MMSS_server_cert_key,   'Server Certificate and Key generator');
+      set_stopped_only_item(Main.MMSS_regen_cert_vhosts, 'Regenerate certificate for all Vhosts');
+      Main.MMSS_trust_cert.Enabled := True;
 
       //--Apache log menu items
       If FileExists(USF_APACHE_ERROR_LOG)      Then

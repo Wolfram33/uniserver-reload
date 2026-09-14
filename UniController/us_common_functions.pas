@@ -43,6 +43,10 @@ function us_get_word(var ALine: String; Delimiter: String): String;             
 
 function RelToAbsDir(BaseDirIn: string; DirIn:string): string; //Convert absolute/relative to absolute paths
 
+//=== WINDOWS SERVICES (installed by UniService) ===
+function us_ServiceInstalled(service_name:string):boolean;  // Named Windows service exists
+function us_IsServiceRunning(service_name:string):boolean;  // Named Windows service is in state RUNNING
+
 //=== Apache ====
 function ApachePortFree:boolean;                        // This function checks the specified Apache host and port are free to use
 function ApacheSSLPortFree:boolean;                     // This function checks the specified Apache host and ssl port are free to use
@@ -871,6 +875,69 @@ end;
     ApacheRunning := us_IsProcessRunning(AP_EXE_NAME);
    end;
 {--- End ApacheRunning() -------------------------------------------}
+
+
+//=== WINDOWS SERVICES ===
+
+{====================================================================
+ us_ServiceInstalled(service_name):
+ Returns true when a Windows service of that name exists.
+ Only SC_MANAGER_CONNECT / SERVICE_QUERY_STATUS are requested, both
+ are granted to standard (non-elevated) users.
+ ====================================================================}
+function us_ServiceInstalled(service_name:string):boolean;
+var
+  scm, svc : SC_HANDLE;
+begin
+  Result := False;
+  If service_name = '' Then Exit;
+
+  scm := OpenSCManager(nil, nil, SC_MANAGER_CONNECT);
+  If scm = 0 Then Exit;                                   // Service manager unreachable: treat as not installed
+  try
+    svc := OpenService(scm, PChar(service_name), SERVICE_QUERY_STATUS);
+    If svc <> 0 Then
+     begin
+       Result := True;
+       CloseServiceHandle(svc);
+     end;
+  finally
+    CloseServiceHandle(scm);
+  end;
+end;
+{--- End us_ServiceInstalled ---------------------------------------}
+
+
+{====================================================================
+ us_IsServiceRunning(service_name):
+ Returns true when the named Windows service reports SERVICE_RUNNING.
+ Returns false when it is stopped, in transition or not installed.
+ ====================================================================}
+function us_IsServiceRunning(service_name:string):boolean;
+var
+  scm, svc : SC_HANDLE;
+  status   : TServiceStatus;
+begin
+  Result := False;
+  If service_name = '' Then Exit;
+
+  scm := OpenSCManager(nil, nil, SC_MANAGER_CONNECT);
+  If scm = 0 Then Exit;
+  try
+    svc := OpenService(scm, PChar(service_name), SERVICE_QUERY_STATUS);
+    If svc = 0 Then Exit;                                 // Not installed
+    try
+      FillChar(status, SizeOf(status), 0);
+      If QueryServiceStatus(svc, status) Then
+         Result := (status.dwCurrentState = SERVICE_RUNNING);
+    finally
+      CloseServiceHandle(svc);
+    end;
+  finally
+    CloseServiceHandle(scm);
+  end;
+end;
+{--- End us_IsServiceRunning ---------------------------------------}
 
 
 {*****************************************************************************

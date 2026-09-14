@@ -69,6 +69,10 @@ procedure us_open_console(const ATitle, AWorkDir: String; const ACommand: array 
 procedure us_display_server_console;   // Display console at root folder
 procedure us_display_uniservice;       // Launch UniService (Windows service module, UAC prompt)
 
+//=== Windows services (installed by UniService) ===
+function us_run_elevated(const exe, params, work_dir:string; wait_ms:DWORD):boolean; // Run a program via UAC prompt and wait for it
+function us_control_windows_service(const service_name:string; start:boolean):boolean; // Start/stop a service elevated, wait for the new state
+
 //=== Perl
 procedure force_shebang_update(NEW_SHEBANG:string); // Update shebang in all perl scripts
 
@@ -3107,9 +3111,6 @@ end;
 function us_write_hosts_file(sList:TStringList):boolean;
 var
   tmpPath      :string;
-  sei          :TShellExecuteInfoW;
-  verbW, fileW :WideString;
-  parW, dirW   :WideString;
 begin
  Result := False;
 
@@ -3130,10 +3131,37 @@ begin
    Exit;                                     // Cannot even stage: give up
  end;
 
+ //--Copy attempted when the UAC prompt was accepted; caller verifies the result
+ Result := us_run_elevated('cmd.exe',
+                           '/c copy /y "'+tmpPath+'" "'+us_hosts_file_path+'"',
+                           SysUtils.GetTempDir, 120000);
+
+ SysUtils.DeleteFile(tmpPath);               // Best effort clean-up
+end;
+{--- End us_write_hosts_file ---------------------------------------}
+
+
+//=== Windows services ===
+
+{===================================================================
+ us_run_elevated: Run a program through the UAC prompt (verb "runas")
+ hidden, and wait up to wait_ms for it to finish.
+ Returns false when the user declines the UAC prompt or the program
+ cannot be started. A true result only means the program ran; the
+ caller checks whether it achieved anything.
+====================================================================}
+function us_run_elevated(const exe, params, work_dir:string; wait_ms:DWORD):boolean;
+var
+  sei          :TShellExecuteInfoW;
+  verbW, fileW :WideString;
+  parW, dirW   :WideString;
+begin
+ Result := False;
+
  verbW := 'runas';
- fileW := WideString('cmd.exe');
- parW  := WideString('/c copy /y "'+tmpPath+'" "'+us_hosts_file_path+'"');
- dirW  := WideString(SysUtils.GetTempDir);
+ fileW := WideString(exe);
+ parW  := WideString(params);
+ dirW  := WideString(work_dir);
 
  FillChar(sei, SizeOf(sei), 0);
  sei.cbSize       := SizeOf(sei);
@@ -3148,15 +3176,84 @@ begin
   begin
     If sei.hProcess <> 0 Then
      begin
-       WaitForSingleObject(sei.hProcess, 120000); // Allow time for the UAC prompt
+       WaitForSingleObject(sei.hProcess, wait_ms); // Allow time for the UAC prompt
        CloseHandle(sei.hProcess);
      end;
-    Result := True;                          // Copy attempted; caller verifies
+    Result := True;
+  end;
+end;
+{--- End us_run_elevated -------------------------------------------}
+
+
+{===================================================================
+ us_control_windows_service: Start or stop one of the services that
+ UniService installed (us_apache_<n>, us_mysql_<n>).
+ The controller runs without administrator rights, so the request
+ goes through sc.exe with a UAC prompt; afterwards the service state
+ is polled until it matches or the safety timer runs out.
+ Returns true when the service reached the requested state.
+ Every failure is explained to the user, including the next step.
+====================================================================}
+function us_control_windows_service(const service_name:string; start:boolean):boolean;
+var
+  action      :string;   // sc.exe verb
+  saftey_loop :integer;  // Seconds waited
+  max_wait    :integer;  // Seconds before giving up
+begin
+ Result := False;
+
+ If not us_ServiceInstalled(service_name) Then
+  begin
+    us_MessageDlg('Windows service',
+      'The service "'+service_name+'" is not installed.'+ sLineBreak + sLineBreak +
+      'Install it via Extra > Run Apache/'+US_MYMAR_TXT+' as Windows service.',
+      mtInformation,[mbOk],0);
+    Exit;
   end;
 
- SysUtils.DeleteFile(tmpPath);               // Best effort clean-up
+ If start Then
+  begin
+    action   := 'start';
+    max_wait := USC_AP_StartSafetyTime;    // Same budget as a normal program start
+  end
+ Else
+  begin
+    action   := 'stop';
+    max_wait := USC_AP_StopSafetyTime;
+  end;
+ If max_wait < 15 Then max_wait := 15;      // Never give up before Windows has had a fair chance
+
+ //--Ask Windows (UAC) - the whole command runs hidden
+ If not us_run_elevated('sc.exe', action + ' "' + service_name + '"', UniConPath, 120000) Then
+  begin
+    us_MessageDlg('Windows service',
+      'Windows did not allow the service to be '+ action +'ed.'+ sLineBreak + sLineBreak +
+      'The administrator prompt was declined or blocked.'+ sLineBreak +
+      'Try again and confirm the prompt, or use Extra > Run Apache/'+US_MYMAR_TXT+' as Windows service.',
+      mtWarning,[mbOk],0);
+    Exit;
+  end;
+
+ //--Wait for the service to reach the requested state
+ saftey_loop := 0;
+ While us_IsServiceRunning(service_name) <> start do
+  begin
+    Sleep(1000);
+    Application.ProcessMessages;                 // Keep the window responsive
+    Inc(saftey_loop);
+    If saftey_loop > max_wait Then Break;
+  end;
+
+ Result := (us_IsServiceRunning(service_name) = start);
+
+ If not Result Then
+   us_MessageDlg('Windows service',
+     'The service "'+service_name+'" did not '+ action +' within '+ IntToStr(max_wait) +' seconds.'+ sLineBreak + sLineBreak +
+     'Check the server error log for the cause, or manage the service via'+ sLineBreak +
+     'Extra > Run Apache/'+US_MYMAR_TXT+' as Windows service (or services.msc).',
+     mtWarning,[mbOk],0);
 end;
-{--- End us_write_hosts_file ---------------------------------------}
+{--- End us_control_windows_service --------------------------------}
 
 
 {****************************************************************************

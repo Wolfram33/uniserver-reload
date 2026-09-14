@@ -88,7 +88,7 @@ Release procedure: bump the version in `reload_version.inc`, commit, tag the com
 The controller generates a self-signed `localhost` certificate on first start and enables SSL automatically — `https://localhost` works right away, but browsers mark self-signed certificates as "not secure" until they are trusted. To get the padlock without a warning:
 
 1. **Upgrading from an older install?** Delete `core\apache2\server_certs\server.crt` and `server.key` first (with Apache stopped), then start UniController — certificates created by the old generator lack the subjectAltName entries Chrome requires and are rejected even when trusted. Fresh installs skip this step.
-2. On its **first interactive start UniController asks right away** whether to trust the certificate — answer **Yes** and confirm the Windows security prompt. (Any time later or again: **Apache → Apache SSL → Trust certificate in Windows**.)
+2. On its **first interactive start UniController asks right away** whether to trust the certificate — answer **Yes** and confirm the Windows security prompt. (Any time later or again: **Apache → Apache SSL → Trust certificate in Windows** — this entry stays available while Apache is running, since it only writes to the Windows certificate store; the other entries of that submenu edit `httpd.conf` or the certificate files and say *stop Apache first* while Apache runs.)
 3. **Restart the browser completely** (Chrome: enter `chrome://restart` in the address bar — closing the tab is not enough, and check the system tray for background instances).
 4. Open `https://localhost` — the padlock now shows without a warning.
 
@@ -171,6 +171,15 @@ A CRM with a few hundred customers, tickets, chats and a document archive is a f
 <p align="center"><img src="bundle/branding/controller-medallion.png" alt="UniServer Reload controller: the medallion is the window" width="480"></p>
 
 **Consoles in Reload look:** *Server Console* and *MySQL Console* open in Windows Terminal with a translucent black acrylic background and the Reload icon in the tab (Windows Terminal ships with Windows 11; on Windows 10 install it from the Microsoft Store). The opacity is set in `home\us_config\us_user.ini`: `CONSOLE_OPACITY=50` (50–100; `100` restores the classic opaque cmd window, which is also used automatically when Windows Terminal is not installed). The controller registers the profile *UniServer Reload Console* as a Windows Terminal fragment in `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\UniServer Reload\`, so the profile also appears in the terminal's own dropdown; delete that folder to remove it.
+
+## Running as a Windows service
+
+*Extra → Run Apache/MariaDB as Windows service* opens **UniService**, which installs, starts and stops the servers as Windows services (`us_apache_1`, `us_mysql_1`; the number is the `AppNumber` from `home\us_config\us_config.ini`). While a server runs as a service its process belongs to Windows, not to the controller, so the plain *Stop* used to fail silently ("Failed to stop Apache") and *Start* would launch a second copy. The controller now detects the installed services itself:
+
+* The start buttons read **Start Apache service** / **Stop Apache service** (same for MariaDB) whenever the service is installed, and the tooltip names the service.
+* Clicking them starts or stops the Windows service via `sc.exe` — Windows shows the administrator (UAC) prompt, the controller waits for the new state and reports a clear message if it is not reached.
+* The status LEDs and menus follow the service state, refreshed every few seconds, so changes made in UniService or `services.msc` show up without restarting the controller.
+* To go back to running the servers as normal programs, uninstall the services in UniService; the buttons return to *Start Apache* / *Start MariaDB*.
 
 ## Development goals
 

@@ -377,6 +377,16 @@ jobs:
             echo "*Server Console* and *MariaDB Console* open in Windows Terminal with a"
             echo "translucent black background (opacity via \`CONSOLE_OPACITY\` in us_user.ini)."
             echo
+            echo "## Running as a Windows service"
+            echo
+            echo "When Apache or MariaDB run as Windows services (installed via *Extra > Run"
+            echo "Apache/MariaDB as Windows service*), the controller's buttons now read"
+            echo "*Start/Stop Apache service* and control the service itself through the"
+            echo "administrator (UAC) prompt instead of failing on the service's process."
+            echo "LEDs and menus follow the service state. *Apache > Apache SSL > Trust"
+            echo "certificate in Windows* stays available while Apache runs; the entries that"
+            echo "edit httpd.conf or the certificate files say *stop Apache first*."
+            echo
             echo "## Multiple virtual hosts - finally working"
             echo
             echo "Create as many virtual hosts as you like (*Apache > Apache Vhosts*): the"
