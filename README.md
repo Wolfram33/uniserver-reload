@@ -198,6 +198,10 @@ A CRM with a few hundred customers, tickets, chats and a document archive is a f
 * [x] Remove dead upstream services from the controller: the DtDNS updater and the *Server Internet status* window relied on services (dtdns.com, uniformserver.com version file) that no longer exist or are unmaintained
 * [ ] Work through the open issues of the upstream repository (see below)
 
+## Privacy
+
+UniServer Reload collects no data: no telemetry, no crash reports, no update check, no account. Everything it creates stays in your installation folder. Details in the [privacy policy](PRIVACY.md).
+
 ## Bugs & feature requests (this fork)
 
 Found a problem in UniServer Reload, or missing a feature? Please use **this repository's issue tracker**:
