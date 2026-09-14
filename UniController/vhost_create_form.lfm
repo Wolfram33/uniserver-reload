@@ -1,12 +1,12 @@
 object vhost_create: Tvhost_create
   Left = 568
-  Height = 210
+  Height = 252
   Top = 124
   Width = 470
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'Create Apache Vhost'
-  ClientHeight = 210
+  ClientHeight = 252
   ClientWidth = 470
   OnShow = FormShow
   Position = poOwnerFormCenter
@@ -66,6 +66,7 @@ object vhost_create: Tvhost_create
     Height = 25
     Top = 120
     Width = 420
+    OnChange = Edit_server_nameChange
     TabOrder = 3
     Text = 'app.test'
   end
@@ -80,15 +81,17 @@ object vhost_create: Tvhost_create
   end
   object Label4: TLabel
     Left = 12
-    Height = 16
+    Height = 58
     Top = 148
-    Width = 62
+    Width = 447
+    AutoSize = False
     Caption = 'e.g. app.test'
+    WordWrap = True
   end
   object Btn_create_vhost: TButton
     Left = 12
     Height = 30
-    Top = 172
+    Top = 212
     Width = 447
     Caption = 'Create Vhost'
     OnClick = Btn_create_vhostClick

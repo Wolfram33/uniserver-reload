@@ -38,6 +38,7 @@ type
     procedure Btn_browseClick(Sender: TObject);
     procedure Btn_help_root_folderClick(Sender: TObject);
     procedure Btn_help_server_nameClick(Sender: TObject);
+    procedure Edit_server_nameChange(Sender: TObject);
     procedure FormShow(Sender: TObject);
   private
     { private declarations }
@@ -184,7 +185,8 @@ var
    is_external     :boolean;     // True when an absolute path was given
    sList           :TStringList; // String list
    valid_input     :boolean;     // Valid data from user
-   i               :integer;     // Loop counteri
+   i               :integer;     // Loop counter
+   tld_hint        :string;      // Browser hint for an unusual host name ending
 begin
    new_root_path   :='';
    new_root_input  := Trim(Edit_root_folder.Text); // Get root-folder/path entered
@@ -305,8 +307,10 @@ begin
        mtConfirmation,[mbYes,mbNo],0) = mrYes Then
          us_trust_ssl_cert;
 
+     tld_hint := us_vhost_tld_hint(new_ServerName);
+     If tld_hint <> '' Then tld_hint := sLineBreak + sLineBreak + 'Note: ' + tld_hint;
      us_MessageDlg('Apache Info',
-       'Restart Apache for the new Vhost to take effect.',
+       'Restart Apache for the new Vhost to take effect.' + tld_hint,
        mtInformation,[mbOk],0) ; //Display information message
   end;//End valid_input
 
@@ -366,15 +370,39 @@ begin
 
   str := str + 'Example 2' + sLineBreak;
   str := str + 'Full Internet address: http://uniserver.com' + sLineBreak;
-  str := str + 'Host name: uniserver.com';
+  str := str + 'Host name: uniserver.com' + sLineBreak + sLineBreak;
+
+  str := str + 'Choosing the ending:' + sLineBreak;
+  str := str + 'Any ending is allowed, but browsers only treat names with' + sLineBreak;
+  str := str + 'an ending they know as an address. An invented ending such' + sLineBreak;
+  str := str + 'as .wolf is sent to the search engine instead. Reserved' + sLineBreak;
+  str := str + 'endings that always work locally: .test, .localhost,' + sLineBreak;
+  str := str + '.example. Avoid .dev and .app (browsers force HTTPS)' + sLineBreak;
+  str := str + 'and .local (used by network discovery).' + sLineBreak;
+  str := str + 'Any other ending still works when the address is typed' + sLineBreak;
+  str := str + 'in full, e.g. http://buchhaltung.wolf/';
 
   us_MessageDlg('Server Name - Host Name', str, mtInformation,[mbOk],0); //Display message
+end;
+
+{ Live hint under the server-name field: explains why an ending may not
+  behave as expected in the browser (rule: nothing fails without a reason). }
+procedure Tvhost_create.Edit_server_nameChange(Sender: TObject);
+var
+  tld_hint:string;
+begin
+  tld_hint := us_vhost_tld_hint(Edit_server_name.Text);
+  If tld_hint = '' Then
+    Label4.Caption := 'e.g. app.test (endings .test, .localhost and .example always open directly in a browser)'
+  Else
+    Label4.Caption := tld_hint;
 end;
 
 procedure Tvhost_create.FormShow(Sender: TObject);
 begin
    Edit_root_folder.Text :='';
    Edit_server_name.Text :='app.test';
+   Edit_server_nameChange(nil);                    // Show default hint
 end;
 
 end.

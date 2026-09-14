@@ -73,6 +73,7 @@ function us_start_mysql_skip_grants():boolean;                // Start MySQL no 
 //=== USER INPUT VALIDATION ===
 function valid_root_folder_name(root_folder_name:string;display_str:string): boolean;
 function valid_server_name(server_name:string;display_str:string): boolean;
+function us_vhost_tld_hint(server_name:string): string;                       // Browser hint for the host name ending ('' = fine)
 function valid_server_port(server_port:string;display_str:string): boolean;
 function valid_admin_email(admin_email:string;display_str:string): boolean;
 function valid_directory_index_files(directory_index:string;display_str:string): boolean;
@@ -1525,6 +1526,50 @@ function valid_server_name(server_name:string;display_str:string): boolean;
   valid_server_name := valid_input;
 end;
 {---End valid_server_name ---------------------------------------------------}
+
+{=============================================================================
+ us_vhost_tld_hint
+   Input:  server_name - Host name as typed by the user, e.g. app.test
+   Output: '' when browsers navigate to the name directly, otherwise a short
+           explanation why the name may not work as expected and what to do.
+
+   Browsers decide for a bare address-bar entry whether it is a web address
+   or a search term by looking at the ending. Reserved endings such as .test
+   are always treated as an address; an invented ending such as .wolf is
+   sent to the search engine instead, which looks as if the vhost is broken.
+   .dev/.app are HTTPS-only in Chrome/Firefox, .local belongs to mDNS.
+=============================================================================}
+function us_vhost_tld_hint(server_name:string): string;
+var
+  host :string;
+  tld  :string;
+  p    :integer;
+begin
+  Result := '';
+  host := LowerCase(Trim(server_name));
+  p := Pos('/', host);                              // Drop any path part
+  If p > 0 Then host := Copy(host, 1, p-1);
+  If host = '' Then Exit;
+  If host = 'localhost' Then Exit;                  // Always resolves
+
+  tld := host;
+  While Pos('.', tld) > 0 Do Delete(tld, 1, Pos('.', tld));   // Text after last dot
+  If (tld = '') or (tld = host) Then Exit;          // No dot: validation reports it
+
+  If (tld = 'test') or (tld = 'localhost') or (tld = 'example') or (tld = 'invalid') Then
+    Exit;                                           // Reserved for local use, browsers navigate directly
+
+  If (tld = 'dev') or (tld = 'app') Then
+    Result := 'Browsers force HTTPS for .' + tld + ' - http://' + host + '/ will not open.' + sLineBreak +
+              'Prefer a reserved ending such as ' + Copy(host, 1, Length(host)-Length(tld)) + 'test.'
+  Else If tld = 'local' Then
+    Result := '.local is reserved for network discovery (mDNS) and may resolve slowly or not at all.' + sLineBreak +
+              'Prefer a reserved ending such as ' + Copy(host, 1, Length(host)-Length(tld)) + 'test.'
+  Else
+    Result := 'Browsers do not know the ending .' + tld + ': typing "' + host + '" starts a web search.' + sLineBreak +
+              'Type http://' + host + '/ in full, or use a reserved ending such as .test.';
+end;
+{---End us_vhost_tld_hint ---------------------------------------------------}
 
 {=============================================================================
  Server Port
