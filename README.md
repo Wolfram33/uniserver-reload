@@ -41,15 +41,12 @@ Every push triggers a build that updates the rolling release with fixed download
 | File | Description |
 |---|---|
 | **`UniServer-Reload.zip`** | **Recommended. All-in-one, zero-setup package: the complete server (Apache, MariaDB, phpMyAdmin, PHP 8.3/8.4/8.5, updated controller) as a plain zip — extract it into an empty folder, start `UniController.exe` and it runs, no further downloads or configuration** |
-| `UniServer-Reload.exe` | The same package as a self-extracting 7-Zip archive. **Currently not recommended:** the exe is not code-signed yet, and Windows Defender's machine-learning heuristic regularly quarantines it right after download as `Trojan:Win32/Wacatac.B!ml` (a known false positive for unsigned self-extracting archives — the zip and the binaries inside are not flagged). Use the zip until releases are signed |
-| `UniController.exe` | Controller only — for updating an existing installation |
-| `UniService.exe` | Windows service module — replaces `utils\UniService.exe` in an existing installation; started from the controller via *Extra > Run Apache/MariaDB as Windows service* |
 | `UniServer-Reload_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
 | `UniServer-Reload_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
 | `UniServer-Reload_mariadb_module.zip` | The bundle's database engine (MariaDB LTS) as a separate module — for installations from 1.3.5 or older, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
 | `UniServer-Reload_mysql_module.zip` | MySQL 8.4 LTS as the alternative engine — same switching procedure, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
 
-The single-file downloads exist only for users who want to upgrade an existing Uniform Server installation piece by piece; with `UniServer-Reload.zip` none of them are needed.
+**Zip downloads only.** Until releases are code-signed there are no bare exe downloads: Windows Defender's machine-learning heuristic quarantined the unsigned self-extracting archive right after download as `Trojan:Win32/Wacatac.B!ml` (a known false positive), and SmartScreen warns on downloaded exes in general. A zip needs no extra tool on Windows, and the binaries inside are not flagged. To update only the controller of an existing installation, take `UniController.exe` and `utils\UniService.exe` out of the bundle zip (see [Upgrading](#upgrading)).
 
 Quick start: extract `UniServer-Reload.zip` into an empty folder without spaces in the path (e.g. `C:\UniServer-Reload`), then start `UniController.exe` from it — the server lives directly in the chosen folder (no `UniServerZ` subfolder since 1.3.0) and is ready to go. To switch the PHP version stop Apache first, then use *PHP > Select PHP version*.
 
@@ -61,7 +58,7 @@ UniServer Reload is free and open source. If it saves you time, you can support 
 
 There is no in-place updater — the package is portable by design. Two paths:
 
-* **Controller-only upgrade** (e.g. 1.2.0 → 1.2.1): replace `UniController.exe` (server folder) and `UniService.exe` (its `utils` subfolder) with the single-file downloads from the release page — that is exactly what they are published for. Your `www` content, databases and configuration stay untouched. (The version shown on the splash and test pages comes from `AppVersion=` in `home\us_config\us_config.ini`; update it by hand if you want the pages to match.)
+* **Controller-only upgrade** (e.g. 1.2.0 → 1.2.1): extract the new `UniServer-Reload.zip` somewhere temporary and copy just `UniController.exe` (into the server folder) and `utils\UniService.exe` (into its `utils` subfolder) over the old ones. Your `www` content, databases and configuration stay untouched. (The version shown on the splash and test pages comes from `AppVersion=` in `home\us_config\us_config.ini`; update it by hand if you want the pages to match.)
 * **Full upgrade** (new Apache/PHP/database builds): unpack the new bundle into a fresh folder and move over your `www` content, your databases and any configuration you changed (e.g. `home\us_config\us_user.ini`, `core\msmtp\msmtprc.ini`, certificates in `core\apache2\server_certs`). Databases move as a folder (`core\mysql\data`) only between installations with the **same engine**; from a 1.3.5-or-older bundle (MySQL) into 1.3.6+ (MariaDB) they move as dumps, see [Databases](#databases-mariadb-by-default-mysql-as-a-module).
 * **Server tuning for an existing installation** (log rotation, OPcache, load limits, see [Sized for a small-business server](#sized-for-a-small-business-server)): with Apache and the database stopped, run from a checkout of this repository
 
@@ -76,7 +73,7 @@ There is no in-place updater — the package is portable by design. Two paths:
 
 UniServer Reload follows its **own version line starting at 1.0.0** (`MAJOR.MINOR.PATCH`), independent of upstream's 15.x numbering — the origin stays credited, but the project evolves on its own.
 
-* **Stable releases** are built from git tags (`vX.Y.Z`) and published as versioned GitHub releases with versioned file names (e.g. `UniServer-Reload-1.2.0.exe`).
+* **Stable releases** are built from git tags (`vX.Y.Z`) and published as versioned GitHub releases with versioned file names (e.g. `UniServer-Reload-1.2.0.zip`).
 * The **rolling `latest` release** continues to be updated on every push with development builds.
 * The version is visible everywhere: the *About* dialog, `UniController.exe version` on the command line, the splash page, the exe file properties and `home\version.txt` in the bundle (which also records the ZeroXV base package the bundle was built from).
 * Single source of truth is [`UniController/reload_version.inc`](UniController/reload_version.inc): CI stamps it into the exe VersionInfo and the bundle, and refuses to build a release tag that does not match it.

@@ -1,4 +1,4 @@
-# Build the all-in-one self-extracting bundle: Uniform Server ZeroXV base
+# Build the all-in-one bundle (plain zip): Uniform Server ZeroXV base
 # package + freshly built UniController/UniService + PHP 8.4/8.5 modules +
 # the MariaDB module as the database engine (replaces the base's MySQL).
 #
@@ -8,9 +8,11 @@
 #   artifacts/php-module-*/UniServer-Reload_php8*_module.zip
 #   artifacts/mariadb-module/UniServer-Reload_mariadb_module.zip
 #
-# Produces: dist/UniServer-Reload.exe (7-Zip GUI self-extractor). Unlike the
-# upstream 15_0_2_ZeroXV.exe it extracts FLAT: the server files land directly
-# in the chosen target folder, without a UniServerZ subfolder.
+# Produces: dist/UniServer-Reload.zip. Unlike the upstream 15_0_2_ZeroXV.exe it
+# is FLAT: the server files land directly in the folder the user extracts to,
+# without a UniServerZ subfolder. No self-extracting exe any more: unsigned
+# SFX archives are quarantined by Windows Defender (Wacatac.B!ml false
+# positive), and a zip needs no extra tool on Windows anyway.
 $ErrorActionPreference = 'Stop'
 
 # --- Fork version: single source of truth is UniController/reload_version.inc
@@ -21,9 +23,7 @@ $baseVersion = '15.0.2'   # Uniform Server ZeroXV base package the bundle builds
 Write-Host "==> Building UniServer Reload $reloadVersion (base package $baseVersion)"
 
 $sevenZip = Join-Path $env:ProgramFiles '7-Zip\7z.exe'
-$sfxModule = Join-Path $env:ProgramFiles '7-Zip\7z.sfx'
 if (-not (Test-Path $sevenZip))  { throw "7z.exe not found at $sevenZip" }
-if (-not (Test-Path $sfxModule)) { throw "7z.sfx not found at $sfxModule" }
 
 # --- Fetch and unpack the base package ---------------------------------------
 # Preferred source is our own mirror (assets of the base-package release) so
@@ -502,21 +502,13 @@ foreach ($f in 'access.log', 'error.log', 'access_ssl.log', 'error_ssl.log', 'ht
   Remove-Item "$root\core\apache2\logs\$f" -Force -ErrorAction SilentlyContinue
 }
 
-# --- Pack as self-extracting exe ---------------------------------------------
-# Flat layout (since 1.3.0): the archives carry the server files at their
+# --- Pack as plain zip -------------------------------------------------------
+# Flat layout (since 1.3.0): the archive carries the server files at its
 # root, so extraction puts them directly into the folder the user picks -
 # no UniServerZ nesting any more. 7z's dir\* form keeps empty directories
 # (Apache log folders) and dot-files (.htaccess).
-Write-Host '==> Packing self-extracting bundle'
+Write-Host '==> Packing bundle zip'
 New-Item -ItemType Directory -Force dist | Out-Null
-& $sevenZip a -sfx"$sfxModule" -mx=7 'dist\UniServer-Reload.exe' '.\base\UniServerZ\*'
-if ($LASTEXITCODE -ne 0) { throw "7z sfx packing failed ($LASTEXITCODE)" }
-
-# Same payload as plain zip: for users whose antivirus/SmartScreen distrusts
-# unsigned self-extracting exes. The SFX does nothing beyond extracting, so
-# the zip is fully equivalent - extract into an empty folder and start
-# UniController.exe.
-Write-Host '==> Packing plain-zip bundle'
 & $sevenZip a -tzip -mx=5 'dist\UniServer-Reload.zip' '.\base\UniServerZ\*'
 if ($LASTEXITCODE -ne 0) { throw "7z zip packing failed ($LASTEXITCODE)" }
 
@@ -534,4 +526,4 @@ Add-Content 'dist\module-versions.txt' "UniServer Reload $reloadVersion (base Ze
 Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"
 Add-Content 'dist\module-versions.txt' "MariaDB $dbVersion (bundle)"
 
-Get-Item 'dist\UniServer-Reload.exe', 'dist\UniServer-Reload.zip' | Format-List Name, Length
+Get-Item 'dist\UniServer-Reload.zip' | Format-List Name, Length

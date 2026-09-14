@@ -238,12 +238,13 @@ jobs:
 
       - name: Collect release files
         run: |
+          # Zip archives only: the bare exes (self-extracting bundle, controller,
+          # service) were quarantined or blocked by Defender/SmartScreen while
+          # unsigned. The controller is updated from the bundle zip instead.
           mkdir -p release
-          find artifacts -name '*.exe' -exec cp {} release/ \;
           find artifacts -name '*.zip' -exec cp {} release/ \;
           find artifacts -name 'module-versions.txt' -exec cat {} \; | sort -u > release-versions.txt
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            mv release/UniServer-Reload.exe "release/UniServer-Reload-${VERSION}.exe"
             mv release/UniServer-Reload.zip "release/UniServer-Reload-${VERSION}.zip"
           fi
           echo "Packaged versions:" && cat release-versions.txt
@@ -251,10 +252,8 @@ jobs:
 
       - name: Build release notes
         run: |
-          BUNDLE_NAME="UniServer-Reload.exe"
           BUNDLE_ZIP_NAME="UniServer-Reload.zip"
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            BUNDLE_NAME="UniServer-Reload-${VERSION}.exe"
             BUNDLE_ZIP_NAME="UniServer-Reload-${VERSION}.zip"
           fi
           {
@@ -272,10 +271,7 @@ jobs:
             echo
             echo "| File | Description |"
             echo "|---|---|"
-            echo "| **${BUNDLE_NAME}** | **All-in-one package: complete server with current Apache, MariaDB and PHP 8.3/8.4/8.5 - just run it, no further setup** |"
-            echo "| ${BUNDLE_ZIP_NAME} | Same all-in-one package as a plain zip (for setups where antivirus blocks the unsigned self-extracting exe): extract into an empty folder, then start \`UniController.exe\` |"
-            echo "| UniController.exe | Controller only (replaces the one in your existing server folder) |"
-            echo "| UniService.exe | Windows service module - goes to \`utils\\UniService.exe\`; start it via *Extra > Run Apache/MariaDB as Windows service* in the controller |"
+            echo "| **${BUNDLE_ZIP_NAME}** | **All-in-one package: complete server with current Apache, MariaDB and PHP 8.3/8.4/8.5 - extract into an empty folder, start \`UniController.exe\`, no further setup.** To update only the controller of an existing installation, take \`UniController.exe\` and \`utils\\UniService.exe\` out of this zip |"
             echo "| UniServer-Reload_php84_module.zip | PHP 8.4 module - unzip into your server folder (the folder with UniController.exe) |"
             echo "| UniServer-Reload_php85_module.zip | PHP 8.5 module - unzip into your server folder (the folder with UniController.exe) |"
             echo "| UniServer-Reload_mariadb_module.zip | The bundle's database engine (MariaDB LTS) as a separate module - for installations from 1.3.5 or older: export your databases, delete \`core\\mysql\`, unzip into your server folder, import again |"
@@ -333,8 +329,8 @@ jobs:
             echo
             echo "## Installation (all-in-one)"
             echo
-            echo "1. Run \`${BUNDLE_NAME}\` and pick an **empty target folder without spaces in the path**"
-            echo "   (e.g. \`C:\\UniServer-Reload\`) - the server extracts directly into it, without the old"
+            echo "1. Extract \`${BUNDLE_ZIP_NAME}\` into an **empty target folder without spaces in the path**"
+            echo "   (e.g. \`C:\\UniServer-Reload\`) - the server files land directly in it, without the old"
             echo "   \`UniServerZ\` subfolder (Uniform Server ZeroXV 15.0.2 base with the fork controller"
             echo "   and the PHP 8.4/8.5 modules already integrated)."
             echo "2. Start \`UniController.exe\` and start Apache and MariaDB."
@@ -397,8 +393,9 @@ jobs:
             echo "and \`server.key\` first so a certificate with the subjectAltName entries"
             echo "Chrome requires gets generated."
             echo
-            echo "Note: the executables are not code-signed; Windows SmartScreen may warn on first run"
-            echo "(More info > Run anyway)."
+            echo "Note: the executables are not code-signed yet; Windows SmartScreen may warn on first run"
+            echo "(More info > Run anyway). Downloads are zip archives only - unsigned exe downloads"
+            echo "were quarantined by Windows Defender as a false positive."
             echo
             echo "PHP binaries are the official thread-safe x64 builds from windows.php.net,"
             echo "repackaged in the Uniform Server module layout. Default timezone in the"
