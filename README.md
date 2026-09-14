@@ -7,7 +7,7 @@
 
 **A community fork of [The Uniform Server](https://github.com/iamola/uniserver) — continued as an independent project with its own version line.**
 
-**No external dependencies, no installation, no configuration:** the complete WAMP stack — Apache, MariaDB, PHP 8.3/8.4/8.5, phpMyAdmin and the updated controller — ships as a **single self-extracting 7-Zip archive** ([`UniServer-Reload.exe`](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)). Unpack it anywhere and everything is immediately ready to run. Nothing needs to be downloaded from SourceForge or windows.php.net, no modules need to be added, no settings need to be changed. Portable as ever: no installer, no registry entries.
+**No external dependencies, no installation, no configuration:** the complete WAMP stack — Apache, MariaDB, PHP 8.3/8.4/8.5, phpMyAdmin and the updated controller — ships as a **single archive** ([`UniServer-Reload.zip`](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)). Unpack it anywhere and everything is immediately ready to run. Nothing needs to be downloaded from SourceForge or windows.php.net, no modules need to be added, no settings need to be changed. Portable as ever: no installer, no registry entries.
 
 > ### ⚡ Current PHP versions — upstream never made it past 8.3
 > The original server is stuck on PHP 8.3 (no updates since November 2023) — a dealbreaker for modern apps and frameworks. This fork ships **PHP 8.3, 8.4 and 8.5 preinstalled and switchable** in the controller (*PHP > Select PHP version*), repackaged from the official windows.php.net builds. CI packages new PHP releases automatically, so future versions reach the bundle quickly — and every build is smoke-tested with each installed PHP version before it is published.
@@ -40,8 +40,8 @@ Every push triggers a build that updates the rolling release with fixed download
 
 | File | Description |
 |---|---|
-| **`UniServer-Reload.exe`** | **All-in-one, zero-setup package: the complete server (Apache, MariaDB, phpMyAdmin, PHP 8.3/8.4/8.5, updated controller) in one self-extracting 7-Zip archive — unpack and it runs, no further downloads or configuration** |
-| `UniServer-Reload.zip` | The same all-in-one package as a plain zip — for setups where antivirus software blocks the unsigned self-extracting exe; extract it into an empty folder and start `UniController.exe` |
+| **`UniServer-Reload.zip`** | **Recommended. All-in-one, zero-setup package: the complete server (Apache, MariaDB, phpMyAdmin, PHP 8.3/8.4/8.5, updated controller) as a plain zip — extract it into an empty folder, start `UniController.exe` and it runs, no further downloads or configuration** |
+| `UniServer-Reload.exe` | The same package as a self-extracting 7-Zip archive. **Currently not recommended:** the exe is not code-signed yet, and Windows Defender's machine-learning heuristic regularly quarantines it right after download as `Trojan:Win32/Wacatac.B!ml` (a known false positive for unsigned self-extracting archives — the zip and the binaries inside are not flagged). Use the zip until releases are signed |
 | `UniController.exe` | Controller only — for updating an existing installation |
 | `UniService.exe` | Windows service module — replaces `utils\UniService.exe` in an existing installation; started from the controller via *Extra > Run Apache/MariaDB as Windows service* |
 | `UniServer-Reload_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
@@ -49,9 +49,9 @@ Every push triggers a build that updates the rolling release with fixed download
 | `UniServer-Reload_mariadb_module.zip` | The bundle's database engine (MariaDB LTS) as a separate module — for installations from 1.3.5 or older, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
 | `UniServer-Reload_mysql_module.zip` | MySQL 8.4 LTS as the alternative engine — same switching procedure, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
 
-The single-file downloads exist only for users who want to upgrade an existing Uniform Server installation piece by piece; with `UniServer-Reload.exe` none of them are needed.
+The single-file downloads exist only for users who want to upgrade an existing Uniform Server installation piece by piece; with `UniServer-Reload.zip` none of them are needed.
 
-Quick start: run `UniServer-Reload.exe`, pick an empty target folder without spaces in the path (e.g. `C:\UniServer-Reload`), then start `UniController.exe` from it — the server extracts directly into the chosen folder (no `UniServerZ` subfolder since 1.3.0) and is ready to go. To switch the PHP version stop Apache first, then use *PHP > Select PHP version*.
+Quick start: extract `UniServer-Reload.zip` into an empty folder without spaces in the path (e.g. `C:\UniServer-Reload`), then start `UniController.exe` from it — the server lives directly in the chosen folder (no `UniServerZ` subfolder since 1.3.0) and is ready to go. To switch the PHP version stop Apache first, then use *PHP > Select PHP version*.
 
 ## Support the project
 
