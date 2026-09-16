@@ -8,7 +8,7 @@
 #   artifacts/php-module-*/UniServer-Reload_php8*_module.zip
 #   artifacts/mariadb-module/UniServer-Reload_mariadb_module.zip
 #
-# Produces: dist/UniServer-Reload.zip. Unlike the upstream 15_0_2_ZeroXV.exe it
+# Produces: dist/UniServer-Reload.zip (plus a .7z twin). Unlike the upstream 15_0_2_ZeroXV.exe it
 # is FLAT: the server files land directly in the folder the user extracts to,
 # without a UniServerZ subfolder. No self-extracting exe any more: unsigned
 # SFX archives are quarantined by Windows Defender (Wacatac.B!ml false
@@ -169,6 +169,16 @@ foreach ($m in $modules) {
 foreach ($p in 'php84', 'php85') {
   if (-not (Test-Path "$root\core\$p\php.exe")) { throw "core\$p\php.exe missing after merge" }
 }
+
+# --- Default PHP version: the newest one shipped -------------------------------
+# The base package's us_user.ini selects php83 (its only version). With newer
+# versions bundled, a fresh install should start on the newest, not the oldest.
+$phpVersions = Get-ChildItem "$root\core" -Directory -Filter 'php8*' | ForEach-Object { $_.Name } | Sort-Object
+$defaultPhp = $phpVersions | Select-Object -Last 1
+$userIni = "$root\home\us_config\us_user.ini"
+(Get-Content $userIni -Raw) -replace '(?m)^PHP_SELECT=php\d+', "PHP_SELECT=$defaultPhp" | Set-Content $userIni -NoNewline
+if ((Get-Content $userIni -Raw) -notmatch "(?m)^PHP_SELECT=$defaultPhp") { throw "us_user.ini PHP_SELECT=$defaultPhp stamp failed" }
+Write-Host "==> Default PHP version: $defaultPhp (installed: $($phpVersions -join ', '))"
 
 # --- Patch httpd.conf --------------------------------------------------------
 # The stock config only has <IfDefine> include blocks up to php83; without
@@ -460,7 +470,7 @@ echo 'USR-DBPROBE OK ', implode(' ', $parts);
 '@ | Set-Content "$root\www\_ci_dbprobe.php" -NoNewline
 $pmaTables = ([regex]::Matches((Get-Content 'bundle\db\phpmyadmin-create_tables.sql' -Raw), 'CREATE TABLE IF NOT EXISTS')).Count
 
-$env:PHP_SELECT = ($versions | Select-Object -First 1)
+$env:PHP_SELECT = $defaultPhp
 Start-Process -FilePath $httpd -ArgumentList '-f', "$rootAbs\core\apache2\conf\httpd.conf", '-d', "$rootAbs\core\apache2" | Out-Null
 $resp = $null
 foreach ($i in 1..30) { Start-Sleep -Seconds 1; $resp = & curl.exe -fsS 'http://localhost:8088/_ci_dbprobe.php' 2>$null; if ($LASTEXITCODE -eq 0 -and $resp) { break } }
@@ -485,8 +495,8 @@ Remove-Item Env:\MYSQL_TCP_PORT
 foreach ($f in 'mysql.err', 'mysql.pid') { Remove-Item "$root\core\mysql\data\$f" -Force -ErrorAction SilentlyContinue }
 Write-Host "   MariaDB $dbVersion OK - PHP and phpMyAdmin connect as root and pma, clean shutdown"
 
-# Splash page and www test page render (fork content) under the default version
-$env:PHP_SELECT = ($versions | Select-Object -First 1)
+# Splash page and www test page render (fork content) under the shipped default version
+$env:PHP_SELECT = $defaultPhp
 Start-Process -FilePath $httpd -ArgumentList '-f', "$rootAbs\core\apache2\conf\httpd.conf", '-d', "$rootAbs\core\apache2" | Out-Null
 $resp = $null
 foreach ($i in 1..30) { Start-Sleep -Seconds 1; $resp = & curl.exe -fsS 'http://localhost:8088/us_splash/index.php' 2>$null; if ($LASTEXITCODE -eq 0 -and $resp) { break } }
@@ -522,8 +532,19 @@ if ($listing -contains 'Path = UniService.exe') { throw 'Bundle layout broken: U
 if ($listing -notcontains 'Path = utils\UniService.exe') { throw 'Bundle layout broken: utils\UniService.exe is missing' }
 if ($listing -notcontains 'Path = core\mysql\bin\mysqld_z.exe') { throw 'Bundle layout broken: core\mysql\bin\mysqld_z.exe (MariaDB) is missing' }
 
+# Second flavour: a plain .7z (LZMA, solid) - roughly half the size of the zip,
+# the footprint the old self-extracting exe had, minus the exe stub Defender
+# flagged. Windows 11 23H2+ extracts it natively, older Windows needs 7-Zip;
+# the zip stays the recommended download.
+Write-Host '==> Packing bundle 7z'
+& $sevenZip a -t7z -mx=7 'dist\UniServer-Reload.7z' '.\base\UniServerZ\*'
+if ($LASTEXITCODE -ne 0) { throw "7z packing failed ($LASTEXITCODE)" }
+$listing7z = & $sevenZip l -slt 'dist\UniServer-Reload.7z'
+if ($LASTEXITCODE -ne 0) { throw 'Could not list bundle 7z' }
+if ($listing7z -notcontains 'Path = UniController.exe') { throw 'Bundle layout broken (7z): UniController.exe is not at the archive root' }
+
 Add-Content 'dist\module-versions.txt' "UniServer Reload $reloadVersion (base ZeroXV $baseVersion)"
 Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"
 Add-Content 'dist\module-versions.txt' "MariaDB $dbVersion (bundle)"
 
-Get-Item 'dist\UniServer-Reload.zip' | Format-List Name, Length
+Get-Item 'dist\UniServer-Reload.zip', 'dist\UniServer-Reload.7z' | Format-List Name, Length

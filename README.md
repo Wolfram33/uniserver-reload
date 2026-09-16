@@ -40,15 +40,16 @@ Every push triggers a build that updates the rolling release with fixed download
 
 | File | Description |
 |---|---|
-| **`UniServer-Reload.zip`** | **Recommended. All-in-one, zero-setup package: the complete server (Apache, MariaDB, phpMyAdmin, PHP 8.3/8.4/8.5, updated controller) as a plain zip — extract it into an empty folder, start `UniController.exe` and it runs, no further downloads or configuration** |
+| **`UniServer-Reload.zip`** | **Recommended. All-in-one, zero-setup package: the complete server (Apache, MariaDB, phpMyAdmin, PHP 8.3/8.4/8.5 with 8.5 preselected, updated controller) as a plain zip — extract it into an empty folder, start `UniController.exe` and it runs, no further downloads or configuration** |
+| `UniServer-Reload.7z` | The same bundle as a `.7z` (LZMA, solid): about half the download size — the footprint the former self-extracting exe had, without the exe stub Defender flagged. Windows 11 23H2+ extracts it with Explorer, older Windows needs [7-Zip](https://www.7-zip.org/) |
 | `UniServer-Reload_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
 | `UniServer-Reload_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
 | `UniServer-Reload_mariadb_module.zip` | The bundle's database engine (MariaDB LTS) as a separate module — for installations from 1.3.5 or older, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
 | `UniServer-Reload_mysql_module.zip` | MySQL 8.4 LTS as the alternative engine — same switching procedure, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
 
-**Zip downloads only.** Until releases are code-signed there are no bare exe downloads: Windows Defender's machine-learning heuristic quarantined the unsigned self-extracting archive right after download as `Trojan:Win32/Wacatac.B!ml` (a known false positive), and SmartScreen warns on downloaded exes in general. A zip needs no extra tool on Windows, and the binaries inside are not flagged. To update only the controller of an existing installation, take `UniController.exe` and `utils\UniService.exe` out of the bundle zip (see [Upgrading](#upgrading)).
+**Archive downloads only.** Until releases are code-signed there are no bare exe downloads: Windows Defender's machine-learning heuristic quarantined the unsigned self-extracting archive right after download as `Trojan:Win32/Wacatac.B!ml` (a known false positive), and SmartScreen warns on downloaded exes in general. A zip needs no extra tool on Windows, and the binaries inside are not flagged. To update only the controller of an existing installation, take `UniController.exe` and `utils\UniService.exe` out of the bundle zip (see [Upgrading](#upgrading)).
 
-Quick start: extract `UniServer-Reload.zip` into an empty folder without spaces in the path (e.g. `C:\UniServer-Reload`), then start `UniController.exe` from it — the server lives directly in the chosen folder (no `UniServerZ` subfolder since 1.3.0) and is ready to go. To switch the PHP version stop Apache first, then use *PHP > Select PHP version*.
+Quick start: extract `UniServer-Reload.zip` into an empty folder without spaces in the path (e.g. `C:\UniServer-Reload`), then start `UniController.exe` from it — the server lives directly in the chosen folder (no `UniServerZ` subfolder since 1.3.0) and is ready to go. The newest bundled PHP version (8.5) is preselected; to switch stop Apache first, then use *PHP > Select PHP version*.
 
 ## Support the project
 

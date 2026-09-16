@@ -806,7 +806,7 @@ begin
 
    UENV_MYSQL_TCP_PORT := Ini2.ReadString('USER','MYSQL_TCP_PORT','3306');
 
-   UENV_PHP_SELECT := Ini2.ReadString('USER','PHP_SELECT','php83');          // Get user selected PHP version
+   UENV_PHP_SELECT := Ini2.ReadString('USER','PHP_SELECT','php85');          // Get user selected PHP version (default: newest bundled)
 
    //If folders php70, php71, php72, php73, php74, php80, php81, php82, php83, php84 or php85 do not exist
    //or incorrect PHP_SELECT value, override user config. Set var PHP_SELECT to None.

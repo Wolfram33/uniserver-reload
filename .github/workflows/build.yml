@@ -238,14 +238,17 @@ jobs:
 
       - name: Collect release files
         run: |
-          # Zip archives only: the bare exes (self-extracting bundle, controller,
+          # Archives only: the bare exes (self-extracting bundle, controller,
           # service) were quarantined or blocked by Defender/SmartScreen while
           # unsigned. The controller is updated from the bundle zip instead.
+          # The .7z twin of the bundle is the small download (LZMA, solid).
           mkdir -p release
           find artifacts -name '*.zip' -exec cp {} release/ \;
+          find artifacts -name 'UniServer-Reload.7z' -exec cp {} release/ \;
           find artifacts -name 'module-versions.txt' -exec cat {} \; | sort -u > release-versions.txt
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             mv release/UniServer-Reload.zip "release/UniServer-Reload-${VERSION}.zip"
+            mv release/UniServer-Reload.7z  "release/UniServer-Reload-${VERSION}.7z"
           fi
           echo "Packaged versions:" && cat release-versions.txt
           ls -l release/
@@ -253,8 +256,10 @@ jobs:
       - name: Build release notes
         run: |
           BUNDLE_ZIP_NAME="UniServer-Reload.zip"
+          BUNDLE_7Z_NAME="UniServer-Reload.7z"
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             BUNDLE_ZIP_NAME="UniServer-Reload-${VERSION}.zip"
+            BUNDLE_7Z_NAME="UniServer-Reload-${VERSION}.7z"
           fi
           {
             if [[ "$GITHUB_REF" == refs/tags/* ]]; then
@@ -271,7 +276,8 @@ jobs:
             echo
             echo "| File | Description |"
             echo "|---|---|"
-            echo "| **${BUNDLE_ZIP_NAME}** | **All-in-one package: complete server with current Apache, MariaDB and PHP 8.3/8.4/8.5 - extract into an empty folder, start \`UniController.exe\`, no further setup.** To update only the controller of an existing installation, take \`UniController.exe\` and \`utils\\UniService.exe\` out of this zip |"
+            echo "| **${BUNDLE_ZIP_NAME}** | **All-in-one package: complete server with current Apache, MariaDB and PHP 8.3/8.4/8.5 (8.5 preselected) - extract into an empty folder, start \`UniController.exe\`, no further setup.** To update only the controller of an existing installation, take \`UniController.exe\` and \`utils\\UniService.exe\` out of this zip |"
+            echo "| ${BUNDLE_7Z_NAME} | The same bundle as a .7z: about half the download size (this is why the old self-extracting exe was smaller). Windows 11 23H2+ extracts it with Explorer, older Windows needs [7-Zip](https://www.7-zip.org/) |"
             echo "| UniServer-Reload_php84_module.zip | PHP 8.4 module - unzip into your server folder (the folder with UniController.exe) |"
             echo "| UniServer-Reload_php85_module.zip | PHP 8.5 module - unzip into your server folder (the folder with UniController.exe) |"
             echo "| UniServer-Reload_mariadb_module.zip | The bundle's database engine (MariaDB LTS) as a separate module - for installations from 1.3.5 or older: export your databases, delete \`core\\mysql\`, unzip into your server folder, import again |"
@@ -334,7 +340,7 @@ jobs:
             echo "   \`UniServerZ\` subfolder (Uniform Server ZeroXV 15.0.2 base with the fork controller"
             echo "   and the PHP 8.4/8.5 modules already integrated)."
             echo "2. Start \`UniController.exe\` and start Apache and MariaDB."
-            echo "3. To switch the PHP version: stop Apache first, then *PHP > Select PHP version*, then start Apache again."
+            echo "3. PHP 8.5 is preselected (since 1.3.10; earlier bundles started on 8.3). To switch the PHP version: stop Apache first, then *PHP > Select PHP version*, then start Apache again."
             echo
             echo "Upgrading from an install with the old \`UniServerZ\` layout? Everything is fully"
             echo "portable: your existing folder keeps working as is - or, with the servers stopped,"
