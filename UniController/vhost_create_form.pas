@@ -98,7 +98,7 @@ begin
        sList.Add('');
        sList.Add('<VirtualHost *:${AP_PORT}>');
        sList.Add(' ServerAdmin webmaster@'+In_ServerName);
-       sList.Add(' DocumentRoot '+In_DocRoot);
+       sList.Add(' DocumentRoot "'+In_DocRoot+'"');  // quoted: the path may contain spaces
        sList.Add(' ServerName '+ In_ServerName);
        sList.Add(' ServerAlias www.'+IN_ServerName+ ' *.'+In_ServerName);
        //-- One rotated error log per vhost, shared by the http and the https
@@ -124,7 +124,7 @@ begin
        sList.Add('<IfModule ssl_module>');
        sList.Add('<VirtualHost *:${AP_SSL_PORT}>');
        sList.Add(' ServerAdmin webmaster@'+In_ServerName);
-       sList.Add(' DocumentRoot '+In_DocRoot);
+       sList.Add(' DocumentRoot "'+In_DocRoot+'"');  // quoted: the path may contain spaces
        sList.Add(' ServerName '+ In_ServerName);
        sList.Add(' ServerAlias www.'+IN_ServerName+ ' *.'+In_ServerName);
        sList.Add(' ErrorLog "|bin/rotatelogs_z.exe -n 5 -D -L logs/'+In_ServerName+'-error.log logs/rotated/'+In_ServerName+'-error.log 10M"');

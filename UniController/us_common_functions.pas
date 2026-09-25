@@ -52,6 +52,7 @@ function ApachePortFree:boolean;                        // This function checks 
 function ApacheSSLPortFree:boolean;                     // This function checks the specified Apache host and ssl port are free to use
 function us_get_apache_exe():string;                    // Returns Apache executable file name
 function ApacheRunning():boolean;                       // Is this Apache server running
+function us_apache_config_error():string;               // httpd -t: '' when the configuration parses, else Apache's message
 function SSL_Enabled:boolean;                           // Returns true if SSL enabled
 
 //=== MySQL ===
@@ -876,6 +877,62 @@ end;
     ApacheRunning := us_IsProcessRunning(AP_EXE_NAME);
    end;
 {--- End ApacheRunning() -------------------------------------------}
+
+{====================================================================
+ us_apache_config_error():
+ Runs "httpd -t" (same -f/-d as the real start) and returns '' when
+ the configuration parses. Otherwise the Apache error lines are
+ returned (file, line number and reason), so the caller can tell
+ the user what to fix instead of waiting for a start that never
+ comes: with a broken configuration httpd exits at once, and the
+ start loops used to wait a full minute before giving up.
+ Warnings ([core:warn] etc., e.g. an undefined config variable) are dropped:
+ Apache starts fine with them.
+ ====================================================================}
+function us_apache_config_error():string;
+var
+  AProcess : TProcess;
+  sList    : TStringList;
+  i        : integer;
+  line     : string;
+begin
+  Result   := '';
+  AProcess := TProcess.Create(nil);
+  sList    := TStringList.Create;
+  try
+    try
+      AProcess.Executable := US_APACHE_BIN + '\' + AP_EXE_NAME;
+      AProcess.Parameters.Add('-t');
+      AProcess.Parameters.Add('-f');
+      AProcess.Parameters.Add(USF_APACHE_CNF);
+      AProcess.Parameters.Add('-d');
+      AProcess.Parameters.Add(US_APACHE);
+      // -t output is a few lines only, so waiting on exit cannot fill the pipe
+      AProcess.Options := AProcess.Options + [poWaitOnExit, poUsePipes, poStderrToOutPut, poNoConsole];
+      AProcess.Execute;
+      If AProcess.ExitStatus <> 0 Then
+        begin
+          sList.LoadFromStream(AProcess.Output);
+          for i:=0 to sList.Count-1 do
+            begin
+              line := Trim(sList[i]);
+              If (line <> '') and (Pos('warn]', line) = 0) Then
+                Result := Result + line + sLineBreak;
+            end;
+          Result := Trim(Result);
+          If Result = '' Then
+            Result := 'httpd -t failed with exit code ' + IntToStr(AProcess.ExitStatus) + ' (no message)';
+        end;
+    except
+      on E: Exception do
+        Result := 'The syntax check could not be run: ' + E.Message;
+    end;
+  finally
+    sList.Free;
+    AProcess.Free;
+  end;
+end;
+{--- End us_apache_config_error() ----------------------------------}
 
 
 //=== WINDOWS SERVICES ===

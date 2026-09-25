@@ -804,12 +804,30 @@ procedure us_start_apache_program;
 Var
  AProcess: TProcess;
  saftey_loop: Integer;
+ config_error: string;
 
 begin
  if not ApacheRunning() then
   begin
    saftey_loop :=0;
    us_prepare_rotatelogs;   // windowless log writer, 1.3.3 config migration
+
+   //--A broken configuration makes httpd exit at once; the wait loops below
+   //  would then block the window for a minute and end in a vague warning.
+   //  Check first and name file, line and reason (rule: cause + next step).
+   config_error := us_apache_config_error();
+   If config_error <> '' Then
+    begin
+      us_MessageDlg('Apache not started - configuration error',
+        'Apache was not started because its configuration does not parse:' + sLineBreak + sLineBreak +
+        config_error + sLineBreak + sLineBreak +
+        'Next step: open the file named above, fix that line and start' + sLineBreak +
+        'Apache again. Blocks created by "Create Apache Vhost" live in'          + sLineBreak +
+        USF_APACHE_VHOST_CNF + sLineBreak +
+        '(a Vhost can also be removed with Apache Vhosts > Delete Apache Vhost).',
+        mtError,[mbOk],0);
+      Exit;
+    end;
 
    //--Run command string.
   AProcess := TProcess.Create(nil);                         // Create new process
