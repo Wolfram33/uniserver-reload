@@ -264,6 +264,10 @@ begin
 
    //=== Minimize to system tray toggle (General menu)
    Main.MMS_tray_icon.Checked := USC_TrayIconEnabled;
+   If USC_TrayIconEnabled Then
+     Main.Btn_minimize.Hint := 'Minimize to system tray (taskbar click keeps the taskbar entry)'
+   Else
+     Main.Btn_minimize.Hint := 'Minimize to taskbar';
 
    //===Display pages
    If USUC_DISPLAY_PAGE_1 = 'yes' Then

@@ -405,7 +405,18 @@ end;
 
 procedure TMain.Btn_minimizeClick(Sender: TObject);
 begin
-  WindowState := wsMinimized; // FormWindowStateChange applies the tray option
+  // Only this button sends the window to the tray. A taskbar click
+  // minimizes normally and keeps the taskbar entry, like every other
+  // Windows program. Setting WindowState in code does not fire
+  // OnWindowStateChange, so the button acts directly.
+  If USC_TrayIconEnabled Then
+    begin
+      Main.Hide;                       // Hide; tray icon brings it back
+      Main.ShowInTaskBar := stNever;   // Remove from task bar
+      us_update_server_state;          // Update menus
+    end
+  Else
+    Application.Minimize;              // Minimize to the taskbar button
 end;
 
 procedure TMain.Btn_closeClick(Sender: TObject);
@@ -605,19 +616,9 @@ end;
 
 procedure TMain.FormWindowStateChange(Sender: TObject);
 begin
- case WindowState of
-   wsNormal:    us_update_server_state; // Update menus
-   wsMinimized: begin
-                If USC_TrayIconEnabled Then
-                  begin
-                    Main.Hide;                     // Hide
-                    Main.WindowState := wsNormal;  // Set normal
-                    Main.Hide;                     // Hide again
-                    Main.ShowInTaskBar := stNever; // Remove from task bar
-                  end;
-                 us_update_server_state;           // Update menus
-                end;
- end;
+ // Taskbar click, Win+D, Win+M: plain minimize/restore, the taskbar
+ // entry stays. Only Btn_minimize sends the window to the tray.
+ us_update_server_state; // Update menus
 end;
 
 procedure TMain.MMSS_display_at_startup_page1Click(Sender: TObject);
@@ -1898,7 +1899,10 @@ end;
 
 procedure TMain.SystrayIconClick(Sender: TObject);
 begin
+   Main.ShowInTaskBar := stDefault;   //Back on the taskbar (tray minimize removed it)
+   Application.Restore;               //Minimized via taskbar: restore as well
    Main.Show;              //Show main form
+   Main.BringToFront;
    us_update_server_state; //State may have changed while hidden in the tray
 end;
 

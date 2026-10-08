@@ -332,7 +332,7 @@ object Main: TMain
         Caption = '-'
       end
       object MMS_tray_icon: TMenuItem
-        Caption = 'Minimize to system tray'
+        Caption = 'Minus button minimizes to system tray'
         OnClick = MMS_tray_iconClick
       end
     end
