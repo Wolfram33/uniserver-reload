@@ -291,6 +291,20 @@ jobs:
             echo "runner and must serve a PHP-rendered page, MariaDB is started and PHP"
             echo "and phpMyAdmin must log in to it, before the release is updated."
             echo
+            echo "## Apache security update (1.3.13)"
+            echo
+            echo "Releases up to 1.3.12 shipped Apache 2.4.66, which is affected by the"
+            echo "vulnerabilities fixed in 2.4.67, 2.4.68 and 2.4.69 (among them CVE-2026-23918,"
+            echo "a mod_http2 double free rated *important*, and a Windows-specific"
+            echo "out-of-bounds write via 8.3 short names, CVE-2026-59685). Please update."
+            echo "To update Apache in an existing installation: stop Apache, then copy the"
+            echo "folders \`bin\`, \`modules\`, \`include\`, \`lib\`, \`error\` and \`icons\` from"
+            echo "\`core\\apache2\` of this bundle over yours. Your configuration stays as it is."
+            echo "The new Apache build needs the Microsoft Visual C++ Redistributable 14.51"
+            echo "or newer (https://aka.ms/vc14/vc_redist.x64.exe) - install it before copying."
+            echo "A fresh 1.3.13 bundle warns before starting Apache when the installed runtime"
+            echo "is older (key \`apache=14.51\` in section \`[VCRUNTIME]\` of us_config.ini)."
+            echo
             echo "## MariaDB is the database engine (since 1.3.6)"
             echo
             echo "The bundle ships MariaDB instead of MySQL: the long-term-support release"

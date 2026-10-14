@@ -51,14 +51,19 @@ if (-not (Test-Path "$root\UniController.exe")) { throw "Unexpected base package
 
 # --- Upgrade Apache to the latest Apache Lounge build ------------------------
 # The base package ships Apache 2.4.58 (Oct 2023). Scrape the Apache Lounge
-# download page for the newest 2.4.x VS17 win64 build and swap the binary
+# download page for the newest 2.4.x win64 build and swap the binary
 # directories while keeping the Uniform Server configuration.
+# Floor for the patch level: a lower find means the scrape fell back to an
+# outdated build (releases up to 1.3.12 shipped 2.4.66 this way) - fail loudly.
+# Raise it with every Apache security release.
+$MinApachePatch = 69
 Write-Host '==> Checking for latest Apache Lounge build'
 $UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
 function Find-HttpdZip([string]$html) {
   # Accept anything between the patch level and -win64 (build dates, openssl
-  # tags, ...) and any compiler tag: newest patch, then newest VS wins
-  [regex]::Matches($html, 'httpd-2\.4\.(\d+)[\w.-]*?-win64-VS(\d+)\.zip') |
+  # tags, ...) and any compiler tag: newest patch, then newest VS wins.
+  # Case-insensitive: Lounge spells it "Win64-VS18" as well as "win64-vs18".
+  [regex]::Matches($html, 'httpd-2\.4\.(\d+)[\w.-]*?-win64-VS(\d+)\.zip', 'IgnoreCase') |
     ForEach-Object { [pscustomobject]@{ Patch = [int]$_.Groups[1].Value; VS = [int]$_.Groups[2].Value; Name = $_.Value } } |
     Sort-Object Patch, VS -Descending | Select-Object -First 1
 }
@@ -83,6 +88,7 @@ if (-not $found) {
   [regex]::Matches($dlHtml, 'href="([^"]+)"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique | Select-Object -First 60 | ForEach-Object { Write-Host $_ }
   throw 'No httpd win64 zip found on Apache Lounge page'
 }
+if ($found.Patch -lt $MinApachePatch) { throw "Newest Apache found is 2.4.$($found.Patch) ($($found.Name)), below the floor 2.4.$MinApachePatch - Lounge page layout changed?" }
 $apVer = "2.4.$($found.Patch)"
 Write-Host "==> Downloading Apache $apVer ($($found.Name))"
 & curl.exe -fsSL -A $UA -e 'https://www.apachelounge.com/download/' -o apache.zip "https://www.apachelounge.com/download/VS$($found.VS)/binaries/$($found.Name)"
@@ -149,14 +155,17 @@ if ($c -match '(?m)^DatabaseVersion=') {
 $c = $c -replace '(?m)^ServerTypeText1=Uniform Server Zero(\r?)$', 'ServerTypeText1=Uniform Server Reload$1'
 # Minimum VC++ runtime per PHP version: UniController warns (with download
 # link) before an Apache start that would die on module load (issue #3).
+# VS18 Apache Lounge builds need the 2017-2026 redistributable 14.51+.
+$apRuntime = if ($found.VS -ge 18) { "apache=14.51`r`n" } else { '' }
 if ($c -notmatch '(?m)^\[VCRUNTIME\]') {
-  $c = $c.TrimEnd() + "`r`n`r`n[VCRUNTIME]`r`n; Minimum Microsoft Visual C++ runtime (x64) per PHP version (major.minor).`r`n; UniController warns before starting Apache when the installed runtime is older.`r`nphp85=14.44`r`n"
+  $c = $c.TrimEnd() + "`r`n`r`n[VCRUNTIME]`r`n; Minimum Microsoft Visual C++ runtime (x64) for Apache and per PHP version (major.minor).`r`n; UniController warns before starting Apache when the installed runtime is older.`r`n$($apRuntime)php85=14.44`r`n"
 }
 Set-Content $cfg -Value $c -NoNewline
 if ((Get-Content $cfg -Raw) -notmatch "(?m)^AppVersion=$([regex]::Escape($reloadVersion))") { throw 'us_config.ini version stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch '(?m)^ServerTypeText1=Uniform Server Reload') { throw 'us_config.ini ServerTypeText1 stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch "(?m)^DatabaseVersion=MariaDB $([regex]::Escape($dbVersion))") { throw 'us_config.ini DatabaseVersion stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch '(?m)^php85=14\.44') { throw 'us_config.ini VCRUNTIME stamp failed' }
+if ($apRuntime -and (Get-Content $cfg -Raw) -notmatch '(?m)^apache=14\.51') { throw 'us_config.ini VCRUNTIME apache stamp failed' }
 Set-Content "$root\home\version.txt" -Value "UniServer Reload $reloadVersion (base package Uniform Server ZeroXV $baseVersion)"
 
 # --- Merge the PHP modules ---------------------------------------------------

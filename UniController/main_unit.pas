@@ -552,7 +552,7 @@ begin
 
    If (Main.Btn_start_apache.Caption  = START_AP) Then
     begin
-     us_warn_if_vcruntime_too_old(UENV_PHP_SELECT); // Warn early: selected PHP may need a newer VC++ runtime
+     us_warn_if_vcruntime_too_old(UENV_PHP_SELECT); // Warn early: Apache or selected PHP may need a newer VC++ runtime
      Btn_start_apache.Enabled := False; // Disable button
      us_start_apache_program;           // Start Apache server
      us_update_server_state;            // Update server state. Set button and indicator state
