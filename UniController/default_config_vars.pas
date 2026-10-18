@@ -27,6 +27,10 @@ const
   PALE_MOONL_EXE           = 'Palemoon-Portable.exe'; // Portable Palemoon launcher start-up exe name
   PALE_MOON_EXE            = 'palemoon.exe' ;         // Palemoon execuitable name
 
+  //Controller window look, us_config.ini [APP] GuiStyle
+  GUI_CLASSIC = 'classic'; // normal window with title bar and menu bar (UniServer Zero layout)
+  GUI_MODERN  = 'modern';  // round Reload medallion
+
 Var
 
   //==== User Config and Enironment variables
@@ -74,6 +78,7 @@ Var
    USC_ServerTypeText1 : String;  // TrayIcon hover text
    USC_ServerTypeText2 : String;  // TrayIcon hover text
    USC_TrayIconEnabled : Boolean; // TrayIcon Enable/Disable Default true
+   USC_GuiStyle        : String;  // Window look: GUI_CLASSIC, GUI_MODERN or '' (not chosen yet - asked at the first interactive start)
 
    //[SERVICE] - names of the Windows services UniService installs; the
    //controller only queries/starts/stops them, it never installs them
@@ -718,6 +723,8 @@ begin
    USC_ServerTypeText1 := Ini1.ReadString('APP','ServerTypeText1','Uniform Server Reload');  // TrayIcon hover text
    USC_ServerTypeText2 := Ini1.ReadString('APP','ServerTypeText2','Portable WAMP Server'); // TrayIcon hover text
    USC_TrayIconEnabled := strToBool(Ini1.ReadString('APP','TrayIconEnabled','True'));      // TrayIcon enabled
+   USC_GuiStyle        := LowerCase(Trim(Ini1.ReadString('APP','GuiStyle','')));           // Window look; anything unknown counts as not chosen
+   If (USC_GuiStyle <> GUI_CLASSIC) and (USC_GuiStyle <> GUI_MODERN) Then USC_GuiStyle := '';
 
    //[SERVICE] - same keys and the same "_<AppNumber>" suffix UniService uses,
    //so both programs address the identical Windows services

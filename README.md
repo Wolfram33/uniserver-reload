@@ -168,6 +168,8 @@ A CRM with a few hundred customers, tickets, chats and a document archive is a f
 
 <p align="center"><img src="bundle/branding/controller-medallion.png" alt="UniServer Reload controller: the medallion is the window" width="480"></p>
 
+**Prefer a normal window? Since 1.3.14 there is a classic look.** At the first start the controller asks which look you want: the *Classic window* (a compact normal window with title bar and menu bar, laid out like the original Uniform Server Zero, about 460 x 320 pixels at 100 % display scaling) or the *Modern medallion* (about 640 x 640 pixels). Both offer exactly the same functions. Switch at any time, without a restart, in the menu **General > Window look**. The choice is stored as `GuiStyle=classic` or `GuiStyle=modern` in `home\us_config\us_config.ini` (section `[APP]`); delete that line to be asked again. Existing installations are asked once after the update.
+
 **Consoles in Reload look:** *Server Console* and *MySQL Console* open in Windows Terminal with a translucent black acrylic background and the Reload icon in the tab (Windows Terminal ships with Windows 11; on Windows 10 install it from the Microsoft Store). The opacity is set in `home\us_config\us_user.ini`: `CONSOLE_OPACITY=50` (50–100; `100` restores the classic opaque cmd window, which is also used automatically when Windows Terminal is not installed). The controller registers the profile *UniServer Reload Console* as a Windows Terminal fragment in `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\UniServer Reload\`, so the profile also appears in the terminal's own dropdown; delete that folder to remove it.
 
 ## Running as a Windows service

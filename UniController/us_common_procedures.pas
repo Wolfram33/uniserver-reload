@@ -1034,7 +1034,9 @@ begin
     Bmp.Canvas.Brush.Color := clFill;
     Bmp.Canvas.Pen.Color   := clEdge;
     Bmp.Canvas.Ellipse(0, 0, W, H);
-    AImg.Canvas.Draw(0, 0, Bmp);
+    // Assign, not Canvas.Draw: the picture takes the LED's size. A picture
+    // created earlier at a smaller size (before DPI scaling) clipped the circle.
+    AImg.Picture.Bitmap.Assign(Bmp);
   finally
     Bmp.Free;
   end;

@@ -45,9 +45,28 @@ unchanged. The Lazarus **form designer** however does not know the class:
 to edit `main_unit.lfm` visually you must first add `us_buttons.pas` to a
 design-time package, or simply edit the `.lfm` as text.
 
+### Window looks: classic or medallion
+
+The same `TMain` form shows one of two looks, chosen by `GuiStyle` in
+`us_config.ini` `[APP]` (`classic` / `modern`, empty = not chosen yet):
+
+- First interactive start (no command line parameters) with no choice
+  saved: `us_gui_style_dlg.pas` shows a dialog with both looks and stores the
+  answer. Closed without a choice, the medallion is used and the question
+  comes again at the next start.
+- `TMain.ApplyGuiStyle` switches at runtime (menu General > Window look):
+  classic = `bsSingle` with `Menu := MainMenu1`, white form, no window
+  region, tabs and `-`/`x` hidden, layout from `CLASSIC_BOUNDS`; medallion =
+  `bsNone`, no menu, coin region, layout from the `.lfm` (remembered at start
+  in design units, so DPI changes keep working). Set `Menu` **before**
+  `BorderStyle`: the border change recreates the window, and a menu attached
+  afterwards did not show.
+- Controls whose place differs between the looks are listed once in
+  `TMain.LayoutControls`, in the same order as `CLASSIC_BOUNDS`.
+
 ### The medallion window
 
-The main window is the 3D "Reload" medallion itself (`us_medallion.pas`):
+The modern look is the 3D "Reload" medallion itself (`us_medallion.pas`):
 
 - The artwork is the `MEDALLION` RCDATA resource in `unicon_images.rc`
   (`unicon_images/medaillon.png`, 2000 x 2000, PNG with alpha). Any change to

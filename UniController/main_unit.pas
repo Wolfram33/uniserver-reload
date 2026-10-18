@@ -15,6 +15,7 @@ uses
   ExtCtrls, Menus,
   us_buttons,
   us_medallion,
+  us_gui_style_dlg,
   default_config_vars,
   us_common_procedures,
   us_common_functions,
@@ -43,6 +44,13 @@ uses
 
 type
 
+  { Control position in design units (DesignTimePPI), scaled to the
+    current DPI when a window look is applied }
+  TDesignBounds = record
+    X, Y, W, H: Integer;
+  end;
+  TControlList = array of TControl;
+
   { TMain }
 
   TMain = class(TForm)
@@ -68,6 +76,7 @@ type
     Lbl_apache_utilities: TLabel;
     Lbl_mysql_utilities: TLabel;
     Lbl_version: TLabel;
+    Img_logo: TImage;
     apache_img: TImage;
     menuImageList: TImageList;
     MenuItem1: TMenuItem;
@@ -107,6 +116,9 @@ type
     MMS_pc_win_startup: TMenuItem;
     MMS_tray_icon: TMenuItem;
     MenuItem_tray_spacer: TMenuItem;
+    MMS_gui_style: TMenuItem;
+    MMSS_gui_classic: TMenuItem;
+    MMSS_gui_modern: TMenuItem;
     MMS_clean_up: TMenuItem;
     MMSS_display_at_startup_page1: TMenuItem;
     MMSS_select_page_to_display1: TMenuItem;
@@ -284,6 +296,8 @@ type
     procedure MMS_select_portable_browserClick(Sender: TObject);
     procedure MMS_select_default_browserClick(Sender: TObject);
     procedure MMS_tray_iconClick(Sender: TObject);
+    procedure MMSS_gui_classicClick(Sender: TObject);
+    procedure MMSS_gui_modernClick(Sender: TObject);
     procedure MMS_view_phpinfoClick(Sender: TObject);
     procedure MM_aboutClick(Sender: TObject);
     procedure SystrayIconClick(Sender: TObject);
@@ -295,7 +309,15 @@ type
     FBackground    : Graphics.TBitmap; // coin rendered at the current window size
     FBackgroundSize: Integer;          // edge length FBackground was rendered for
     FTrayMenu      : TPopupMenu;       // right-click menu of the notification area icon
+    FClassic       : Boolean;          // True = classic window look, False = medallion
+    FModernBounds  : array of TDesignBounds; // medallion places of LayoutControls, taken from the .lfm
     procedure RenderBackground;
+    function LayoutControls: TControlList; // controls whose place depends on the window look
+    procedure ApplyGuiStyle;               // switch the form to USC_GuiStyle (classic or medallion)
+    procedure ApplyGuiStyleAsync(Data: PtrInt);
+    procedure AskGuiStyleOnce;             // first interactive start: classic or modern?
+    function SaveGuiStyle(const AStyle: string): Boolean;
+    procedure SwitchGuiStyle(const AStyle: string); // menu General > Window look
     function MenuItemForTab(ATab: TUsButton): TMenuItem;
     procedure ApplyDatabaseEngineName; // 'MySQL' in the design becomes the installed engine's name (MariaDB)
     procedure CreateTrayMenu;          // Show / Exit for the notification area icon
@@ -316,7 +338,219 @@ implementation
 {$R *.lfm}
 {$R unicon_images.rc}  // Add image resource for tray icon -> Added into the Project Resources
 
+const
+  //--- Window looks (design units at DesignTimePPI 120, see ApplyGuiStyle)
+  MEDALLION_CLIENT_SIZE = 800;              // edge of the coin window
+  MEDALLION_FORM_COLOR  = TColor($2F2F2F);  // dark outside/behind the coin
+  MEDALLION_LABEL_COLOR = TColor($EDEAE8);  // #E8EAED on the dark pads
+  MEDALLION_FILL_OPACITY = 240;             // buttons let the metal shimmer through
+
+  CLASSIC_CLIENT_WIDTH  = 556;              // compact UniServer Zero layout
+  CLASSIC_CLIENT_HEIGHT = 318;
+  CLASSIC_FORM_COLOR    = clWhite;
+  CLASSIC_LABEL_COLOR   = TColor($514137);  // #374151, about 10:1 on white
+  CLASSIC_FILL_OPACITY  = 255;              // opaque: a translucent fill on white loses contrast
+  // Same order as TMain.LayoutControls
+  CLASSIC_BOUNDS: array[0..13] of TDesignBounds = (
+    (X: 290; Y:  14; W: 214; H: 38),  // Btn_start_apache
+    (X: 290; Y:  60; W: 214; H: 38),  // Btn_start_mysql
+    (X: 512; Y:  22; W:  22; H: 22),  // apache_img
+    (X: 512; Y:  68; W:  22; H: 22),  // mysql_img
+    (X:  16; Y: 112; W: 200; H: 26),  // Lbl_apache_utilities
+    (X:  16; Y: 142; W: 250; H: 34),  // Btn_server_console
+    (X:  16; Y: 184; W: 250; H: 34),  // Btn_view_www
+    (X:  16; Y: 226; W: 250; H: 34),  // Btn_view_ssl
+    (X:  16; Y: 268; W: 250; H: 34),  // Btn_documentation
+    (X: 290; Y: 112; W: 200; H: 26),  // Lbl_mysql_utilities
+    (X: 290; Y: 142; W: 250; H: 34),  // Btn_mysql_console
+    (X: 290; Y: 184; W: 250; H: 34),  // Btn_opt1
+    (X: 290; Y: 226; W: 250; H: 34),  // Btn_opt2
+    (X: 290; Y: 268; W: 250; H: 34)); // Btn_opt3
+
+  TRAY_ICON_CAPTION         = 'Minus button minimizes to system tray';
+  TRAY_ICON_CAPTION_CLASSIC = 'Minus button minimizes to system tray (Modern medallion only)';
+
 { TMain }
+
+{====================================================================
+Window look. The same form shows either the round medallion (borderless,
+clipped to the coin, menus as tabs) or the classic window (title bar,
+real menu bar, compact UniServer Zero layout). The choice lives in
+us_config.ini [APP] GuiStyle and is asked once at the first interactive
+start; General > Window look switches at any time without a restart.
+--------------------------------------------------------------------}
+function TMain.LayoutControls: TControlList;
+begin
+  Result := TControlList.Create(
+    Btn_start_apache, Btn_start_mysql, apache_img, mysql_img,
+    Lbl_apache_utilities, Btn_server_console, Btn_view_www, Btn_view_ssl,
+    Btn_documentation, Lbl_mysql_utilities, Btn_mysql_console,
+    Btn_opt1, Btn_opt2, Btn_opt3);
+end;
+
+procedure TMain.ApplyGuiStyle;
+var
+  placed : TControlList;
+  i        : Integer;
+  b        : TDesignBounds;
+  wasShown : Boolean;
+  cx, cy   : Integer;
+  fill     : Byte;
+  lblColor : TColor;
+begin
+  placed := LayoutControls;
+  if Length(FModernBounds) = 0 then   // first call: remember the medallion layout of the .lfm
+  begin
+    SetLength(FModernBounds, Length(placed));
+    for i := 0 to High(placed) do
+    begin
+      FModernBounds[i].X := ScaleFormToDesign(placed[i].Left);
+      FModernBounds[i].Y := ScaleFormToDesign(placed[i].Top);
+      FModernBounds[i].W := ScaleFormToDesign(placed[i].Width);
+      FModernBounds[i].H := ScaleFormToDesign(placed[i].Height);
+    end;
+  end;
+
+  FClassic := USC_GuiStyle = GUI_CLASSIC;   // not chosen yet = medallion, as before
+  wasShown := Visible;
+  cx := Left + Width div 2;                 // switching keeps the window centre
+  cy := Top + Height div 2;
+
+  // Elements that exist in one look only
+  Tab_general.Visible := not FClassic;
+  Tab_extra.Visible   := not FClassic;
+  Tab_apache.Visible  := not FClassic;
+  Tab_mysql.Visible   := not FClassic;
+  Tab_php.Visible     := not FClassic;
+  Tab_perl.Visible    := not FClassic;
+  Tab_about.Visible   := not FClassic;
+  Btn_minimize.Visible:= not FClassic;      // classic: title bar buttons instead
+  Btn_close.Visible   := not FClassic;
+  Lbl_version.Visible := not FClassic;      // classic: version is in About
+  Img_logo.Visible    := FClassic;
+
+  if FClassic then
+  begin
+    UsButtonBackground := nil;              // buttons paint their corners in the form colour
+    FreeAndNil(FBackground);
+    FBackgroundSize := 0;
+    if HandleAllocated then SetWindowRgn(Handle, 0, True); // no coin outline
+    Color       := CLASSIC_FORM_COLOR;
+    // Menu first: the BorderStyle change recreates the window, and a window
+    // created with the menu shows it (attaching it afterwards left no menu bar)
+    Menu        := MainMenu1;               // real menu bar replaces the tabs
+    BorderStyle := bsSingle;                // recreates the window with a title bar
+    fill     := CLASSIC_FILL_OPACITY;
+    lblColor := CLASSIC_LABEL_COLOR;
+  end
+  else
+  begin
+    Menu        := nil;
+    BorderStyle := bsNone;
+    Color       := MEDALLION_FORM_COLOR;
+    fill     := MEDALLION_FILL_OPACITY;
+    lblColor := MEDALLION_LABEL_COLOR;
+  end;
+
+  for i := 0 to High(placed) do
+  begin
+    if FClassic then b := CLASSIC_BOUNDS[i] else b := FModernBounds[i];
+    placed[i].SetBounds(ScaleDesignToForm(b.X), ScaleDesignToForm(b.Y),
+                          ScaleDesignToForm(b.W), ScaleDesignToForm(b.H));
+    if placed[i] is TUsButton then TUsButton(placed[i]).FillOpacity := fill;
+  end;
+  Lbl_apache_utilities.Font.Color := lblColor;
+  Lbl_mysql_utilities.Font.Color  := lblColor;
+
+  if FClassic then
+  begin
+    ClientWidth  := ScaleDesignToForm(CLASSIC_CLIENT_WIDTH);
+    ClientHeight := ScaleDesignToForm(CLASSIC_CLIENT_HEIGHT);
+  end
+  else
+  begin
+    ClientWidth  := ScaleDesignToForm(MEDALLION_CLIENT_SIZE);
+    ClientHeight := ScaleDesignToForm(MEDALLION_CLIENT_SIZE);
+    if FBackgroundSize <> ClientWidth then RenderBackground; // also sets the coin outline
+  end;
+
+  // Menu state
+  MMSS_gui_classic.Checked := FClassic;
+  MMSS_gui_modern.Checked  := not FClassic;
+  MMS_tray_icon.Enabled    := not FClassic; // classic has no minus button
+  if FClassic then
+    MMS_tray_icon.Caption := TRAY_ICON_CAPTION_CLASSIC
+  else
+    MMS_tray_icon.Caption := TRAY_ICON_CAPTION;
+
+  if wasShown then
+  begin
+    // Same centre as before, but fully on the work area of this monitor
+    Left := cx - Width div 2;
+    Top  := cy - Height div 2;
+    if Left + Width > Monitor.WorkareaRect.Right then Left := Monitor.WorkareaRect.Right - Width;
+    if Top + Height > Monitor.WorkareaRect.Bottom then Top := Monitor.WorkareaRect.Bottom - Height;
+    if Left < Monitor.WorkareaRect.Left then Left := Monitor.WorkareaRect.Left;
+    if Top < Monitor.WorkareaRect.Top then Top := Monitor.WorkareaRect.Top;
+  end;
+  Invalidate;
+end;
+
+procedure TMain.ApplyGuiStyleAsync(Data: PtrInt);
+begin
+  ApplyGuiStyle;
+  us_update_server_state; // redraw the LEDs on the new background colour
+end;
+
+{Persist the look. Returns False (after telling the user) when
+ us_config.ini cannot be written, e.g. a read-only server folder.}
+function TMain.SaveGuiStyle(const AStyle: string): Boolean;
+begin
+  USC_GuiStyle := AStyle;
+  try
+    us_ini_set(USF_US_CONF_INI, 'APP', 'GuiStyle', AStyle);
+    Result := True;
+  except
+    on E: Exception do
+    begin
+      Result := False;
+      us_MessageDlg('Window look',
+        'The window look could not be saved in' + sLineBreak + USF_US_CONF_INI + sLineBreak + sLineBreak +
+        'Reason: ' + E.Message + sLineBreak + sLineBreak +
+        'The look applies until UniController is closed. To keep it, make sure the' + sLineBreak +
+        'server folder is writable and choose it again in General > Window look.',
+        mtWarning, [mbOk], 0);
+    end;
+  end;
+end;
+
+procedure TMain.AskGuiStyleOnce;
+var
+  choice: string;
+begin
+  if USC_GuiStyle <> '' then Exit;          // already chosen
+  choice := us_ask_gui_style;               // coloured choice dialog, us_gui_style_dlg.pas
+  if choice <> '' then SaveGuiStyle(choice);
+  // Closed without a choice: medallion for now, asked again at the next start
+end;
+
+procedure TMain.SwitchGuiStyle(const AStyle: string);
+begin
+  if AStyle <> USC_GuiStyle then SaveGuiStyle(AStyle);
+  USC_GuiStyle := AStyle;
+  // Outside the menu's own message handling: the switch recreates the window
+  Application.QueueAsyncCall(@ApplyGuiStyleAsync, 0);
+end;
+
+procedure TMain.MMSS_gui_classicClick(Sender: TObject);
+begin
+  SwitchGuiStyle(GUI_CLASSIC);
+end;
+
+procedure TMain.MMSS_gui_modernClick(Sender: TObject);
+begin
+  SwitchGuiStyle(GUI_MODERN);
+end;
 
 {====================================================================
 Medallion window (see us_medallion.pas): render the coin at the current
@@ -374,14 +608,14 @@ end;
 
 procedure TMain.FormPaint(Sender: TObject);
 begin
-  if FBackground <> nil then
+  if (not FClassic) and (FBackground <> nil) then
     Canvas.Draw(0, 0, FBackground);
 end;
 
 procedure TMain.FormResize(Sender: TObject);
 begin
   // DPI change or monitor move: the LCL rescaled the controls, redo the coin
-  if (FMedallion <> nil) and (ClientWidth <> FBackgroundSize) then
+  if (not FClassic) and (FMedallion <> nil) and (ClientWidth <> FBackgroundSize) then
     RenderBackground;
 end;
 
@@ -395,8 +629,9 @@ end;
 procedure TMain.FormMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
-  // No title bar: dragging any free spot of the coin moves the window
-  if Button = mbLeft then
+  // No title bar: dragging any free spot of the coin moves the window.
+  // The classic window has a title bar for that, like every other program.
+  if (Button = mbLeft) and not FClassic then
   begin
     ReleaseCapture;
     SendMessage(Handle, WM_NCLBUTTONDOWN, HTCAPTION, 0);
@@ -1399,10 +1634,10 @@ begin
   Timer1.Enabled := False;          // Disable timer
 
   //--- Medallion window: the coin artwork is the form (see us_medallion.pas).
-  //    Outline and background must exist before the window is first shown.
+  //    Outline and background must exist before the window is first shown;
+  //    ApplyGuiStyle below renders it once the chosen look is known.
   DoubleBuffered := True;
   FMedallion     := TUsMedallion.Create;
-  RenderBackground;
   Lbl_version.Caption := 'Uniform Server Reload ' + US_RELOAD_VERSION;
   CreateTrayMenu;                   // Right-click menu of the notification area icon (Show / Exit)
 
@@ -1412,7 +1647,9 @@ If us_application_is_runable Then   // A draconian check. If a space found in pa
   us_command_line_start_up;         // UniController started with parameters. Process and exit application
 
   us_main_init;                     // Set initial values for variables, paths and environment variables.
-  ApplyDatabaseEngineName;          // Menus and buttons name the installed engine (us_opt.ini), not 'MySQL'
+  If (ParamCount = 0) Then AskGuiStyleOnce; // First interactive start: classic window or medallion
+  ApplyGuiStyle;                    // Shape the window in the chosen look before it is shown
+  ApplyDatabaseEngineName;         // Menus and buttons name the installed engine (us_opt.ini), not 'MySQL'
   CreateEngineSwitchMenuItem;       // How to get the other engine (MySQL module / MariaDB module)
   us_auto_generate_ssl_cert;        // First start: generate localhost certificate and enable SSL
 
