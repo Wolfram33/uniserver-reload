@@ -77,7 +77,7 @@ Var
    USC_ServerType      : String;  // Server Type: WAMP=Default APS=Apache standalone server MYS=MySQL  standalone server
    USC_ServerTypeText1 : String;  // TrayIcon hover text
    USC_ServerTypeText2 : String;  // TrayIcon hover text
-   USC_TrayIconEnabled : Boolean; // TrayIcon Enable/Disable Default true
+   USC_TrayIconEnabled : Boolean; // TrayIcon Enable/Disable Default false (stay on the taskbar)
    USC_GuiStyle        : String;  // Window look: GUI_CLASSIC, GUI_MODERN or '' (not chosen yet - asked at the first interactive start)
 
    //[SERVICE] - names of the Windows services UniService installs; the
@@ -722,7 +722,7 @@ begin
    USC_ServerType      := Ini1.ReadString('APP','ServerType','WAMP0');                     // Default=WAMP APS=Apache standalone server MYS=MySQL  standalone server
    USC_ServerTypeText1 := Ini1.ReadString('APP','ServerTypeText1','Uniform Server Reload');  // TrayIcon hover text
    USC_ServerTypeText2 := Ini1.ReadString('APP','ServerTypeText2','Portable WAMP Server'); // TrayIcon hover text
-   USC_TrayIconEnabled := strToBool(Ini1.ReadString('APP','TrayIconEnabled','True'));      // TrayIcon enabled
+   USC_TrayIconEnabled := strToBool(Ini1.ReadString('APP','TrayIconEnabled','False'));      // TrayIcon enabled
    USC_GuiStyle        := LowerCase(Trim(Ini1.ReadString('APP','GuiStyle','')));           // Window look; anything unknown counts as not chosen
    If (USC_GuiStyle <> GUI_CLASSIC) and (USC_GuiStyle <> GUI_MODERN) Then USC_GuiStyle := '';
 

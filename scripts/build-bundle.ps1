@@ -153,6 +153,10 @@ if ($c -match '(?m)^DatabaseVersion=') {
 }
 # Window title / tray hover text still carries the upstream name in the stock ini
 $c = $c -replace '(?m)^ServerTypeText1=Uniform Server Zero(\r?)$', 'ServerTypeText1=Uniform Server Reload$1'
+# Minimize stays on the taskbar like any other program; the tray is opt-in
+# (General > Minimize button minimizes to system tray). Stock ini: True.
+$c = $c -replace '(?m)^;--Default true(\r?\n)TrayIconEnabled=', ';--Default false (stay on the taskbar)$1TrayIconEnabled='
+$c = $c -replace '(?m)^TrayIconEnabled=.*?(\r?)$', 'TrayIconEnabled=False$1'
 # Minimum VC++ runtime per PHP version: UniController warns (with download
 # link) before an Apache start that would die on module load (issue #3).
 # VS18 Apache Lounge builds need the 2017-2026 redistributable 14.51+.
@@ -163,6 +167,7 @@ if ($c -notmatch '(?m)^\[VCRUNTIME\]') {
 Set-Content $cfg -Value $c -NoNewline
 if ((Get-Content $cfg -Raw) -notmatch "(?m)^AppVersion=$([regex]::Escape($reloadVersion))") { throw 'us_config.ini version stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch '(?m)^ServerTypeText1=Uniform Server Reload') { throw 'us_config.ini ServerTypeText1 stamp failed' }
+if ((Get-Content $cfg -Raw) -notmatch '(?m)^TrayIconEnabled=False') { throw 'us_config.ini TrayIconEnabled stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch "(?m)^DatabaseVersion=MariaDB $([regex]::Escape($dbVersion))") { throw 'us_config.ini DatabaseVersion stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch '(?m)^php85=14\.44') { throw 'us_config.ini VCRUNTIME stamp failed' }
 if ($apRuntime -and (Get-Content $cfg -Raw) -notmatch '(?m)^apache=14\.51') { throw 'us_config.ini VCRUNTIME apache stamp failed' }

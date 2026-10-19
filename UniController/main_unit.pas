@@ -325,8 +325,11 @@ type
     procedure TrayExitClick(Sender: TObject);
     procedure CreateEngineSwitchMenuItem; // "Switch to MySQL instead..." at the end of the database menu
     procedure EngineSwitchInfoClick(Sender: TObject);
+  protected
+    procedure CreateWnd; override;     // hooks the title bar minimize button (see TitleBarMinimizeProc)
   public
     { public declarations }
+    procedure MinimizeToTray;          // hide into the notification area icon
     procedure SyncMenuTabs; // Mirror caption/enabled state of the top-level menu items onto the tabs
   end;
 
@@ -334,6 +337,9 @@ var
   Main: TMain;
 
 implementation
+
+uses
+  commctrl;  // SetWindowSubclass for the title bar minimize button
 
 {$R *.lfm}
 {$R unicon_images.rc}  // Add image resource for tray icon -> Added into the Project Resources
@@ -367,8 +373,7 @@ const
     (X: 290; Y: 226; W: 250; H: 34),  // Btn_opt2
     (X: 290; Y: 268; W: 250; H: 34)); // Btn_opt3
 
-  TRAY_ICON_CAPTION         = 'Minus button minimizes to system tray';
-  TRAY_ICON_CAPTION_CLASSIC = 'Minus button minimizes to system tray (Modern medallion only)';
+  TITLE_BAR_SUBCLASS_ID = 1;  // our id for SetWindowSubclass on the form window
 
 { TMain }
 
@@ -477,11 +482,6 @@ begin
   // Menu state
   MMSS_gui_classic.Checked := FClassic;
   MMSS_gui_modern.Checked  := not FClassic;
-  MMS_tray_icon.Enabled    := not FClassic; // classic has no minus button
-  if FClassic then
-    MMS_tray_icon.Caption := TRAY_ICON_CAPTION_CLASSIC
-  else
-    MMS_tray_icon.Caption := TRAY_ICON_CAPTION;
 
   if wasShown then
   begin
@@ -640,18 +640,54 @@ end;
 
 procedure TMain.Btn_minimizeClick(Sender: TObject);
 begin
-  // Only this button sends the window to the tray. A taskbar click
-  // minimizes normally and keeps the taskbar entry, like every other
-  // Windows program. Setting WindowState in code does not fire
-  // OnWindowStateChange, so the button acts directly.
+  // Only the window's own minimize button sends it to the tray: this
+  // minus button on the medallion, the title bar button in the classic
+  // look (see TitleBarMinimizeProc). A taskbar click minimizes normally
+  // and keeps the taskbar entry, like every other Windows program.
+  // Setting WindowState in code does not fire OnWindowStateChange, so
+  // the button acts directly.
   If USC_TrayIconEnabled Then
-    begin
-      Main.Hide;                       // Hide; tray icon brings it back
-      Main.ShowInTaskBar := stNever;   // Remove from task bar
-      us_update_server_state;          // Update menus
-    end
+    MinimizeToTray
   Else
     Application.Minimize;              // Minimize to the taskbar button
+end;
+
+procedure TMain.MinimizeToTray;
+begin
+  Main.Hide;                       // Hide; tray icon brings it back
+  Main.ShowInTaskBar := stNever;   // Remove from task bar
+  us_update_server_state;          // Update menus
+end;
+
+{====================================================================
+Classic window: the title bar minimize button goes to the tray, like
+the minus button of the medallion, so both looks behave the same.
+The LCL minimizes the whole application in its own WM_SYSCOMMAND
+handling before the form sees the message, so the form window is
+subclassed and SC_MINIMIZE is taken off it first. Only the form gets
+this message from the title bar button (and Alt+Space > Minimize);
+a taskbar click goes to the hidden Application window and still
+minimizes normally. CreateWnd runs again whenever the window look
+switch recreates the window, so the hook is set on every new handle.
+--------------------------------------------------------------------}
+function TitleBarMinimizeProc(hWnd: HWND; uMsg: UINT; wParam: WPARAM;
+  lParam: LPARAM; uIdSubclass: UINT_PTR; dwRefData: DWORD_PTR): LRESULT; stdcall;
+begin
+  if (uMsg = WM_SYSCOMMAND) and ((wParam and $FFF0) = SC_MINIMIZE)
+     and USC_TrayIconEnabled then
+  begin
+    TMain(dwRefData).MinimizeToTray;
+    Exit(0);
+  end;
+  if uMsg = WM_NCDESTROY then              // required before the window goes away
+    RemoveWindowSubclass(hWnd, SUBCLASSPROC(@TitleBarMinimizeProc), uIdSubclass);
+  Result := DefSubclassProc(hWnd, uMsg, wParam, lParam);
+end;
+
+procedure TMain.CreateWnd;
+begin
+  inherited CreateWnd;
+  SetWindowSubclass(Handle, @TitleBarMinimizeProc, TITLE_BAR_SUBCLASS_ID, DWORD_PTR(Self));
 end;
 
 procedure TMain.Btn_closeClick(Sender: TObject);
@@ -2250,6 +2286,9 @@ end;
 {====================================================================
 Toggle: minimize to system tray.
 UI switch for TrayIconEnabled in us_config.ini, previously ini-only.
+Off (default since 1.3.15): the window stays on the taskbar like any
+other program. On: the window's own minimize button (medallion minus,
+classic title bar) hides it into the notification area.
 --------------------------------------------------------------------}
 procedure TMain.MMS_tray_iconClick(Sender: TObject);
 begin
@@ -2258,13 +2297,19 @@ begin
     Main.MMS_tray_icon.Checked := False;                            // Set to un-checked
     USC_TrayIconEnabled := False;                                   // Stay in taskbar when minimized
     us_ini_set(USF_US_CONF_INI,'APP','TrayIconEnabled','False');    // save to config file
+    SystrayIcon.Hide;                                               // No tray icon without the option
   end
  Else
   begin
     Main.MMS_tray_icon.Checked := True;                             // Set to checked
     USC_TrayIconEnabled := True;                                    // Minimize to system tray
     us_ini_set(USF_US_CONF_INI,'APP','TrayIconEnabled','True');     // save to config file
+    // The icon is otherwise only shown at start-up; without it a window
+    // minimized to the tray could not be brought back.
+    us_set_icon_and_hover_text;
+    SystrayIcon.Show;
   end;
+ us_update_server_state;                                            // Minimize button hint
 end;
 
 
