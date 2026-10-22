@@ -211,6 +211,7 @@ type
     procedure Btn_closeClick(Sender: TObject);
     procedure TabClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure FormPaint(Sender: TObject);
@@ -1546,6 +1547,50 @@ begin
   url        := 'file:///' + PathFslash + '/manual/index.html';
   browser_display_url(url);  // Display Server documentation page
 
+end;
+
+{====================================================================
+Closing the controller (medallion x, title bar x, tray Exit, Alt+F4)
+with Apache or MySQL still running as standard programs: they would
+keep running invisibly, findable only in the Task Manager. So ask:
+stop them first, leave them running, or stay in the controller.
+Servers running as Windows services are left alone, they are meant
+to outlive the controller (and can only be stopped elevated).
+--------------------------------------------------------------------}
+procedure TMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+var
+  ap_running, my_running: Boolean;
+  names, msg: string;
+begin
+  If USC_CLI_MODE Then Exit;  // Scripts decide themselves (stop/start actions)
+
+  ap_running := ApacheRunning() and not us_IsServiceRunning(USC_APACHE_SERVICE_NAME);
+  my_running := MysqlRunning()  and not us_IsServiceRunning(USC_MYSQL_SERVICE_NAME);
+  If not (ap_running or my_running) Then Exit;
+
+  If ap_running and my_running Then names := 'Apache and ' + US_MYMAR_TXT + ' are'
+  Else If ap_running Then names := 'Apache is'
+  Else names := US_MYMAR_TXT + ' is';
+
+  msg := names + ' still running.' + sLineBreak + sLineBreak +
+         'Yes: stop the server(s), then close winpacho.' + sLineBreak +
+         'No: close winpacho and keep the server(s) running in the' + sLineBreak +
+         '      background. They are then only visible in the Task Manager;' + sLineBreak +
+         '      start winpacho again to see and stop them.' + sLineBreak + sLineBreak +
+         'Close this box with its x to stay in winpacho.';
+
+  If not Main.Visible Then SystrayIconClick(Sender);  // Exit from the tray: show what is being asked about
+
+  Case us_MessageDlg('Close winpacho', msg, mtConfirmation, [mbYes, mbNo], 0) of
+    mrYes:
+      begin
+        If ap_running Then us_kill_apache_program;       // Same as the Stop Apache button
+        If my_running Then us_clean_stop_mysql_program;  // Same as the Stop MySQL button
+      end;
+    mrNo: ;                                             // Leave them running
+  Else
+    CanClose := False;                                  // Dialog closed with x: stay
+  end;
 end;
 
 procedure TMain.FormClose(Sender: TObject; var CloseAction: TCloseAction);

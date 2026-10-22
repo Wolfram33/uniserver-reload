@@ -13,6 +13,7 @@ object Main: TMain
   DesignTimePPI = 120
   FormStyle = fsStayOnTop
   OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnMouseDown = FormMouseDown
