@@ -107,7 +107,7 @@ $report = @("## Upstream versions vs. release $($release.tag_name)", '',
             '| Component | Shipped | Upstream | State |', '|---|---|---|---|')
 $report += $rows | ForEach-Object { "| $($_.Component) | $($_.Shipped) | $($_.Upstream) | $($_.State) |" }
 if ($updates) {
-  $report += '', "**$updates update(s) available.** Bump UniController/reload_version.inc, commit, tag and push -",
+  $report += '', "**$updates update(s) available.** Bump WinpachoController/reload_version.inc, commit, tag and push -",
              'the build fetches the newest versions. For a new Apache also raise $MinApachePatch in scripts/build-bundle.ps1.'
 }
 if ($errors) { $report += '', '**Checks that failed:**'; $report += $errors | ForEach-Object { "- $_" } }

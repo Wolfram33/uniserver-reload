@@ -6,7 +6,7 @@
 # module also upgrades an installation from before 1.3.6 (or from the MySQL
 # module) - fresh core\mysql only, see README "Databases".
 #
-# Layout (the core\mysql structure UniController expects; the same one the
+# Layout (the core\mysql structure WinpachoController expects; the same one the
 # original Uniform Server used for its database modules):
 #   core/mysql/bin/       mysqld_z.exe (= mariadbd) + classic client tool
 #                         names (mysql.exe, mysqladmin.exe, mysqldump.exe),

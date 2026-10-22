@@ -18,7 +18,7 @@
 > One of the most notorious problems of the original Uniform Server is fixed in this fork: **creating more than one virtual host silently failed.** The controller handed the Windows hosts file entry to the interactive EdHost utility as a command line call — but EdHost has no command line interface, so **nothing was ever written** and the new host name simply did not resolve. It looked like a broken Apache configuration and was masked whenever an entry already existed from another tool. winpacho writes the hosts entries itself — deduplicated, elevated only when needed, and verified with a clear message if anything fails. Create as many vhosts as you like: `http://` **and** `https://` work for every one of them.
 
 The original project — a free lightweight WAMP server solution for Windows — has seen no commits since November 2023.
-This fork imports the source of its two control programs (UniController and UniService) as a clean starting point for further development.
+This fork continues the source of the two original control programs (UniController and UniService, since 2.1.0 named WinpachoController and WinpachoService) as a clean starting point for further development.
 
 * Upstream repository: https://github.com/iamola/uniserver (imported at commit `1704fa1`, 2023-11-25)
 * Upstream downloads: https://sourceforge.net/projects/miniserver/
@@ -29,8 +29,8 @@ This fork imports the source of its two control programs (UniController and UniS
 
 This repository contains the **source code of the controllers only**, written in Free Pascal and compiled with [Lazarus](https://www.lazarus-ide.org/):
 
-* **[UniController](UniController/)** — the main GUI that starts, stops and configures Apache, MySQL/MariaDB and PHP (see its [README](UniController/README.md) for build instructions)
-* **[UniService](UniService/)** — a plugin that runs the servers as a Windows service (see its [README](UniService/README.md))
+* **[WinpachoController](WinpachoController/)** — the main GUI that starts, stops and configures Apache, MySQL/MariaDB and PHP (see its [README](WinpachoController/README.md) for build instructions)
+* **[WinpachoService](WinpachoService/)** — the service module that runs the servers as Windows services (see its [README](WinpachoService/README.md))
 
 The actual server binaries are not part of this repository. Apache, PHP, MariaDB and MySQL are fetched from their vendors by the packaging scripts in [scripts/](scripts/) on every CI build; phpMyAdmin, the Apache configuration and the remaining pieces come from the Uniform Server ZeroXV 15.0.2 base package.
 
@@ -42,17 +42,17 @@ Every push triggers a build that updates the rolling release with fixed download
 
 | File | Description |
 |---|---|
-| **`winpacho.zip`** | **Recommended. All-in-one, zero-setup package: the complete server (Apache, MariaDB, phpMyAdmin, PHP 8.3/8.4/8.5 with 8.5 preselected, updated controller) as a plain zip — extract it into an empty folder, start `UniController.exe` and it runs, no further downloads or configuration** |
+| **`winpacho.zip`** | **Recommended. All-in-one, zero-setup package: the complete server (Apache, MariaDB, phpMyAdmin, PHP 8.3/8.4/8.5 with 8.5 preselected, updated controller) as a plain zip — extract it into an empty folder, start `WinpachoController.exe` and it runs, no further downloads or configuration** |
 | `winpacho.7z` | The same bundle as a `.7z` (LZMA, solid): about half the download size — the footprint the former self-extracting exe had, without the exe stub Defender flagged. Windows 11 23H2+ extracts it with Explorer, older Windows needs [7-Zip](https://www.7-zip.org/) |
 | `winpacho_php83_module.zip` | PHP 8.3 module — for adding to or updating an existing installation |
-| `winpacho_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
+| `winpacho_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, winpacho module layout) — for adding to an existing installation |
 | `winpacho_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
 | `winpacho_mariadb_module.zip` | The bundle's database engine (MariaDB LTS) as a separate module — for installations from 1.3.5 or older, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
 | `winpacho_mysql_module.zip` | MySQL 8.4 LTS as the alternative engine — same switching procedure, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
 
-**Archive downloads only.** Until releases are code-signed there are no bare exe downloads: Windows Defender's machine-learning heuristic quarantined the unsigned self-extracting archive right after download as `Trojan:Win32/Wacatac.B!ml` (a known false positive), and SmartScreen warns on downloaded exes in general. A zip needs no extra tool on Windows, and the binaries inside are not flagged. To update only the controller of an existing installation, take `UniController.exe` and `utils\UniService.exe` out of the bundle zip (see [Upgrading](#upgrading)).
+**Archive downloads only.** Until releases are code-signed there are no bare exe downloads: Windows Defender's machine-learning heuristic quarantined the unsigned self-extracting archive right after download as `Trojan:Win32/Wacatac.B!ml` (a known false positive), and SmartScreen warns on downloaded exes in general. A zip needs no extra tool on Windows, and the binaries inside are not flagged. To update only the controller of an existing installation, take `WinpachoController.exe` and `utils\WinpachoService.exe` out of the bundle zip (see [Upgrading](#upgrading)).
 
-Quick start: extract `winpacho.zip` into an empty folder without spaces in the path (e.g. `C:\winpacho`), then start `UniController.exe` from it — the server lives directly in the chosen folder (no `UniServerZ` subfolder since 1.3.0) and is ready to go. The newest bundled PHP version (8.5) is preselected; to switch stop Apache first, then use *PHP > Select PHP version*.
+Quick start: extract `winpacho.zip` into an empty folder without spaces in the path (e.g. `C:\winpacho`), then start `WinpachoController.exe` from it — the server lives directly in the chosen folder (no `UniServerZ` subfolder since 1.3.0) and is ready to go. The newest bundled PHP version (8.5) is preselected; to switch stop Apache first, then use *PHP > Select PHP version*.
 
 ## Support the project
 
@@ -62,7 +62,7 @@ winpacho is free and open source. If it saves you time, you can support its deve
 
 There is no in-place updater — the package is portable by design. Two paths:
 
-* **Controller-only upgrade** (e.g. 1.2.0 → 1.2.1): extract the new `winpacho.zip` somewhere temporary and copy just `UniController.exe` (into the server folder) and `utils\UniService.exe` (into its `utils` subfolder) over the old ones. Your `www` content, databases and configuration stay untouched. (The version shown on the splash and test pages comes from `AppVersion=` in `home\us_config\us_config.ini`; update it by hand if you want the pages to match.)
+* **Controller-only upgrade** (e.g. 1.2.0 → 1.2.1): extract the new `winpacho.zip` somewhere temporary and copy just `WinpachoController.exe` (into the server folder) and `utils\WinpachoService.exe` (into its `utils` subfolder) over the old ones. Your `www` content, databases and configuration stay untouched. (The version shown on the splash and test pages comes from `AppVersion=` in `home\us_config\us_config.ini`; update it by hand if you want the pages to match.)
 * **Full upgrade** (new Apache/PHP/database builds): unpack the new bundle into a fresh folder and move over your `www` content, your databases and any configuration you changed (e.g. `home\us_config\us_user.ini`, `core\msmtp\msmtprc.ini`, certificates in `core\apache2\server_certs`). Databases move as a folder (`core\mysql\data`) only between installations with the **same engine**; from a 1.3.5-or-older bundle (MySQL) into 1.3.6+ (MariaDB) they move as dumps, see [Databases](#databases-mariadb-by-default-mysql-as-a-module).
 * **Server tuning for an existing installation** (log rotation, OPcache, load limits, see [Sized for a small-business server](#sized-for-a-small-business-server)): with Apache and the database stopped, run from a checkout of this repository
 
@@ -71,7 +71,8 @@ There is no in-place updater — the package is portable by design. Two paths:
   ```
 
   It changes only what is not in place yet, keeps existing logs, and stops with a clear message if a file does not look as expected.
-* **Coming from 1.3.3** (a terminal window per log writer on every Apache start): replace `UniController.exe` with the 1.3.4 build and start Apache once, the controller converts the configuration itself. Running the tuning script does the same.
+* **Coming from 2.0.0 or older** (new program names): the controller is `WinpachoController.exe` since 2.1.0, the service module `utils\WinpachoService.exe` (before: `UniController.exe` and `utils\UniService.exe`). Stop Apache and the database, close the controller, copy the two new files into place and **delete the old `UniController.exe` and `utils\UniService.exe`**, so nobody starts the old controller by mistake. Configuration, databases, `www` and installed Windows services stay as they are. Used *Extra → Start with Windows*? The new controller detects the old start-up entry and explains the one-time conversion (one start as administrator). Own shortcuts and scripts that call `UniController.exe` need the new name.
+* **Coming from 1.3.3** (a terminal window per log writer on every Apache start): replace the controller exe with the 1.3.4 build and start Apache once, the controller converts the configuration itself. Running the tuning script does the same.
 
 ## Versioning
 
@@ -79,8 +80,8 @@ winpacho follows its **own version line starting at 1.0.0** (`MAJOR.MINOR.PATCH`
 
 * **Stable releases** are built from git tags (`vX.Y.Z`) and published as versioned GitHub releases with versioned file names (e.g. `winpacho-2.0.0.zip`).
 * The **rolling `latest` release** continues to be updated on every push with development builds.
-* The version is visible everywhere: the *About* dialog, `UniController.exe version` on the command line, the splash page, the exe file properties and `home\version.txt` in the bundle (which also records the ZeroXV base package the bundle was built from).
-* Single source of truth is [`UniController/reload_version.inc`](UniController/reload_version.inc): CI stamps it into the exe VersionInfo and the bundle, and refuses to build a release tag that does not match it.
+* The version is visible everywhere: the *About* dialog, `WinpachoController.exe version` on the command line, the splash page, the exe file properties and `home\version.txt` in the bundle (which also records the ZeroXV base package the bundle was built from).
+* Single source of truth is [`WinpachoController/reload_version.inc`](WinpachoController/reload_version.inc): CI stamps it into the exe VersionInfo and the bundle, and refuses to build a release tag that does not match it.
 
 Release procedure: bump the version in `reload_version.inc`, commit, tag the commit `vX.Y.Z`, push branch and tag — CI builds, verifies and publishes the versioned release.
 
@@ -88,8 +89,8 @@ Release procedure: bump the version in `reload_version.inc`, commit, tag the com
 
 The controller generates a self-signed `localhost` certificate on first start and enables SSL automatically — `https://localhost` works right away, but browsers mark self-signed certificates as "not secure" until they are trusted. To get the padlock without a warning:
 
-1. **Upgrading from an older install?** Delete `core\apache2\server_certs\server.crt` and `server.key` first (with Apache stopped), then start UniController — certificates created by the old generator lack the subjectAltName entries Chrome requires and are rejected even when trusted. Fresh installs skip this step.
-2. On its **first interactive start UniController asks right away** whether to trust the certificate — answer **Yes** and confirm the Windows security prompt. (Any time later or again: **Apache → Apache SSL → Trust certificate in Windows** — this entry stays available while Apache is running, since it only writes to the Windows certificate store; the other entries of that submenu edit `httpd.conf` or the certificate files and say *stop Apache first* while Apache runs.)
+1. **Upgrading from an older install?** Delete `core\apache2\server_certs\server.crt` and `server.key` first (with Apache stopped), then start the controller — certificates created by the old generator lack the subjectAltName entries Chrome requires and are rejected even when trusted. Fresh installs skip this step.
+2. On its **first interactive start the controller asks right away** whether to trust the certificate — answer **Yes** and confirm the Windows security prompt. (Any time later or again: **Apache → Apache SSL → Trust certificate in Windows** — this entry stays available while Apache is running, since it only writes to the Windows certificate store; the other entries of that submenu edit `httpd.conf` or the certificate files and say *stop Apache first* while Apache runs.)
 3. **Restart the browser completely** (Chrome: enter `chrome://restart` in the address bar — closing the tab is not enough, and check the system tray for background instances).
 4. Open `https://localhost` — the padlock now shows without a warning.
 
@@ -165,7 +166,7 @@ What stays yours to size is the **InnoDB buffer pool** (`innodb_buffer_pool_size
 
 A CRM with a few hundred customers, tickets, chats and a document archive is a few gigabytes of data after years; 2G to 4G keeps that working set in memory. If documents are stored in the database as BLOBs, count them separately and prefer the file system for them.
 
-**Extensions enabled by default in every PHP version** (all ini variants **including `php-cli.ini`**, so CLI scripts and cron jobs get the same set): on top of the stock set (`gd`, `mbstring`, `exif`, `mysqli`, `openssl`, `pdo_mysql`) this fork also enables `pdo_sqlite`, `sqlite3`, `fileinfo` and `curl` — the ones small PHP apps most often need but that upstream ships commented out. Every build's smoke test starts Apache once per installed PHP version and fails unless PHP executes and all of these extensions actually load, so a version switch in UniController can never silently drop them.
+**Extensions enabled by default in every PHP version** (all ini variants **including `php-cli.ini`**, so CLI scripts and cron jobs get the same set): on top of the stock set (`gd`, `mbstring`, `exif`, `mysqli`, `openssl`, `pdo_mysql`) this fork also enables `pdo_sqlite`, `sqlite3`, `fileinfo` and `curl` — the ones small PHP apps most often need but that upstream ships commented out. Every build's smoke test starts Apache once per installed PHP version and fails unless PHP executes and all of these extensions actually load, so a version switch in the controller can never silently drop them.
 
 **The controller is the medallion:** the main window is the round 3D winpacho medallion itself, with the start buttons, utilities and status LEDs sitting on the metal. There is no title bar: drag the window by any free spot of the coin, use the small `–` / `×` buttons (or Alt+F4) to minimize and close, and open the menus from the tab row (*General*, *Extra*, *Apache*, ...). All menu entries are the same as before, only their home moved from a menu bar to the tabs. Minimizing with the tray option enabled parks the medallion in the notification area (see *Minimize* below); since 1.3.6 the tray icon has a right-click menu (*Show* / *Exit*), so the controller can be quit from there, and *Extra > Edit Win hosts file* no longer hides the window when the hosts editor opens.
 
@@ -183,12 +184,12 @@ A CRM with a few hundred customers, tickets, chats and a document archive is a f
 
 ## Running as a Windows service
 
-*Extra → Run Apache/MariaDB as Windows service* opens **UniService**, which installs, starts and stops the servers as Windows services (`us_apache_1`, `us_mysql_1`; the number is the `AppNumber` from `home\us_config\us_config.ini`). While a server runs as a service its process belongs to Windows, not to the controller, so the plain *Stop* used to fail silently ("Failed to stop Apache") and *Start* would launch a second copy. The controller now detects the installed services itself:
+*Extra → Run Apache/MariaDB as Windows service* opens **WinpachoService**, which installs, starts and stops the servers as Windows services (`us_apache_1`, `us_mysql_1`; the number is the `AppNumber` from `home\us_config\us_config.ini`). While a server runs as a service its process belongs to Windows, not to the controller, so the plain *Stop* used to fail silently ("Failed to stop Apache") and *Start* would launch a second copy. The controller now detects the installed services itself:
 
 * The start buttons read **Start Apache service** / **Stop Apache service** (same for MariaDB) whenever the service is installed, and the tooltip names the service.
 * Clicking them starts or stops the Windows service via `sc.exe` — Windows shows the administrator (UAC) prompt, the controller waits for the new state and reports a clear message if it is not reached.
-* The status LEDs and menus follow the service state, refreshed every few seconds, so changes made in UniService or `services.msc` show up without restarting the controller.
-* To go back to running the servers as normal programs, uninstall the services in UniService; the buttons return to *Start Apache* / *Start MariaDB*.
+* The status LEDs and menus follow the service state, refreshed every few seconds, so changes made in WinpachoService or `services.msc` show up without restarting the controller.
+* To go back to running the servers as normal programs, uninstall the services in WinpachoService; the buttons return to *Start Apache* / *Start MariaDB*.
 
 ## Development goals
 
@@ -235,41 +236,9 @@ For reference — what this fork did about the issues that remain [open in the o
 
 ---
 
-## Original project description
+## Origin and credits
 
-Uniform Server is a free lightweight WAMP server solution for Windows.
-Build using a modular design approach, it includes the latest versions of Apache, MySQL or MariaDB, PHP (with version switching), phpMyAdmin or Adminer.
+winpacho is based on **The Uniform Server Zero XV** (base package 15.0.2) by The Uniform Server Development Team, published under the BSD license (see [LICENSE](LICENSE)). The controller and the service module started as the upstream programs UniController and UniService (XV 2.5.2).
 
-No installation required! No registry dust! Just unpack and fire up!
-
-**Uniform Server Zero XV** can be found at SourceForge at https://sourceforge.net/projects/miniserver/ or can be downloaded by clicking on the button below:
-
-[![Download Uniform Server](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/miniserver/files/latest/download)
-
-### Uniform Server Core
-
-The base version which is suitable for most users is the 15_x_x_ZeroXV.exe that contains the following:
-
- * Unicontroller - The Uniform Server Controller
- * Apache
- * PHP
- * MySQL
- * PhpMyAdmin
- * msmtp - A SMTP mail client
- * Cron Scheduler
- * Documentation
-
-### Uniform Server Modules
-
-Apart from the core, The Uniform Server Zero XV has a modular design. Install only modules (plugins) that you require.
-Each server requires a controller, which automatically detects installed plugins.
-
-The following are the optional plugins that can be used to enhance the Uniform Server Core from the **XV Modules** folder:
-
-* **Core:** UniService - Enables the Servers to be run as a Windows Service.
-* **PHP:** PHP 7.0 to 8.3
-* **Database:** MariaDB
-* **Database Administration:** Adminer, MySQL Auto Backup
-* **FTP:** FileZilla Server with a custom controller
-* **Perl:** Strawberry Perl
-* **Portable Browser:** Pale Moon
+* Original project: <https://github.com/iamola/uniserver>
+* Original downloads: <https://sourceforge.net/projects/miniserver/>

@@ -7,11 +7,11 @@ $server_port="";
 
  if (getenv('HOME') == ''){                       // Not set when running as service
    $root= substr($_SERVER["DOCUMENT_ROOT"],0,-4); // this alternative with limitations
- }                                                // gets path to folder UniServerZ
+ }                                                // gets path to the server folder
 
  else{                                            // Set when run as standard program
    $root= getenv('HOME');                         // this is the ideal method to
- }                                                // get the path to folder UniServerZ
+ }                                                // get the path to the server folder
 
 function us_h($text){                             // escape for HTML output
   return htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8');

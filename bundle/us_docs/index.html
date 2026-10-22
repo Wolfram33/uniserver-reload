@@ -102,7 +102,7 @@
       <ol class="steps">
         <li>Download <b>winpacho.zip</b> from the <a href="https://github.com/Wolfram33/winpacho/releases/tag/latest">releases page</a>.</li>
         <li>Extract it into an empty folder (no spaces in the path, not under <code>C:\Program Files</code>), e.g. <code>C:\winpacho</code>. The server files land directly in it.</li>
-        <li>Start <code>UniController.exe</code> from that folder, then click <b>Start Apache</b> and <b>Start MariaDB</b>.</li>
+        <li>Start <code>WinpachoController.exe</code> from that folder, then click <b>Start Apache</b> and <b>Start MariaDB</b>.</li>
         <li>Put your site into the <code>www</code> subfolder — or point a Vhost straight at your project folder (see <a href="#vhosts">Virtual hosts</a>).</li>
       </ol>
       <div class="note">Everything below is preconfigured. This page describes the fork; the original ZeroXV reference manual is linked at the bottom.</div>
@@ -125,7 +125,7 @@
       <p><code>https://localhost</code> works out of the box: on first start the controller generates a self-signed certificate (covering <code>localhost</code>, <code>127.0.0.1</code>, <code>::1</code>) and enables SSL. When SSL is on, the controller opens the start page as <code>https://</code>.</p>
       <h3>Remove the browser warning</h3>
       <ol class="steps">
-        <li>UniController <b>asks on its first start</b> whether to trust the certificate → confirm with <b>Yes</b> and accept the Windows prompt. (Any time later: <b>Apache &gt; Apache SSL &gt; Trust certificate in Windows</b>.)</li>
+        <li>The controller <b>asks on its first start</b> whether to trust the certificate → confirm with <b>Yes</b> and accept the Windows prompt. (Any time later: <b>Apache &gt; Apache SSL &gt; Trust certificate in Windows</b>.)</li>
         <li>Restart the browser completely (Chrome: <code>chrome://restart</code>).</li>
       </ol>
       <div class="note">One certificate covers localhost <i>and</i> all your Vhost domains. Both HTTP and HTTPS serve the same <code>www</code> folder — and with Vhosts, unknown host names (e.g. access by IP) fall back to <code>www</code> on both ports.</div>
@@ -159,7 +159,7 @@
       <ol class="steps">
         <li>Export the databases you need: <b>MariaDB &gt; Database backup</b> (or <code>core\mysql\bin\mysqldump.exe</code>). The two engines cannot read each other's data folder.</li>
         <li>Stop MariaDB and delete the folder <code>core\mysql</code> <b>completely</b> - a mix of both engines' files corrupts the data folder.</li>
-        <li>Unzip the module into the server folder (the folder with <code>UniController.exe</code>). It brings a fresh <code>core\mysql</code>: root password <code>root</code>, phpMyAdmin control user and tables included.</li>
+        <li>Unzip the module into the server folder (the folder with <code>WinpachoController.exe</code>). It brings a fresh <code>core\mysql</code>: root password <code>root</code>, phpMyAdmin control user and tables included.</li>
         <li>Restart the controller - the menus now say <b>MySQL</b> - and import the dumps via <b>MySQL &gt; Database restore</b>. Recreate restricted users (<b>MySQL &gt; Create restricted MySQL user</b>); single-database dumps do not carry them.</li>
       </ol>
       <div class="note">MySQL 8.4 uses the <code>caching_sha2_password</code> login by default. The bundled PHP handles it; very old external tools may not. Switching back to MariaDB works the same way with <code>winpacho_mariadb_module.zip</code>.</div>

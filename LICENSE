@@ -35,6 +35,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ---
 
-The bundled Synapse networking library (UniController/synapse/) is
+The bundled Synapse networking library (WinpachoController/synapse/) is
 distributed under its own BSD-style license; see the license headers in the
 files within that directory.

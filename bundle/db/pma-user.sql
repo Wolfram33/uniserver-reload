@@ -2,7 +2,7 @@
 --
 -- home\us_opt1\config.inc.php uses 'pma' as controluser for the
 -- configuration storage (bookmarks, relations, history, ...), with the same
--- password as root: UniController changes both passwords together (MySQL >
+-- password as root: WinpachoController changes both passwords together (MySQL >
 -- Change root password) and restores both (Restore root password). The
 -- tables come from phpmyadmin-create_tables.sql, run right after this file.
 --

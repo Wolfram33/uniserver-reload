@@ -14,10 +14,10 @@
 #   core\apache2\bin\rotatelogs_z.exe
 #       Copy of Apache's rotatelogs.exe with the PE subsystem set to GUI.
 #       Apache spawns piped log programs without console flags, so when it
-#       runs without a console (as started by UniController) every console
+#       runs without a console (as started by WinpachoController) every console
 #       rotatelogs gets a window of its own - a Windows Terminal window per
 #       log on Windows 11 (1.3.3 shipped that). A GUI-subsystem process never
-#       gets a console and still reads the log pipe. UniController creates
+#       gets a console and still reads the log pipe. WinpachoController creates
 #       the same file at Apache start when it is missing.
 #   core\apache2\conf\httpd.conf, extra\httpd-ssl.conf, extra\httpd-vhosts.conf
 #       ErrorLog/CustomLog go through bin\rotatelogs_z.exe: logs\<name> stays
@@ -44,7 +44,7 @@ $ErrorActionPreference = 'Stop'
 
 $Root = (Resolve-Path $Root).Path
 $apache = Join-Path $Root 'core\apache2'
-if (-not (Test-Path (Join-Path $apache 'conf\httpd.conf'))) { throw "No Uniform Server installation at $Root (core\apache2\conf\httpd.conf missing)" }
+if (-not (Test-Path (Join-Path $apache 'conf\httpd.conf'))) { throw "No winpacho installation at $Root (core\apache2\conf\httpd.conf missing)" }
 
 # Rotating log settings: the ring of older parts lives in logs\rotated\
 $ACCESS_FILES = 10; $ACCESS_SIZE = '20M'
@@ -128,7 +128,7 @@ function Assert-IniLine([string]$text, [string]$line, [string]$file) {
 
 # --- Servers must be stopped: the files below are open while they run ---------
 foreach ($p in 'httpd_z', 'mysqld_z', 'rotatelogs', 'rotatelogs_z') {
-  if (Get-Process -Name $p -ErrorAction SilentlyContinue) { throw "$p.exe is running - stop Apache and MySQL (UniController or the Windows services) before running this script" }
+  if (Get-Process -Name $p -ErrorAction SilentlyContinue) { throw "$p.exe is running - stop Apache and MySQL (WinpachoController or the Windows services) before running this script" }
 }
 
 # =============================================================================
@@ -175,7 +175,7 @@ $VHOST_FORMAT = 'LogFormat "%v:%p %h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{
 $conf = Join-Path $apache 'conf\httpd.conf'
 $t = Read-Text $conf
 $nl = Get-Newline $t
-$note = "# UniServer Reload: logs rotate in place through bin\rotatelogs_z.exe (rotatelogs$nl" +
+$note = "# winpacho: logs rotate in place through bin\rotatelogs_z.exe (rotatelogs$nl" +
         "# without a console window). logs\<name> is always the current file (hard link);$nl" +
         "# logs\rotated\ keeps a ring of older parts ($ACCESS_FILES x $ACCESS_SIZE access, $ERROR_FILES x $ERROR_SIZE error),$nl" +
         "# so the logs can never fill the disk. The access log takes the requests of every$nl" +
@@ -190,9 +190,10 @@ if ($t -notmatch '(?m)^[\t ]*LogFormat .* vhost_combined[\t ]*\r?$') {
 }
 # Replace the whole note (earlier versions described the previous layout):
 # it sits directly above the ErrorLog line, so every comment line that
-# follows its first line belongs to it
-$t = $t -replace '(?m)^# UniServer Reload: logs rotate in place through bin\\rotatelogs(_z)?\.exe[^\r\n]*\r?\n(#[^\r\n]*\r?\n)*', ''
-if ($t -notmatch 'UniServer Reload: logs rotate in place') { $t = $t -replace '(?m)^(ErrorLog ")', ($note + '$1') }
+# follows its first line belongs to it. Up to 2.0.0 it started with
+# "UniServer Reload:", it is replaced by the current wording then too.
+$t = $t -replace '(?m)^# (UniServer Reload|winpacho): logs rotate in place through bin\\rotatelogs(_z)?\.exe[^\r\n]*\r?\n(#[^\r\n]*\r?\n)*', ''
+if ($t -notmatch 'winpacho: logs rotate in place') { $t = $t -replace '(?m)^(ErrorLog ")', ($note + '$1') }
 Write-Text $conf $t
 $t = Read-Text $conf
 if ($t -notmatch ('(?m)^ErrorLog "' + [regex]::Escape($errorPipe) + '"'))                        { throw 'httpd.conf: ErrorLog rotation patch failed' }
@@ -295,7 +296,7 @@ foreach ($dir in $phpDirs) {
       # from php.ini-production, the upstream DLL path form, or an active one)
       $r = Set-FirstMatch $t '(?m)^[;\t ]*zend_extension[\t ]*=[\t ]*\S*opcache\S*[\t ]*(?=\r?$)' $zendLine ';'
       $t = $r[0]
-      if ($r[1] -eq 0) { $t = $t.TrimEnd() + $nl + $nl + '; UniServer Reload - OPcache' + $nl + $zendLine + $nl }
+      if ($r[1] -eq 0) { $t = $t.TrimEnd() + $nl + $nl + '; winpacho - OPcache' + $nl + $zendLine + $nl }
     }
     else {
       # Built-in OPcache (PHP 8.5+): a zend_extension line would only produce a
@@ -368,7 +369,7 @@ else {
       if ($t -match ('(?m)^[#\t ]*' + [regex]::Escape($key) + '[\t ]*=')) { $t = Set-IniLine $t $line '#' } else { $missing += $line }
     }
     if ($missing) {
-      $block = '# UniServer Reload - server load settings (see README, "Sized for a server")' + $nl + ($missing -join $nl) + $nl + $nl
+      $block = '# winpacho - server load settings (see README, "Sized for a server")' + $nl + ($missing -join $nl) + $nl + $nl
       $pos = [regex]::Match($t, '(?m)^\[mysqldump\]').Index
       $t = $t.Insert($pos, $block)
     }

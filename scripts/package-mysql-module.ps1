@@ -6,7 +6,7 @@
 # such as the binary JSON type). Fresh core\mysql only - a MariaDB data
 # directory cannot be opened by MySQL and vice versa, see README "Databases".
 #
-# Layout (the core\mysql structure UniController expects, same as the
+# Layout (the core\mysql structure WinpachoController expects, same as the
 # MariaDB module and the pre-1.3.6 base package):
 #   core/mysql/bin/        mysqld_z.exe (= mysqld) + mysql.exe, mysqladmin.exe,
 #                          mysqldump.exe + required DLLs

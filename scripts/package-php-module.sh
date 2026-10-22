@@ -5,7 +5,7 @@
 #   e.g. package-php-module.sh 8.4 dist
 #
 # Downloads the latest thread-safe x64 build of the given PHP branch from
-# windows.php.net and repacks it in the core\php8X layout the UniController
+# windows.php.net and repacks it in the core\php8X layout the WinpachoController
 # expects (the structure the original Uniform Server used for its PHP modules):
 #
 #   core/php8X/                  PHP files, ext/ renamed to extensions/
@@ -15,7 +15,7 @@
 #   core/php8X/php-cli.ini
 #   core/apache2/conf/extra_us/php8X.conf   Apache module wiring
 #
-# The resulting ZIP is unpacked into the UniServerZ root folder.
+# The resulting ZIP is unpacked into the server folder (the one with WinpachoController.exe).
 set -euo pipefail
 
 BRANCH="${1:?usage: package-php-module.sh <branch e.g. 8.4> [output-dir]}"
@@ -60,9 +60,9 @@ fi
 # Uniform Server keeps the extension DLLs in "extensions" instead of "ext"
 mv "$PHP_ROOT/ext" "$PHP_ROOT/extensions"
 
-# --- Generate the four ini files the UniController expects -------------------
+# --- Generate the four ini files the WinpachoController expects -------------------
 # ${US_ROOTF} and ${PHP_INI_SELECT} are environment variables set by the
-# UniController at runtime; they must remain literal in the generated files.
+# WinpachoController at runtime; they must remain literal in the generated files.
 #
 # OPcache: php.ini-production carries ";zend_extension=opcache". That short
 # form is enabled here in the php_opcache.dll path form, for two reasons:
@@ -102,7 +102,7 @@ patch_ini() { # $1=source $2=dest-name $3=variant label
     -e 's|^;max_input_vars = 1000|max_input_vars = 5000|' \
     -e 's|^max_file_uploads = .*|max_file_uploads = 50|' \
     "$dest"
-  sed -i "1s|^\[PHP\]|[PHP]\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;\n; PHP $VERSION $2\n; Uniform Server $3 php.ini\n; PHP Installed as Apache module\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;|" "$dest"
+  sed -i "1s|^\[PHP\]|[PHP]\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;\n; PHP $VERSION $2\n; winpacho $3 php.ini\n; PHP Installed as Apache module\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;|" "$dest"
 }
 
 patch_ini "$PHP_ROOT/php.ini-production"  php_production.ini  Production
@@ -113,7 +113,7 @@ cat > "$PHP_ROOT/php-cli.ini" <<EOF
 [PHP]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; PHP $VERSION CLI  php-cli.ini      ;
-; Uniform Server PHP CLI php-cli.ini ;
+; winpacho PHP CLI php-cli.ini ;
 ; PHP Installed as Apache module     ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

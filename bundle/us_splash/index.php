@@ -3,11 +3,11 @@ $version="";
 
  if (getenv('HOME') == ''){                       // Not set when running as service
    $root= substr($_SERVER["DOCUMENT_ROOT"],0,-4); // this alternative with limitations
- }                                                // gets path to folder UniServerZ
+ }                                                // gets path to the server folder
 
  else{                                            // Set when run as standard program
    $root= getenv('HOME');                         // this is the ideal method to
- }                                                // get the path to folder UniServerZ
+ }                                                // get the path to the server folder
 
 function us_h($text){                             // escape for HTML output
   return htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8');
@@ -97,7 +97,7 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
       <section class="col">
         <h3>Core</h3>
         <ul>
-          <li><strong>UniController (Reload build)</strong></li>
+          <li><strong>WinpachoController</strong></li>
           <li><strong><?php print us_h($apache_ver); ?></strong></li>
           <li><strong>Mail client for PHP - msmtp</strong></li>
           <li><strong>Cron - Scheduler</strong></li>
@@ -120,9 +120,9 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
           <li><strong>Active: PHP <?php print us_h($php_active); ?></strong></li>
 <?php foreach ($php_installed as $v) { print "          <li>PHP ".us_h($v)."</li>\n"; } ?>
         </ul>
-        <p>Switch versions in UniController: stop Apache, then <em>PHP &gt; Select PHP version</em>, then start Apache again.</p>
+        <p>Switch versions in the controller: stop Apache, then <em>PHP &gt; Select PHP version</em>, then start Apache again.</p>
         <h3>HTTPS</h3>
-        <p><a href="https://localhost">https://localhost</a> works out of the box and serves the same <strong>www</strong> folder as http. UniController offers to trust the certificate on its first start &mdash; confirm with Yes and restart the browser completely to remove the warning. Any time later: <em>Apache &gt; Apache SSL &gt; Trust certificate in Windows</em>.</p>
+        <p><a href="https://localhost">https://localhost</a> works out of the box and serves the same <strong>www</strong> folder as http. The controller offers to trust the certificate on its first start &mdash; confirm with Yes and restart the browser completely to remove the warning. Any time later: <em>Apache &gt; Apache SSL &gt; Trust certificate in Windows</em>.</p>
         <h3>Virtual hosts</h3>
         <p>Create as many as you like (<em>Apache &gt; Apache Vhosts</em>) &mdash; host names are added to the Windows hosts file automatically and verified, and every vhost is served over http <strong>and</strong> https.</p>
         <h3>PHP Accelerator</h3>

@@ -2,13 +2,13 @@
 
 *Last updated: 2026-09-14*
 
-winpacho is a free, open-source, portable WAMP stack for Windows (Apache, MariaDB/MySQL, PHP, phpMyAdmin and the UniController / UniService control programs). It is developed in the open at <https://github.com/Wolfram33/winpacho>.
+winpacho is a free, open-source, portable WAMP stack for Windows (Apache, MariaDB/MySQL, PHP, phpMyAdmin and the WinpachoController / WinpachoService control programs). It is developed in the open at <https://github.com/Wolfram33/winpacho>.
 
 **In short: winpacho does not collect, store or transmit any personal data. There is no telemetry, no usage statistics, no crash reporting, no account and no automatic update check.**
 
 ## 1. Data the software collects
 
-None. The programs written by this project (`UniController.exe`, `UniService.exe`, the packaging scripts) do not send any information about you, your computer or your usage to the project maintainers or to anyone else.
+None. The programs written by this project (`WinpachoController.exe`, `WinpachoService.exe`, the packaging scripts) do not send any information about you, your computer or your usage to the project maintainers or to anyone else.
 
 * No telemetry, analytics or usage tracking.
 * No crash or error reports are sent anywhere.

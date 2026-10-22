@@ -1,10 +1,10 @@
 # Build the all-in-one bundle (plain zip): Uniform Server ZeroXV base
-# package + freshly built UniController/UniService + PHP 8.4/8.5 modules +
+# package + freshly built WinpachoController/WinpachoService + PHP 8.4/8.5 modules +
 # the MariaDB module as the database engine (replaces the base's MySQL).
 #
 # Expects (as laid out by actions/download-artifact):
-#   artifacts/uniserver-binaries/UniController/UniController.exe
-#   artifacts/uniserver-binaries/UniService/UniService.exe
+#   artifacts/uniserver-binaries/WinpachoController/WinpachoController.exe
+#   artifacts/uniserver-binaries/WinpachoService/WinpachoService.exe
 #   artifacts/php-module-*/winpacho_php8*_module.zip
 #   artifacts/mariadb-module/winpacho_mariadb_module.zip
 #
@@ -15,9 +15,9 @@
 # positive), and a zip needs no extra tool on Windows anyway.
 $ErrorActionPreference = 'Stop'
 
-# --- Fork version: single source of truth is UniController/reload_version.inc
-$versionInc = Get-Content 'UniController\reload_version.inc' -Raw
-if ($versionInc -notmatch "US_RELOAD_VERSION\s*=\s*'([^']+)'") { throw 'US_RELOAD_VERSION not found in UniController\reload_version.inc' }
+# --- Fork version: single source of truth is WinpachoController/reload_version.inc
+$versionInc = Get-Content 'WinpachoController\reload_version.inc' -Raw
+if ($versionInc -notmatch "US_RELOAD_VERSION\s*=\s*'([^']+)'") { throw 'US_RELOAD_VERSION not found in WinpachoController\reload_version.inc' }
 $reloadVersion = $Matches[1]
 $baseVersion = '15.0.2'   # Uniform Server ZeroXV base package the bundle builds on
 Write-Host "==> Building winpacho $reloadVersion (base package $baseVersion)"
@@ -47,6 +47,7 @@ Write-Host '==> Extracting base package'
 if ($LASTEXITCODE -ne 0) { throw "7z extraction failed ($LASTEXITCODE)" }
 
 $root = 'base\UniServerZ'
+# The upstream package names its own controller UniController.exe - proof of the expected layout
 if (-not (Test-Path "$root\UniController.exe")) { throw "Unexpected base package layout - UniServerZ\UniController.exe not found" }
 
 # --- Upgrade Apache to the latest Apache Lounge build ------------------------
@@ -104,14 +105,24 @@ Move-Item "$root\core\apache2\bin\httpd.exe" "$root\core\apache2\bin\httpd_z.exe
 Write-Host "==> Apache upgraded to $apVer"
 
 # --- Replace controllers with the fork builds --------------------------------
-# UniService lives in utils\ since 1.3.0: it is launched from the controller
-# menu (Extra > Run Apache/MySQL as Windows service) instead of sitting next
-# to UniController.exe, where it invited accidental double-clicks.
-Write-Host '==> Installing fork UniController/UniService'
-Copy-Item 'artifacts\uniserver-binaries\UniController\UniController.exe' "$root\UniController.exe" -Force
+# Since 2.1.0 the programs carry the winpacho names; the upstream
+# UniController.exe / UniService.exe must not ship next to them, a second
+# controller under the old name would compete for the same servers.
+# The service module lives in utils\ since 1.3.0: it is launched from the
+# controller menu (Extra > Run Apache/MySQL as Windows service) instead of
+# sitting next to the controller, where it invited accidental double-clicks.
+Write-Host '==> Installing fork WinpachoController/WinpachoService'
+Copy-Item 'artifacts\uniserver-binaries\WinpachoController\WinpachoController.exe' "$root\WinpachoController.exe" -Force
 New-Item -ItemType Directory -Force "$root\utils" | Out-Null
-Copy-Item 'artifacts\uniserver-binaries\UniService\UniService.exe' "$root\utils\UniService.exe" -Force
-if (Test-Path "$root\UniService.exe") { Remove-Item "$root\UniService.exe" -Force }
+Copy-Item 'artifacts\uniserver-binaries\WinpachoService\WinpachoService.exe' "$root\utils\WinpachoService.exe" -Force
+foreach ($old in 'UniController.exe', 'UniService.exe', 'utils\UniService.exe') {
+  if (Test-Path "$root\$old") { Remove-Item "$root\$old" -Force }
+}
+# The upstream read-me describes the original ZeroXV package; it moves next
+# to the upstream license instead of greeting users at the archive root.
+$upstreamDocs = "$root\docs\licenses\Uniform Server"
+New-Item -ItemType Directory -Force $upstreamDocs | Out-Null
+Get-ChildItem $root -File -Filter '*_ZeroXV_read_me.txt' | Move-Item -Destination $upstreamDocs -Force
 
 # --- Database engine: MariaDB replaces the base package's MySQL (1.3.6) ------
 # The engine is the MariaDB module built by package-mariadb-module.ps1 in the
@@ -157,12 +168,12 @@ $c = $c -replace '(?m)^ServerTypeText1=Uniform Server Zero(\r?)$', 'ServerTypeTe
 # (General > Minimize button minimizes to system tray). Stock ini: True.
 $c = $c -replace '(?m)^;--Default true(\r?\n)TrayIconEnabled=', ';--Default false (stay on the taskbar)$1TrayIconEnabled='
 $c = $c -replace '(?m)^TrayIconEnabled=.*?(\r?)$', 'TrayIconEnabled=False$1'
-# Minimum VC++ runtime per PHP version: UniController warns (with download
+# Minimum VC++ runtime per PHP version: WinpachoController warns (with download
 # link) before an Apache start that would die on module load (issue #3).
 # VS18 Apache Lounge builds need the 2017-2026 redistributable 14.51+.
 $apRuntime = if ($found.VS -ge 18) { "apache=14.51`r`n" } else { '' }
 if ($c -notmatch '(?m)^\[VCRUNTIME\]') {
-  $c = $c.TrimEnd() + "`r`n`r`n[VCRUNTIME]`r`n; Minimum Microsoft Visual C++ runtime (x64) for Apache and per PHP version (major.minor).`r`n; UniController warns before starting Apache when the installed runtime is older.`r`n$($apRuntime)php85=14.44`r`n"
+  $c = $c.TrimEnd() + "`r`n`r`n[VCRUNTIME]`r`n; Minimum Microsoft Visual C++ runtime (x64) for Apache and per PHP version (major.minor).`r`n; WinpachoController warns before starting Apache when the installed runtime is older.`r`n$($apRuntime)php85=14.44`r`n"
 }
 Set-Content $cfg -Value $c -NoNewline
 if ((Get-Content $cfg -Raw) -notmatch "(?m)^AppVersion=$([regex]::Escape($reloadVersion))") { throw 'us_config.ini version stamp failed' }
@@ -270,7 +281,7 @@ if ((Get-Content $userIni -Raw) -notmatch [regex]::Escape('US_ROOTF_SSL=./www'))
 
 # --- Console look -------------------------------------------------------------
 # Server Console / MySQL Console open in Windows Terminal with a translucent
-# acrylic background (UniController reads CONSOLE_OPACITY, default 50).
+# acrylic background (WinpachoController reads CONSOLE_OPACITY, default 50).
 # Document the knob in the shipped ini right next to RUN_CONSOLE.
 $consoleDoc = 'RUN_CONSOLE=yes$1;$1;--Console windows (Server Console, MySQL Console): opacity in percent, 50-100. 100 = classic opaque cmd window$1CONSOLE_OPACITY=50$1'
 (Get-Content $userIni -Raw) -replace 'RUN_CONSOLE=yes(\r?\n)', $consoleDoc | Set-Content $userIni -NoNewline
@@ -536,10 +547,12 @@ if ($LASTEXITCODE -ne 0) { throw "7z zip packing failed ($LASTEXITCODE)" }
 # stray UniServerZ folder may sneak back in.
 $listing = & $sevenZip l -slt 'dist\winpacho.zip'
 if ($LASTEXITCODE -ne 0) { throw 'Could not list bundle zip' }
-if ($listing -notcontains 'Path = UniController.exe') { throw 'Bundle layout broken: UniController.exe is not at the archive root' }
+if ($listing -notcontains 'Path = WinpachoController.exe') { throw 'Bundle layout broken: WinpachoController.exe is not at the archive root' }
 if ($listing | Where-Object { $_ -like 'Path = UniServerZ*' }) { throw 'Bundle layout broken: unexpected UniServerZ folder in the archive' }
-if ($listing -contains 'Path = UniService.exe') { throw 'Bundle layout broken: UniService.exe must live in utils\, not at the root' }
-if ($listing -notcontains 'Path = utils\UniService.exe') { throw 'Bundle layout broken: utils\UniService.exe is missing' }
+foreach ($old in 'UniController.exe', 'UniService.exe', 'utils\UniService.exe', 'WinpachoService.exe') {
+  if ($listing -contains "Path = $old") { throw "Bundle layout broken: $old must not be in the archive (old name or wrong folder)" }
+}
+if ($listing -notcontains 'Path = utils\WinpachoService.exe') { throw 'Bundle layout broken: utils\WinpachoService.exe is missing' }
 if ($listing -notcontains 'Path = core\mysql\bin\mysqld_z.exe') { throw 'Bundle layout broken: core\mysql\bin\mysqld_z.exe (MariaDB) is missing' }
 
 # Second flavour: a plain .7z (LZMA, solid) - roughly half the size of the zip,
@@ -551,7 +564,7 @@ Write-Host '==> Packing bundle 7z'
 if ($LASTEXITCODE -ne 0) { throw "7z packing failed ($LASTEXITCODE)" }
 $listing7z = & $sevenZip l -slt 'dist\winpacho.7z'
 if ($LASTEXITCODE -ne 0) { throw 'Could not list bundle 7z' }
-if ($listing7z -notcontains 'Path = UniController.exe') { throw 'Bundle layout broken (7z): UniController.exe is not at the archive root' }
+if ($listing7z -notcontains 'Path = WinpachoController.exe') { throw 'Bundle layout broken (7z): WinpachoController.exe is not at the archive root' }
 
 Add-Content 'dist\module-versions.txt' "winpacho $reloadVersion (base ZeroXV $baseVersion)"
 Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"
