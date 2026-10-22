@@ -1,6 +1,6 @@
 <?php
 /**
- * Uniform Server Reload - mail header wrapper
+ * winpacho - mail header wrapper
  *
  * Sits between PHP's mail() (sendmail_path) and msmtp. Reads the message
  * from STDIN, adds standard headers that spam filters expect but that

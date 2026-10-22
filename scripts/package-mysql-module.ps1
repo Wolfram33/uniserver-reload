@@ -1,4 +1,4 @@
-# Package MySQL (the current 8.4 LTS line) as an optional UniServer Reload
+# Package MySQL (the current 8.4 LTS line) as an optional winpacho
 # database module.
 #
 # The bundle ships MariaDB since 1.3.6; this module is the alternative for
@@ -124,4 +124,4 @@ Write-DbModuleConfig -ModuleDir $m -RepoRoot $repo -Flavor $flavor -Version $ver
 if (Test-Path "$dist\LICENSE") { Copy-Item "$dist\LICENSE" "$m\docs\licenses\mysql\LICENSE" }
 
 # --- Package --------------------------------------------------------------------
-Compress-DbModule -ModuleDir $m -OutDir $OutDir -ZipName 'UniServer-Reload_mysql_module.zip' -Flavor $flavor -Version $ver
+Compress-DbModule -ModuleDir $m -OutDir $OutDir -ZipName 'winpacho_mysql_module.zip' -Flavor $flavor -Version $ver

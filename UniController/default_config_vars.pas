@@ -18,6 +18,7 @@ uses
 const
   {$I reload_version.inc} //US_RELOAD_VERSION - fork version, single source of truth
   UNICONTROLLER_VERSION = US_RELOAD_VERSION; // Controller is released with the fork version
+  US_PRODUCT_NAME       = 'winpacho';        // Product name (Uniform Server Reload until 1.3.16)
   ZENDOPCACHE_DLL       = 'php_opcache.dll';
 
   Btn_text_enable_ssl   = 'Enable SSL (Currently Disabled)';
@@ -720,7 +721,11 @@ begin
    USC_AppVersion      := Ini1.ReadString('APP','AppVersion','15.0.2');                    // Version
    USC_BaseVersion     := Ini1.ReadString('APP','BaseVersion','15.0.2');                   // Base package version
    USC_ServerType      := Ini1.ReadString('APP','ServerType','WAMP0');                     // Default=WAMP APS=Apache standalone server MYS=MySQL  standalone server
-   USC_ServerTypeText1 := Ini1.ReadString('APP','ServerTypeText1','Uniform Server Reload');  // TrayIcon hover text
+   USC_ServerTypeText1 := Ini1.ReadString('APP','ServerTypeText1',US_PRODUCT_NAME);  // TrayIcon hover text, window title
+   // Installations from before the 2.0 rename still carry an old product name
+   // here; show the current one (the ini itself is left as it is)
+   If (USC_ServerTypeText1 = 'Uniform Server Reload') or (USC_ServerTypeText1 = 'Uniform Server Zero') Then
+     USC_ServerTypeText1 := US_PRODUCT_NAME;
    USC_ServerTypeText2 := Ini1.ReadString('APP','ServerTypeText2','Portable WAMP Server'); // TrayIcon hover text
    USC_TrayIconEnabled := strToBool(Ini1.ReadString('APP','TrayIconEnabled','False'));      // TrayIcon enabled
    USC_GuiStyle        := LowerCase(Trim(Ini1.ReadString('APP','GuiStyle','')));           // Window look; anything unknown counts as not chosen

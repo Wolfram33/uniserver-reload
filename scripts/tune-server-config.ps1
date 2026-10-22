@@ -1,11 +1,11 @@
-# Server tuning for UniServer Reload: rotating Apache logs with bounded disk
+# Server tuning for winpacho: rotating Apache logs with bounded disk
 # use, OPcache on in every PHP version, Apache/MySQL limits sized for a small
 # business server instead of a developer laptop.
 #
 # build-bundle.ps1 runs this for every bundle. It also works stand-alone on an
 # existing installation (with Apache and MySQL stopped):
 #
-#   powershell -ExecutionPolicy Bypass -File tune-server-config.ps1 -Root C:\UniServer-Reload
+#   powershell -ExecutionPolicy Bypass -File tune-server-config.ps1 -Root C:\winpacho
 #
 # Idempotent: running it again changes nothing. Every change is verified and
 # the script stops with a clear message when a file does not look as expected.
@@ -338,7 +338,7 @@ $myIni = Join-Path $Root 'core\mysql\my.ini'
 if (-not (Test-Path $myIni)) { Write-Host '==> core\mysql\my.ini not found - MySQL tuning skipped' }
 else {
   $t = Read-Text $myIni
-  if ($t -match 'MariaDB configuration for Uniform Server Reload') {
+  if ($t -match 'MariaDB configuration for (Uniform Server Reload|winpacho)') {   # my.ini header before / after the 2.0 rename
     Write-Host '==> MariaDB module my.ini detected - it ships tuned, nothing to do'
   }
   elseif ($t -notmatch '(?m)^\[mysqld\]') { throw 'core\mysql\my.ini: no [mysqld] section' }

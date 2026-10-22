@@ -4,7 +4,7 @@ object Main: TMain
   Top = 178
   Width = 442
   BorderStyle = bsDialog
-  Caption = 'UniServer Reload Service'
+  Caption = 'winpacho Service'
   ClientHeight = 285
   ClientWidth = 442
   Color = clWhite

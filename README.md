@@ -1,19 +1,21 @@
-<p align="center"><img src="bundle/branding/medaillon-512.png" alt="UniServer Reload medallion" width="280"></p>
+<p align="center"><img src="bundle/branding/medaillon-512.png" alt="winpacho medallion" width="280"></p>
 
-# Uniform Server Reload
+# winpacho
 
-[![Build](https://github.com/Wolfram33/uniserver-reload/actions/workflows/build.yml/badge.svg)](https://github.com/Wolfram33/uniserver-reload/actions/workflows/build.yml)
+[![Build](https://github.com/Wolfram33/winpacho/actions/workflows/build.yml/badge.svg)](https://github.com/Wolfram33/winpacho/actions/workflows/build.yml)
 [![Donate via PayPal](https://img.shields.io/badge/Donate-PayPal-0070ba?logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/robderoy)
 
-**A community fork of [The Uniform Server](https://github.com/iamola/uniserver) — continued as an independent project with its own version line.**
+**Portable WAMP server for Windows — the maintained successor of [The Uniform Server](https://github.com/iamola/uniserver), continued as an independent project with its own version line.**
 
-**No external dependencies, no installation, no configuration:** the complete WAMP stack — Apache, MariaDB, PHP 8.3/8.4/8.5, phpMyAdmin and the updated controller — ships as a **single archive** ([`UniServer-Reload.zip`](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)). Unpack it anywhere and everything is immediately ready to run. Nothing needs to be downloaded from SourceForge or windows.php.net, no modules need to be added, no settings need to be changed. Portable as ever: no installer, no registry entries.
+> **Looking for Uniform Server Reload?** You found it: the project was renamed to **winpacho** with version 2.0.0. Everything else stays the same — same code, same releases, same issues; old links to `uniserver-reload` redirect here. Existing installations keep working and update as before.
+
+**No external dependencies, no installation, no configuration:** the complete WAMP stack — Apache, MariaDB, PHP 8.3/8.4/8.5, phpMyAdmin and the updated controller — ships as a **single archive** ([`winpacho.zip`](https://github.com/Wolfram33/winpacho/releases/tag/latest)). Unpack it anywhere and everything is immediately ready to run. Nothing needs to be downloaded from SourceForge or windows.php.net, no modules need to be added, no settings need to be changed. Portable as ever: no installer, no registry entries.
 
 > ### ⚡ Current PHP versions — upstream never made it past 8.3
 > The original server is stuck on PHP 8.3 (no updates since November 2023) — a dealbreaker for modern apps and frameworks. This fork ships **PHP 8.3, 8.4 and 8.5 preinstalled and switchable** in the controller (*PHP > Select PHP version*), repackaged from the official windows.php.net builds. CI packages new PHP releases automatically, so future versions reach the bundle quickly — and every build is smoke-tested with each installed PHP version before it is published.
 
 > ### 🎉 Multiple virtual hosts finally work — including HTTPS
-> One of the most notorious problems of the original Uniform Server is fixed in this fork: **creating more than one virtual host silently failed.** The controller handed the Windows hosts file entry to the interactive EdHost utility as a command line call — but EdHost has no command line interface, so **nothing was ever written** and the new host name simply did not resolve. It looked like a broken Apache configuration and was masked whenever an entry already existed from another tool. UniServer Reload writes the hosts entries itself — deduplicated, elevated only when needed, and verified with a clear message if anything fails. Create as many vhosts as you like: `http://` **and** `https://` work for every one of them.
+> One of the most notorious problems of the original Uniform Server is fixed in this fork: **creating more than one virtual host silently failed.** The controller handed the Windows hosts file entry to the interactive EdHost utility as a command line call — but EdHost has no command line interface, so **nothing was ever written** and the new host name simply did not resolve. It looked like a broken Apache configuration and was masked whenever an entry already existed from another tool. winpacho writes the hosts entries itself — deduplicated, elevated only when needed, and verified with a clear message if anything fails. Create as many vhosts as you like: `http://` **and** `https://` work for every one of them.
 
 The original project — a free lightweight WAMP server solution for Windows — has seen no commits since November 2023.
 This fork imports the source of its two control programs (UniController and UniService) as a clean starting point for further development.
@@ -36,35 +38,36 @@ The actual server binaries are not part of this repository. Apache, PHP, MariaDB
 
 Every push triggers a build that updates the rolling release with fixed download links (no login required):
 
-**➡ [Latest development build](https://github.com/Wolfram33/uniserver-reload/releases/tag/latest)**
+**➡ [Latest development build](https://github.com/Wolfram33/winpacho/releases/tag/latest)**
 
 | File | Description |
 |---|---|
-| **`UniServer-Reload.zip`** | **Recommended. All-in-one, zero-setup package: the complete server (Apache, MariaDB, phpMyAdmin, PHP 8.3/8.4/8.5 with 8.5 preselected, updated controller) as a plain zip — extract it into an empty folder, start `UniController.exe` and it runs, no further downloads or configuration** |
-| `UniServer-Reload.7z` | The same bundle as a `.7z` (LZMA, solid): about half the download size — the footprint the former self-extracting exe had, without the exe stub Defender flagged. Windows 11 23H2+ extracts it with Explorer, older Windows needs [7-Zip](https://www.7-zip.org/) |
-| `UniServer-Reload_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
-| `UniServer-Reload_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
-| `UniServer-Reload_mariadb_module.zip` | The bundle's database engine (MariaDB LTS) as a separate module — for installations from 1.3.5 or older, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
-| `UniServer-Reload_mysql_module.zip` | MySQL 8.4 LTS as the alternative engine — same switching procedure, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
+| **`winpacho.zip`** | **Recommended. All-in-one, zero-setup package: the complete server (Apache, MariaDB, phpMyAdmin, PHP 8.3/8.4/8.5 with 8.5 preselected, updated controller) as a plain zip — extract it into an empty folder, start `UniController.exe` and it runs, no further downloads or configuration** |
+| `winpacho.7z` | The same bundle as a `.7z` (LZMA, solid): about half the download size — the footprint the former self-extracting exe had, without the exe stub Defender flagged. Windows 11 23H2+ extracts it with Explorer, older Windows needs [7-Zip](https://www.7-zip.org/) |
+| `winpacho_php83_module.zip` | PHP 8.3 module — for adding to or updating an existing installation |
+| `winpacho_php84_module.zip` | PHP 8.4 module (latest official thread-safe x64 build, Uniform Server layout) — for adding to an existing installation |
+| `winpacho_php85_module.zip` | PHP 8.5 module — for adding to an existing installation |
+| `winpacho_mariadb_module.zip` | The bundle's database engine (MariaDB LTS) as a separate module — for installations from 1.3.5 or older, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
+| `winpacho_mysql_module.zip` | MySQL 8.4 LTS as the alternative engine — same switching procedure, see [Databases](#databases-mariadb-by-default-mysql-as-a-module) |
 
 **Archive downloads only.** Until releases are code-signed there are no bare exe downloads: Windows Defender's machine-learning heuristic quarantined the unsigned self-extracting archive right after download as `Trojan:Win32/Wacatac.B!ml` (a known false positive), and SmartScreen warns on downloaded exes in general. A zip needs no extra tool on Windows, and the binaries inside are not flagged. To update only the controller of an existing installation, take `UniController.exe` and `utils\UniService.exe` out of the bundle zip (see [Upgrading](#upgrading)).
 
-Quick start: extract `UniServer-Reload.zip` into an empty folder without spaces in the path (e.g. `C:\UniServer-Reload`), then start `UniController.exe` from it — the server lives directly in the chosen folder (no `UniServerZ` subfolder since 1.3.0) and is ready to go. The newest bundled PHP version (8.5) is preselected; to switch stop Apache first, then use *PHP > Select PHP version*.
+Quick start: extract `winpacho.zip` into an empty folder without spaces in the path (e.g. `C:\winpacho`), then start `UniController.exe` from it — the server lives directly in the chosen folder (no `UniServerZ` subfolder since 1.3.0) and is ready to go. The newest bundled PHP version (8.5) is preselected; to switch stop Apache first, then use *PHP > Select PHP version*.
 
 ## Support the project
 
-UniServer Reload is free and open source. If it saves you time, you can support its development with a donation: **[Donate via PayPal](https://www.paypal.com/paypalme/robderoy)** — thank you!
+winpacho is free and open source. If it saves you time, you can support its development with a donation: **[Donate via PayPal](https://www.paypal.com/paypalme/robderoy)** — thank you!
 
 ## Upgrading
 
 There is no in-place updater — the package is portable by design. Two paths:
 
-* **Controller-only upgrade** (e.g. 1.2.0 → 1.2.1): extract the new `UniServer-Reload.zip` somewhere temporary and copy just `UniController.exe` (into the server folder) and `utils\UniService.exe` (into its `utils` subfolder) over the old ones. Your `www` content, databases and configuration stay untouched. (The version shown on the splash and test pages comes from `AppVersion=` in `home\us_config\us_config.ini`; update it by hand if you want the pages to match.)
+* **Controller-only upgrade** (e.g. 1.2.0 → 1.2.1): extract the new `winpacho.zip` somewhere temporary and copy just `UniController.exe` (into the server folder) and `utils\UniService.exe` (into its `utils` subfolder) over the old ones. Your `www` content, databases and configuration stay untouched. (The version shown on the splash and test pages comes from `AppVersion=` in `home\us_config\us_config.ini`; update it by hand if you want the pages to match.)
 * **Full upgrade** (new Apache/PHP/database builds): unpack the new bundle into a fresh folder and move over your `www` content, your databases and any configuration you changed (e.g. `home\us_config\us_user.ini`, `core\msmtp\msmtprc.ini`, certificates in `core\apache2\server_certs`). Databases move as a folder (`core\mysql\data`) only between installations with the **same engine**; from a 1.3.5-or-older bundle (MySQL) into 1.3.6+ (MariaDB) they move as dumps, see [Databases](#databases-mariadb-by-default-mysql-as-a-module).
 * **Server tuning for an existing installation** (log rotation, OPcache, load limits, see [Sized for a small-business server](#sized-for-a-small-business-server)): with Apache and the database stopped, run from a checkout of this repository
 
   ```
-  powershell -ExecutionPolicy Bypass -File scripts\tune-server-config.ps1 -Root C:\UniServer-Reload
+  powershell -ExecutionPolicy Bypass -File scripts\tune-server-config.ps1 -Root C:\winpacho
   ```
 
   It changes only what is not in place yet, keeps existing logs, and stops with a clear message if a file does not look as expected.
@@ -72,9 +75,9 @@ There is no in-place updater — the package is portable by design. Two paths:
 
 ## Versioning
 
-UniServer Reload follows its **own version line starting at 1.0.0** (`MAJOR.MINOR.PATCH`), independent of upstream's 15.x numbering — the origin stays credited, but the project evolves on its own.
+winpacho follows its **own version line starting at 1.0.0** (`MAJOR.MINOR.PATCH`), independent of upstream's 15.x numbering — the origin stays credited, but the project evolves on its own.
 
-* **Stable releases** are built from git tags (`vX.Y.Z`) and published as versioned GitHub releases with versioned file names (e.g. `UniServer-Reload-1.2.0.zip`).
+* **Stable releases** are built from git tags (`vX.Y.Z`) and published as versioned GitHub releases with versioned file names (e.g. `winpacho-2.0.0.zip`).
 * The **rolling `latest` release** continues to be updated on every push with development builds.
 * The version is visible everywhere: the *About* dialog, `UniController.exe version` on the command line, the splash page, the exe file properties and `home\version.txt` in the bundle (which also records the ZeroXV base package the bundle was built from).
 * Single source of truth is [`UniController/reload_version.inc`](UniController/reload_version.inc): CI stamps it into the exe VersionInfo and the bundle, and refuses to build a release tag that does not match it.
@@ -107,13 +110,13 @@ Since 1.3.6 the bundle ships **MariaDB** as its database engine instead of MySQL
 
 **Which MariaDB**: the packaging script picks the stable long-term-support series with the **longest remaining support** (MariaDB's REST API publishes the end-of-life dates), at its newest patch level, and moves to a newer series only once its support outlasts the current one. The exact version is on the splash page (`http://localhost/us_splash/`) and in the release notes.
 
-**I want MySQL, not MariaDB:** MySQL 8.4 LTS remains available as `UniServer-Reload_mysql_module.zip` on every release, for apps that rely on MySQL-only features (binary JSON type, multi-valued indexes, the X DevAPI) or simply because MySQL is what you know. The switch is the four steps below; the controller shows them under *MariaDB > Switch to MySQL instead…* and offers to open the download page, and the bundled documentation has them under *Databases*.
+**I want MySQL, not MariaDB:** MySQL 8.4 LTS remains available as `winpacho_mysql_module.zip` on every release, for apps that rely on MySQL-only features (binary JSON type, multi-valued indexes, the X DevAPI) or simply because MySQL is what you know. The switch is the four steps below; the controller shows them under *MariaDB > Switch to MySQL instead…* and offers to open the download page, and the bundled documentation has them under *Databases*.
 
 **Switching engines** (also from a 1.3.5-or-older bundle, which ran MySQL 8.2): the two engines cannot open each other's data folder, so the data travels as SQL dumps.
 
 1. Export every database you need: *MySQL > Database backup* (in 1.3.6+: *MariaDB > Database backup*) in the controller, or `core\mysql\bin\mysqldump.exe --user=root --password=root --databases <name> > <name>.sql` per database.
 2. Stop the database. Delete `core\mysql` completely (mixing the two engines' files corrupts the data folder).
-3. Unzip the engine module (`UniServer-Reload_mariadb_module.zip` or `UniServer-Reload_mysql_module.zip`) into the server folder. It brings `core\mysql` with a fresh data folder, root password `root` and the phpMyAdmin control user.
+3. Unzip the engine module (`winpacho_mariadb_module.zip` or `winpacho_mysql_module.zip`) into the server folder. It brings `core\mysql` with a fresh data folder, root password `root` and the phpMyAdmin control user.
 4. Start the database and import the dumps: *MariaDB > Database restore* (or *MySQL > Database restore*) in the controller, or `core\mysql\bin\mysql.exe --user=root --password=root < <name>.sql`. Recreate application users (*… > Create restricted … user*) - dumps of single databases do not carry them.
 
 Both modules are built by CI from the vendors' downloads (`scripts\package-mariadb-module.ps1`, `scripts\package-mysql-module.ps1`) and are the same files the bundle uses; the data folder they ship went through a first start with the phpMyAdmin control user `pma` and its storage tables, then a clean shutdown.
@@ -128,7 +131,7 @@ Spam-filter friendliness built in: outgoing mails automatically get the standard
 
 The stock configuration is extremely conservative (2 MB PHP uploads, 1 MB MySQL packets, 32 MB InnoDB pool). This fork ships with limits sized for development machines:
 
-| Setting | Upstream | Reload |
+| Setting | Upstream | winpacho |
 |---|---|---|
 | PHP `memory_limit` | 128M | **512M** |
 | PHP `upload_max_filesize` / `post_max_size` | 2M / 8M | **256M / 256M** |
@@ -164,19 +167,19 @@ A CRM with a few hundred customers, tickets, chats and a document archive is a f
 
 **Extensions enabled by default in every PHP version** (all ini variants **including `php-cli.ini`**, so CLI scripts and cron jobs get the same set): on top of the stock set (`gd`, `mbstring`, `exif`, `mysqli`, `openssl`, `pdo_mysql`) this fork also enables `pdo_sqlite`, `sqlite3`, `fileinfo` and `curl` — the ones small PHP apps most often need but that upstream ships commented out. Every build's smoke test starts Apache once per installed PHP version and fails unless PHP executes and all of these extensions actually load, so a version switch in UniController can never silently drop them.
 
-**The controller is the medallion:** the main window is the round 3D Reload medallion itself, with the start buttons, utilities and status LEDs sitting on the metal. There is no title bar: drag the window by any free spot of the coin, use the small `–` / `×` buttons (or Alt+F4) to minimize and close, and open the menus from the tab row (*General*, *Extra*, *Apache*, ...). All menu entries are the same as before, only their home moved from a menu bar to the tabs. Minimizing with the tray option enabled parks the medallion in the notification area (see *Minimize* below); since 1.3.6 the tray icon has a right-click menu (*Show* / *Exit*), so the controller can be quit from there, and *Extra > Edit Win hosts file* no longer hides the window when the hosts editor opens.
+**The controller is the medallion:** the main window is the round 3D winpacho medallion itself, with the start buttons, utilities and status LEDs sitting on the metal. There is no title bar: drag the window by any free spot of the coin, use the small `–` / `×` buttons (or Alt+F4) to minimize and close, and open the menus from the tab row (*General*, *Extra*, *Apache*, ...). All menu entries are the same as before, only their home moved from a menu bar to the tabs. Minimizing with the tray option enabled parks the medallion in the notification area (see *Minimize* below); since 1.3.6 the tray icon has a right-click menu (*Show* / *Exit*), so the controller can be quit from there, and *Extra > Edit Win hosts file* no longer hides the window when the hosts editor opens.
 
-<p align="center"><img src="bundle/branding/controller-medallion.png" alt="UniServer Reload controller: the medallion is the window" width="480"></p>
+<p align="center"><img src="bundle/branding/controller-medallion.png" alt="winpacho controller: the medallion is the window" width="480"></p>
 
 **Prefer a normal window? Since 1.3.14 there is a classic look.** At the first start the controller asks which look you want: the *Classic window* (a compact normal window with title bar and menu bar, laid out like the original Uniform Server Zero, about 460 x 320 pixels at 100 % display scaling) or the *Modern medallion* (about 640 x 640 pixels). Both offer exactly the same functions. Switch at any time, without a restart, in the menu **General > Window look**. The choice is stored as `GuiStyle=classic` or `GuiStyle=modern` in `home\us_config\us_config.ini` (section `[APP]`); delete that line to be asked again. Existing installations are asked once after the update.
 
 <p align="center"><img src="bundle/branding/controller-look-choice.png" alt="First start: choose between the classic window and the modern medallion" width="560"></p>
 
-<p align="center"><img src="bundle/branding/controller-classic.png" alt="UniServer Reload controller in the classic window look" width="440"></p>
+<p align="center"><img src="bundle/branding/controller-classic.png" alt="winpacho controller in the classic window look" width="440"></p>
 
 **Minimize: taskbar or notification area, the same in both looks.** By default the controller behaves like any other Windows program: minimizing keeps it on the taskbar, and a click on its taskbar button brings it back. If you prefer to park it next to the clock, switch on **General > Minimize button minimizes to system tray**. Then the window's own minimize button (the `-` on the medallion, the title bar button of the classic window) hides it into the notification area; click the tray icon or use its right-click menu (*Show* / *Exit*) to get it back. A click on the taskbar button always minimizes normally. The setting is stored as `TrayIconEnabled=True` / `False` in `home\us_config\us_config.ini` (section `[APP]`); before 1.3.15 the tray was on by default, and existing installations keep their setting.
 
-**Consoles in Reload look:** *Server Console* and *MySQL Console* open in Windows Terminal with a translucent black acrylic background and the Reload icon in the tab (Windows Terminal ships with Windows 11; on Windows 10 install it from the Microsoft Store). The opacity is set in `home\us_config\us_user.ini`: `CONSOLE_OPACITY=50` (50–100; `100` restores the classic opaque cmd window, which is also used automatically when Windows Terminal is not installed). The controller registers the profile *UniServer Reload Console* as a Windows Terminal fragment in `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\UniServer Reload\`, so the profile also appears in the terminal's own dropdown; delete that folder to remove it.
+**Consoles in winpacho look:** *Server Console* and *MySQL Console* open in Windows Terminal with a translucent black acrylic background and the winpacho icon in the tab (Windows Terminal ships with Windows 11; on Windows 10 install it from the Microsoft Store). The opacity is set in `home\us_config\us_user.ini`: `CONSOLE_OPACITY=50` (50–100; `100` restores the classic opaque cmd window, which is also used automatically when Windows Terminal is not installed). The controller registers the profile *winpacho Console* as a Windows Terminal fragment in `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\winpacho\`, so the profile also appears in the terminal's own dropdown; delete that folder to remove it.
 
 ## Running as a Windows service
 
@@ -207,13 +210,13 @@ A CRM with a few hundred customers, tickets, chats and a document archive is a f
 
 ## Privacy
 
-UniServer Reload collects no data: no telemetry, no crash reports, no update check, no account. Everything it creates stays in your installation folder. Details in the [privacy policy](PRIVACY.md).
+winpacho collects no data: no telemetry, no crash reports, no update check, no account. Everything it creates stays in your installation folder. Details in the [privacy policy](PRIVACY.md).
 
 ## Bugs & feature requests (this fork)
 
-Found a problem in UniServer Reload, or missing a feature? Please use **this repository's issue tracker**:
+Found a problem in winpacho, or missing a feature? Please use **this repository's issue tracker**:
 
-**➡ [Known issues and reports](https://github.com/Wolfram33/uniserver-reload/issues)** — every currently known problem of the fork lives there.
+**➡ [Known issues and reports](https://github.com/Wolfram33/winpacho/issues)** — every currently known problem of the fork lives there.
 
 Please do not report fork problems to the original project; its tracker is unmaintained.
 

@@ -23,7 +23,7 @@
       <MajorVersionNr Value="1"/>
       <MinorVersionNr Value="2"/>
       <RevisionNr Value="0"/>
-      <StringTable Comments="Run UniServer Reload servers as a Service" CompanyName="UniServer Reload project" FileDescription="UniService for UniServer Reload" ProductName="UniServer Reload" ProductVersion="1.2.0"/>
+      <StringTable Comments="Run winpacho servers as a Service" CompanyName="winpacho project" FileDescription="UniService for winpacho" ProductName="winpacho" ProductVersion="1.2.0"/>
     </VersionInfo>
     <BuildModes Count="3">
       <Item1 Name="Default" Default="True"/>

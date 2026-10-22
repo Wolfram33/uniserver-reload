@@ -1,10 +1,10 @@
-# Privacy Policy — UniServer Reload
+# Privacy Policy — winpacho
 
 *Last updated: 2026-09-14*
 
-UniServer Reload is a free, open-source, portable WAMP stack for Windows (Apache, MariaDB/MySQL, PHP, phpMyAdmin and the UniController / UniService control programs). It is developed in the open at <https://github.com/Wolfram33/uniserver-reload>.
+winpacho is a free, open-source, portable WAMP stack for Windows (Apache, MariaDB/MySQL, PHP, phpMyAdmin and the UniController / UniService control programs). It is developed in the open at <https://github.com/Wolfram33/winpacho>.
 
-**In short: UniServer Reload does not collect, store or transmit any personal data. There is no telemetry, no usage statistics, no crash reporting, no account and no automatic update check.**
+**In short: winpacho does not collect, store or transmit any personal data. There is no telemetry, no usage statistics, no crash reporting, no account and no automatic update check.**
 
 ## 1. Data the software collects
 
@@ -18,7 +18,7 @@ None. The programs written by this project (`UniController.exe`, `UniService.exe
 
 ## 2. Network connections the software makes
 
-UniServer Reload runs a web server on **your** machine. By default Apache and the database listen on `localhost` only. Network activity is limited to what you configure and trigger yourself:
+winpacho runs a web server on **your** machine. By default Apache and the database listen on `localhost` only. Network activity is limited to what you configure and trigger yourself:
 
 * **Local server traffic:** Apache, the database and PHP answer requests from browsers or applications that connect to your server. If you expose the server to your network or the internet, the access logs written by Apache (`core\apache2\logs`) contain the IP addresses and requested URLs of the visitors — stored locally on your machine only, under your control, and never sent to the project.
 * **Scheduled tasks (cron):** the controller's cron feature can fetch a URL at intervals. It only requests the addresses you enter yourself.
@@ -31,7 +31,7 @@ The bundle ships software from other vendors unchanged: Apache HTTP Server, Mari
 
 * **phpMyAdmin** has a built-in version check that, when you open phpMyAdmin in your browser, asks `phpmyadmin.net` for the latest version number. This is a phpMyAdmin feature, not something added by this project. It can be switched off by setting `$cfg['VersionCheck'] = false;` in `home\us_opt1\config.inc.php`.
 
-None of these components report anything to UniServer Reload.
+None of these components report anything to winpacho.
 
 ## 4. Data stored on your computer
 
@@ -57,4 +57,4 @@ Changes are made in this file in the repository, where the history of every chan
 
 ## 8. Contact
 
-Questions about privacy: open an issue at <https://github.com/Wolfram33/uniserver-reload/issues>.
+Questions about privacy: open an issue at <https://github.com/Wolfram33/winpacho/issues>.

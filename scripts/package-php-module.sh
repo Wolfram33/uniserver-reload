@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Package an official PHP Windows build as a UniServer Reload PHP module.
+# Package an official PHP Windows build as a winpacho PHP module.
 #
 # Usage: package-php-module.sh <branch> [output-dir]
 #   e.g. package-php-module.sh 8.4 dist
@@ -155,7 +155,7 @@ mkdir -p "$CONF_DIR"
 
 # --- Package -----------------------------------------------------------------
 mkdir -p "$OUT_DIR"
-ZIP_NAME="UniServer-Reload_${SHORT}_module.zip"
+ZIP_NAME="winpacho_${SHORT}_module.zip"
 (cd "$WORK/module" && zip -qr9 "$OLDPWD/$OUT_DIR/$ZIP_NAME" core)
 echo "PHP $VERSION ($SHORT)" >> "$OUT_DIR/module-versions.txt"
 echo "==> Created $OUT_DIR/$ZIP_NAME (PHP $VERSION)"

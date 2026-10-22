@@ -214,7 +214,7 @@ begin
   inherited CreateNew(nil);
   Scaled       := False;   // sizes below are already scaled to the screen in S()
   FChoice      := '';
-  Caption      := 'UniServer Reload - choose the window look';
+  Caption      := 'winpacho - choose the window look';
   BorderStyle  := bsDialog;
   Position     := poScreenCenter;
   Color        := clWhite;
@@ -233,7 +233,7 @@ begin
   header.BevelOuter  := bvNone;
   header.ParentColor := False;
   header.Color       := HEADER_COLOR;
-  AddLabel(header, 'Welcome to UniServer Reload', 12, 28, clWhite, True, 14);
+  AddLabel(header, 'Welcome to winpacho', 12, 28, clWhite, True, 14);
   AddLabel(header, 'How should the control window look? Both looks offer exactly the same functions.',
            44, 24, clWhite, False, 10);
 
@@ -269,7 +269,7 @@ begin
     coin.Free;
   end;
   AddLabel(card, 'Modern medallion', PREVIEW_H + 22, 26, MODERN_HEAD_COLOR, True, 12);
-  AddLabel(card, 'The round Reload coin is the window, with the menus as tabs on it. ' +
+  AddLabel(card, 'The round winpacho coin is the window, with the menus as tabs on it. ' +
                  'About 640 x 640 pixels at 100 % display scaling.',
            PREVIEW_H + 50, 84, MODERN_TEXT_COLOR, False, 10);
   btn := TUsButton.Create(Self);

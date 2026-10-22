@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Uniform Server Reload — Documentation</title>
+<title>winpacho — Documentation</title>
 <style>
   :root{
     --navy:#1b2c45; --navy2:#28466a; --blue:#2b8fe0; --blue2:#50b9ff;
@@ -73,9 +73,9 @@
 
 <header class="hero">
   <div class="hero-inner">
-    <img src="common/images/us_zero_logo.png" alt="Uniform Server Reload">
+    <img src="common/images/us_zero_logo.png" alt="winpacho">
     <div>
-      <h1>Uniform Server Reload — Documentation</h1>
+      <h1>winpacho — Documentation</h1>
       <p>A maintained fork of The Uniform Server. Portable WAMP for Windows: Apache · MySQL/MariaDB · PHP 8.3 / 8.4 / 8.5.</p>
     </div>
   </div>
@@ -100,8 +100,8 @@
       <h2><span class="ico">🚀</span> Quick start</h2>
       <p class="lead">The all-in-one package ships the complete server in one zip archive — no installation, no dependencies, no configuration.</p>
       <ol class="steps">
-        <li>Download <b>UniServer-Reload.zip</b> from the <a href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">releases page</a>.</li>
-        <li>Extract it into an empty folder (no spaces in the path, not under <code>C:\Program Files</code>), e.g. <code>C:\UniServer-Reload</code>. The server files land directly in it.</li>
+        <li>Download <b>winpacho.zip</b> from the <a href="https://github.com/Wolfram33/winpacho/releases/tag/latest">releases page</a>.</li>
+        <li>Extract it into an empty folder (no spaces in the path, not under <code>C:\Program Files</code>), e.g. <code>C:\winpacho</code>. The server files land directly in it.</li>
         <li>Start <code>UniController.exe</code> from that folder, then click <b>Start Apache</b> and <b>Start MariaDB</b>.</li>
         <li>Put your site into the <code>www</code> subfolder — or point a Vhost straight at your project folder (see <a href="#vhosts">Virtual hosts</a>).</li>
       </ol>
@@ -147,7 +147,7 @@
 
     <section id="db">
       <h2><span class="ico">🗄️</span> Databases</h2>
-      <p><b>MariaDB</b> is the database engine since 1.3.6 (the long-term-support release with the longest remaining support, see the splash page for the exact version). It lives in <code>core\mysql</code> and answers on port 3306 like MySQL did, so apps, phpMyAdmin and the controller menus work unchanged. <b>MySQL 8.4 LTS</b> remains available as a module (<code>UniServer-Reload_mysql_module.zip</code>).</p>
+      <p><b>MariaDB</b> is the database engine since 1.3.6 (the long-term-support release with the longest remaining support, see the splash page for the exact version). It lives in <code>core\mysql</code> and answers on port 3306 like MySQL did, so apps, phpMyAdmin and the controller menus work unchanged. <b>MySQL 8.4 LTS</b> remains available as a module (<code>winpacho_mysql_module.zip</code>).</p>
       <div class="grid">
         <div class="card"><b>Admin</b>phpMyAdmin via the <b>phpMyAdmin</b> button. Default login <code>root</code> / <code>root</code>.</div>
         <div class="card"><b>Host</b>Use <code>127.0.0.1</code> as the DB host in your apps (not <code>localhost</code>) for a reliable IPv4 connection.</div>
@@ -155,14 +155,14 @@
         <div class="card"><b>Coming from 1.3.5 or older</b>Those bundles ran MySQL 8.2. Export the databases there first (<b>MySQL &gt; Database backup</b>), then import the dumps into MariaDB (<b>MariaDB &gt; Database restore</b>). Copying <code>core\mysql\data</code> across does not work.</div>
       </div>
       <h3 id="mysql">I want MySQL, not MariaDB</h3>
-      <p>No problem: <b>MySQL 8.4 LTS</b> ships as the module <code>UniServer-Reload_mysql_module.zip</code> on the <a href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">releases page</a>, built by the same CI from Oracle's download. It replaces the engine in place; apps, phpMyAdmin, <code>mysqli</code>/PDO and every controller function work the same. In the controller, <b>MariaDB &gt; Switch to MySQL instead…</b> shows these steps as well.</p>
+      <p>No problem: <b>MySQL 8.4 LTS</b> ships as the module <code>winpacho_mysql_module.zip</code> on the <a href="https://github.com/Wolfram33/winpacho/releases/tag/latest">releases page</a>, built by the same CI from Oracle's download. It replaces the engine in place; apps, phpMyAdmin, <code>mysqli</code>/PDO and every controller function work the same. In the controller, <b>MariaDB &gt; Switch to MySQL instead…</b> shows these steps as well.</p>
       <ol class="steps">
         <li>Export the databases you need: <b>MariaDB &gt; Database backup</b> (or <code>core\mysql\bin\mysqldump.exe</code>). The two engines cannot read each other's data folder.</li>
         <li>Stop MariaDB and delete the folder <code>core\mysql</code> <b>completely</b> - a mix of both engines' files corrupts the data folder.</li>
         <li>Unzip the module into the server folder (the folder with <code>UniController.exe</code>). It brings a fresh <code>core\mysql</code>: root password <code>root</code>, phpMyAdmin control user and tables included.</li>
         <li>Restart the controller - the menus now say <b>MySQL</b> - and import the dumps via <b>MySQL &gt; Database restore</b>. Recreate restricted users (<b>MySQL &gt; Create restricted MySQL user</b>); single-database dumps do not carry them.</li>
       </ol>
-      <div class="note">MySQL 8.4 uses the <code>caching_sha2_password</code> login by default. The bundled PHP handles it; very old external tools may not. Switching back to MariaDB works the same way with <code>UniServer-Reload_mariadb_module.zip</code>.</div>
+      <div class="note">MySQL 8.4 uses the <code>caching_sha2_password</code> login by default. The bundled PHP handles it; very old external tools may not. Switching back to MariaDB works the same way with <code>winpacho_mariadb_module.zip</code>.</div>
     </section>
 
     <section id="mail">
@@ -203,15 +203,15 @@
       <p>The detailed original ZeroXV manual (Apache, MySQL, cron, SSL internals, plugins) remains available. It was written for the upstream 15.0.2 release, so some download/version details are dated — but the controller reference is still accurate.</p>
       <p><a href="index_main.html">Open the full reference manual (site map) →</a></p>
       <p>Project home, current downloads and issues:
-      <a href="https://github.com/Wolfram33/uniserver-reload">github.com/Wolfram33/uniserver-reload</a></p>
+      <a href="https://github.com/Wolfram33/winpacho">github.com/Wolfram33/winpacho</a></p>
     </section>
   </main>
 </div>
 
 <footer>
-  Uniform Server Reload — originally developed by
+  winpacho — originally developed by
   <a href="https://www.uniformserver.com/">The Uniform Server Development Team</a>;
-  <a href="https://github.com/Wolfram33/uniserver-reload">Reload fork</a> initiated by Rob de Roy.
+  <a href="https://github.com/Wolfram33/winpacho">winpacho</a> (formerly Uniform Server Reload) initiated by Rob de Roy.
 </footer>
 
 </body>

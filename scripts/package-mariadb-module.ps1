@@ -1,4 +1,4 @@
-# Package MariaDB as the UniServer Reload database module.
+# Package MariaDB as the winpacho database module.
 #
 # Since 1.3.6 this module IS the bundle's database engine: build-bundle.ps1
 # replaces the base package's core\mysql (MySQL) with the zip this script
@@ -148,4 +148,4 @@ Write-DbModuleConfig -ModuleDir $m -RepoRoot $repo -Flavor $flavor -Version $ver
 if (Test-Path "$dist\COPYING") { Copy-Item "$dist\COPYING" "$m\docs\licenses\mariadb\COPYING" }
 
 # --- Package --------------------------------------------------------------------
-Compress-DbModule -ModuleDir $m -OutDir $OutDir -ZipName 'UniServer-Reload_mariadb_module.zip' -Flavor $flavor -Version $ver
+Compress-DbModule -ModuleDir $m -OutDir $OutDir -ZipName 'winpacho_mariadb_module.zip' -Flavor $flavor -Version $ver

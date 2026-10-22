@@ -48,7 +48,7 @@ begin
    about.Caption := 'About';     // About
 
   str1:='';
-  str1:= str1 + 'UniServer Reload '+ US_RELOAD_VERSION +sLineBreak;
+  str1:= str1 + 'winpacho '+ US_RELOAD_VERSION +sLineBreak;
   str1:= str1 + 'Based on Uniform Server Zero XV ' + USC_BaseVersion;
   Label1.Caption := str1;
 
@@ -61,7 +61,7 @@ begin
   str2 := str2 + '- Sudeep DSouza (SudeepJD)'+sLineBreak;
   str2 := str2 + '- Davide Bonsangue (BrainStorm)'+sLineBreak;
   str2 := str2 + '- Sylvain Bourdon (sbourdon)'+sLineBreak+sLineBreak;
-  str2 := str2 + 'Uniform Server Reload fork initiated by Rob de Roy' +sLineBreak+sLineBreak;
+  str2 := str2 + 'winpacho (formerly Uniform Server Reload) initiated by Rob de Roy' +sLineBreak+sLineBreak;
   Label2.Caption := str2;
 end;
 

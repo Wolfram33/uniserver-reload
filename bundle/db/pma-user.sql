@@ -1,4 +1,4 @@
--- phpMyAdmin control user for Uniform Server Reload.
+-- phpMyAdmin control user for winpacho.
 --
 -- home\us_opt1\config.inc.php uses 'pma' as controluser for the
 -- configuration storage (bookmarks, relations, history, ...), with the same

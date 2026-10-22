@@ -5,10 +5,10 @@
 # Expects (as laid out by actions/download-artifact):
 #   artifacts/uniserver-binaries/UniController/UniController.exe
 #   artifacts/uniserver-binaries/UniService/UniService.exe
-#   artifacts/php-module-*/UniServer-Reload_php8*_module.zip
-#   artifacts/mariadb-module/UniServer-Reload_mariadb_module.zip
+#   artifacts/php-module-*/winpacho_php8*_module.zip
+#   artifacts/mariadb-module/winpacho_mariadb_module.zip
 #
-# Produces: dist/UniServer-Reload.zip (plus a .7z twin). Unlike the upstream 15_0_2_ZeroXV.exe it
+# Produces: dist/winpacho.zip (plus a .7z twin). Unlike the upstream 15_0_2_ZeroXV.exe it
 # is FLAT: the server files land directly in the folder the user extracts to,
 # without a UniServerZ subfolder. No self-extracting exe any more: unsigned
 # SFX archives are quarantined by Windows Defender (Wacatac.B!ml false
@@ -20,7 +20,7 @@ $versionInc = Get-Content 'UniController\reload_version.inc' -Raw
 if ($versionInc -notmatch "US_RELOAD_VERSION\s*=\s*'([^']+)'") { throw 'US_RELOAD_VERSION not found in UniController\reload_version.inc' }
 $reloadVersion = $Matches[1]
 $baseVersion = '15.0.2'   # Uniform Server ZeroXV base package the bundle builds on
-Write-Host "==> Building UniServer Reload $reloadVersion (base package $baseVersion)"
+Write-Host "==> Building winpacho $reloadVersion (base package $baseVersion)"
 
 $sevenZip = Join-Path $env:ProgramFiles '7-Zip\7z.exe'
 if (-not (Test-Path $sevenZip))  { throw "7z.exe not found at $sevenZip" }
@@ -28,7 +28,7 @@ if (-not (Test-Path $sevenZip))  { throw "7z.exe not found at $sevenZip" }
 # --- Fetch and unpack the base package ---------------------------------------
 # Preferred source is our own mirror (assets of the base-package release) so
 # builds do not depend on SourceForge availability; SourceForge is the fallback.
-$mirrorUrl = 'https://github.com/Wolfram33/uniserver-reload/releases/download/base-package/15_0_2_ZeroXV.exe'
+$mirrorUrl = 'https://github.com/Wolfram33/winpacho/releases/download/base-package/15_0_2_ZeroXV.exe'
 $baseUrl = 'https://downloads.sourceforge.net/project/miniserver/Uniform%20Server%20ZeroXV/15_0_2_ZeroXV/15_0_2_ZeroXV.exe'
 Write-Host '==> Downloading Uniform Server ZeroXV 15.0.2 base package (mirror)'
 & curl.exe -fsSL -o base.exe $mirrorUrl
@@ -118,7 +118,7 @@ if (Test-Path "$root\UniService.exe") { Remove-Item "$root\UniService.exe" -Forc
 # same CI run, so bundle and module are identical. The base's core\mysql
 # (MySQL 8.2 with its data directory) goes completely: the two engines'
 # data formats are incompatible, a mix of files corrupts the data directory.
-$dbModule = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'UniServer-Reload_mariadb_module.zip' | Select-Object -First 1
+$dbModule = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'winpacho_mariadb_module.zip' | Select-Object -First 1
 if (-not $dbModule) { throw 'MariaDB module ZIP not found in artifacts (package-mariadb-module job)' }
 Write-Host "==> Replacing MySQL with MariaDB ($($dbModule.Name))"
 Remove-Item "$root\core\mysql" -Recurse -Force
@@ -152,7 +152,7 @@ if ($c -match '(?m)^DatabaseVersion=') {
   $c = $c -replace '(?m)^(BaseVersion=.*?\r?)$', "`$1`nDatabaseVersion=MariaDB $dbVersion"
 }
 # Window title / tray hover text still carries the upstream name in the stock ini
-$c = $c -replace '(?m)^ServerTypeText1=Uniform Server Zero(\r?)$', 'ServerTypeText1=Uniform Server Reload$1'
+$c = $c -replace '(?m)^ServerTypeText1=Uniform Server Zero(\r?)$', 'ServerTypeText1=winpacho$1'
 # Minimize stays on the taskbar like any other program; the tray is opt-in
 # (General > Minimize button minimizes to system tray). Stock ini: True.
 $c = $c -replace '(?m)^;--Default true(\r?\n)TrayIconEnabled=', ';--Default false (stay on the taskbar)$1TrayIconEnabled='
@@ -166,21 +166,21 @@ if ($c -notmatch '(?m)^\[VCRUNTIME\]') {
 }
 Set-Content $cfg -Value $c -NoNewline
 if ((Get-Content $cfg -Raw) -notmatch "(?m)^AppVersion=$([regex]::Escape($reloadVersion))") { throw 'us_config.ini version stamp failed' }
-if ((Get-Content $cfg -Raw) -notmatch '(?m)^ServerTypeText1=Uniform Server Reload') { throw 'us_config.ini ServerTypeText1 stamp failed' }
+if ((Get-Content $cfg -Raw) -notmatch '(?m)^ServerTypeText1=winpacho') { throw 'us_config.ini ServerTypeText1 stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch '(?m)^TrayIconEnabled=False') { throw 'us_config.ini TrayIconEnabled stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch "(?m)^DatabaseVersion=MariaDB $([regex]::Escape($dbVersion))") { throw 'us_config.ini DatabaseVersion stamp failed' }
 if ((Get-Content $cfg -Raw) -notmatch '(?m)^php85=14\.44') { throw 'us_config.ini VCRUNTIME stamp failed' }
 if ($apRuntime -and (Get-Content $cfg -Raw) -notmatch '(?m)^apache=14\.51') { throw 'us_config.ini VCRUNTIME apache stamp failed' }
-Set-Content "$root\home\version.txt" -Value "UniServer Reload $reloadVersion (base package Uniform Server ZeroXV $baseVersion)"
+Set-Content "$root\home\version.txt" -Value "winpacho $reloadVersion (base package Uniform Server ZeroXV $baseVersion)"
 
 # --- Merge the PHP modules ---------------------------------------------------
 # Every PHP version comes fresh from windows.php.net, php83 included: the base
 # package's own php83 is 8.3.0 from 2023 and misses two years of security
 # fixes (among them PHP2Shell, CVE-2026-109618/-109619). It is moved out of
 # the bundle tree first, so no stale file of it can survive the merge.
-$modules = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'UniServer-Reload_php8*_module.zip'
+$modules = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'winpacho_php8*_module.zip'
 if ($modules.Count -eq 0) { throw 'No PHP module ZIPs found in artifacts' }
-if (-not ($modules | Where-Object Name -eq 'UniServer-Reload_php83_module.zip')) { throw 'PHP 8.3 module missing in artifacts' }
+if (-not ($modules | Where-Object Name -eq 'winpacho_php83_module.zip')) { throw 'PHP 8.3 module missing in artifacts' }
 if (Test-Path "$root\core\php83") {
   Write-Host '==> Replacing the base package php83 (8.3.0) with the current PHP 8.3 module'
   Move-Item "$root\core\php83" 'base\php83-from-base-package'
@@ -512,8 +512,8 @@ $resp = $null
 foreach ($i in 1..30) { Start-Sleep -Seconds 1; $resp = & curl.exe -fsS 'http://localhost:8088/us_splash/index.php' 2>$null; if ($LASTEXITCODE -eq 0 -and $resp) { break } }
 $respWww = & curl.exe -fsS 'http://localhost:8088/index.php' 2>$null
 Stop-SmokeApache
-if (($resp -join "`n") -notmatch 'Uniform Server Reload') { throw 'Smoke test: splash page did not render fork content' }
-if (($respWww -join "`n") -notmatch 'Uniform Server Reload') { throw 'Smoke test: www test page did not render fork content' }
+if (($resp -join "`n") -notmatch 'winpacho') { throw 'Smoke test: splash page did not render fork content' }
+if (($respWww -join "`n") -notmatch 'winpacho') { throw 'Smoke test: www test page did not render fork content' }
 Write-Host "==> Smoke test passed: Apache $apVer, all PHP versions execute with OPcache and required extensions"
 
 # The smoke test's logs must not ship: empty log folder, rotation ring gone
@@ -529,12 +529,12 @@ foreach ($f in 'access.log', 'error.log', 'access_ssl.log', 'error_ssl.log', 'ht
 # (Apache log folders) and dot-files (.htaccess).
 Write-Host '==> Packing bundle zip'
 New-Item -ItemType Directory -Force dist | Out-Null
-& $sevenZip a -tzip -mx=5 'dist\UniServer-Reload.zip' '.\base\UniServerZ\*'
+& $sevenZip a -tzip -mx=5 'dist\winpacho.zip' '.\base\UniServerZ\*'
 if ($LASTEXITCODE -ne 0) { throw "7z zip packing failed ($LASTEXITCODE)" }
 
 # Guard the flat layout: the controller must sit at the archive root and no
 # stray UniServerZ folder may sneak back in.
-$listing = & $sevenZip l -slt 'dist\UniServer-Reload.zip'
+$listing = & $sevenZip l -slt 'dist\winpacho.zip'
 if ($LASTEXITCODE -ne 0) { throw 'Could not list bundle zip' }
 if ($listing -notcontains 'Path = UniController.exe') { throw 'Bundle layout broken: UniController.exe is not at the archive root' }
 if ($listing | Where-Object { $_ -like 'Path = UniServerZ*' }) { throw 'Bundle layout broken: unexpected UniServerZ folder in the archive' }
@@ -547,14 +547,14 @@ if ($listing -notcontains 'Path = core\mysql\bin\mysqld_z.exe') { throw 'Bundle 
 # flagged. Windows 11 23H2+ extracts it natively, older Windows needs 7-Zip;
 # the zip stays the recommended download.
 Write-Host '==> Packing bundle 7z'
-& $sevenZip a -t7z -mx=7 'dist\UniServer-Reload.7z' '.\base\UniServerZ\*'
+& $sevenZip a -t7z -mx=7 'dist\winpacho.7z' '.\base\UniServerZ\*'
 if ($LASTEXITCODE -ne 0) { throw "7z packing failed ($LASTEXITCODE)" }
-$listing7z = & $sevenZip l -slt 'dist\UniServer-Reload.7z'
+$listing7z = & $sevenZip l -slt 'dist\winpacho.7z'
 if ($LASTEXITCODE -ne 0) { throw 'Could not list bundle 7z' }
 if ($listing7z -notcontains 'Path = UniController.exe') { throw 'Bundle layout broken (7z): UniController.exe is not at the archive root' }
 
-Add-Content 'dist\module-versions.txt' "UniServer Reload $reloadVersion (base ZeroXV $baseVersion)"
+Add-Content 'dist\module-versions.txt' "winpacho $reloadVersion (base ZeroXV $baseVersion)"
 Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"
 Add-Content 'dist\module-versions.txt' "MariaDB $dbVersion (bundle)"
 
-Get-Item 'dist\UniServer-Reload.zip', 'dist\UniServer-Reload.7z' | Format-List Name, Length
+Get-Item 'dist\winpacho.zip', 'dist\winpacho.7z' | Format-List Name, Length

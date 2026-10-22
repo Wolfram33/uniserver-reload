@@ -6,7 +6,7 @@
 # data directory, run a temporary server once to set the root password and
 # create the phpMyAdmin control user with its tables, shut it down cleanly,
 # then arrange the files in the core\mysql layout the controller expects
-# and zip them as a UniServer Reload module. The
+# and zip them as a winpacho module. The
 # engine-specific parts (download source, init command, which binaries)
 # stay in the two scripts; everything else lives here so the two modules
 # cannot drift apart.

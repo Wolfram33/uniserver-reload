@@ -51,9 +51,9 @@ if (!ctype_digit((string)$server_port) || (int)$server_port < 1 || 65535 < (int)
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Uniform Server Reload - test page</title>
-<meta name="Description" content="Uniform Server Reload - a maintained fork of The Uniform Server ZeroXV" />
-<meta name="Keywords" content="Uniform Server Reload,The Uniform Server,ZeroXV,WAMP,Apache,MariaDB,MySQL,PHP" />
+<title>winpacho - test page</title>
+<meta name="Description" content="winpacho - a maintained fork of The Uniform Server ZeroXV" />
+<meta name="Keywords" content="winpacho,The Uniform Server,ZeroXV,WAMP,Apache,MariaDB,MySQL,PHP" />
 <link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" type="text/css" href="css/style.css" media="screen" />
 </head>
@@ -64,16 +64,16 @@ if (!ctype_digit((string)$server_port) || (int)$server_port < 1 || 65535 < (int)
 
 <div id="wrap">
   <header id="header">
-    <a href="https://github.com/Wolfram33/uniserver-reload">
-      <img src="images/logo.png" width="465" height="93" alt="Uniform Server Reload - a lightweight WAMP server solution, reloaded" />
+    <a href="https://github.com/Wolfram33/winpacho">
+      <img src="images/logo.png" width="465" height="93" alt="winpacho - portable WAMP server for Windows" />
     </a>
     <p class="version"><?php if ($version !== ""){ print "v".us_h($version); } ?></p>
   </header>
 
   <main id="main">
-    <h1>Welcome to Uniform Server Reload</h1>
+    <h1>Welcome to winpacho</h1>
 
-    <p class="intro">This test page <strong>index.php</strong> was served from the <strong>www</strong> folder of your UniServer Reload installation
+    <p class="intro">This test page <strong>index.php</strong> was served from the <strong>www</strong> folder of your winpacho installation
     <?php if (0): ?><br />If no PHP module is installed, Apache returns PHP directives un-processed.<?php endif; ?>
     </p>
 
@@ -157,9 +157,9 @@ if (!ctype_digit((string)$server_port) || (int)$server_port < 1 || 65535 < (int)
   </main>
 
   <footer>
-    <p class="footer-links"><a href="https://github.com/Wolfram33/uniserver-reload">GitHub Repository</a> | <a href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">Latest Downloads</a> | <a href="/us_docs/manual/index.html">Local Documentation</a></p>
+    <p class="footer-links"><a href="https://github.com/Wolfram33/winpacho">GitHub Repository</a> | <a href="https://github.com/Wolfram33/winpacho/releases/tag/latest">Latest Downloads</a> | <a href="/us_docs/manual/index.html">Local Documentation</a></p>
     <p><a class="donate" href="https://www.paypal.com/paypalme/robderoy" rel="noopener"><span aria-hidden="true">&#9829;</span> Donate via PayPal</a></p>
-    <p class="credits">Originally developed by <a href="https://www.uniformserver.com/">The Uniform Server Development Team</a> &mdash; Reload fork initiated by Rob de Roy</p>
+    <p class="credits">Originally developed by <a href="https://www.uniformserver.com/">The Uniform Server Development Team</a> &mdash; winpacho (formerly Uniform Server Reload) initiated by Rob de Roy</p>
   </footer>
 </div>
 </body>

@@ -109,7 +109,7 @@ end;
 ============================================================================}
 procedure cli_print_usage;
 begin
-  cli_write_line('UniServer Reload ' + US_RELOAD_VERSION);
+  cli_write_line('winpacho ' + US_RELOAD_VERSION);
   cli_write_line('Usage: UniController.exe <command>');
   cli_write_line('');
   cli_write_line('Commands (also accepted as --command form, e.g. --restart-apache):');
@@ -265,7 +265,7 @@ begin
 
   If cmd = 'version' Then
    begin
-     cli_write_line('UniServer Reload ' + US_RELOAD_VERSION);
+     cli_write_line('winpacho ' + US_RELOAD_VERSION);
      Halt(CLI_EXIT_OK);
    end;
 

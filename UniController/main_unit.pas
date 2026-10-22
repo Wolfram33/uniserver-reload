@@ -1674,7 +1674,7 @@ begin
   //    ApplyGuiStyle below renders it once the chosen look is known.
   DoubleBuffered := True;
   FMedallion     := TUsMedallion.Create;
-  Lbl_version.Caption := 'Uniform Server Reload ' + US_RELOAD_VERSION;
+  Lbl_version.Caption := 'winpacho ' + US_RELOAD_VERSION;
   CreateTrayMenu;                   // Right-click menu of the notification area icon (Show / Exit)
 
 If us_application_is_runable Then   // A draconian check. If a space found in path
@@ -2193,7 +2193,7 @@ begin
   FTrayMenu := TPopupMenu.Create(Self);
 
   item := TMenuItem.Create(FTrayMenu);
-  item.Caption := 'Show UniServer Reload';
+  item.Caption := 'Show winpacho';
   item.Default := True;                       // bold: what a left click does
   item.OnClick := @TrayShowClick;
   FTrayMenu.Items.Add(item);
@@ -2203,7 +2203,7 @@ begin
   FTrayMenu.Items.Add(item);
 
   item := TMenuItem.Create(FTrayMenu);
-  item.Caption := 'Exit UniServer Reload';
+  item.Caption := 'Exit winpacho';
   item.OnClick := @TrayExitClick;
   FTrayMenu.Items.Add(item);
 
@@ -2246,19 +2246,19 @@ end;
 
 procedure TMain.EngineSwitchInfoClick(Sender: TObject);
 const
-  RELEASES_URL = 'https://github.com/Wolfram33/uniserver-reload/releases/tag/latest';
+  RELEASES_URL = 'https://github.com/Wolfram33/winpacho/releases/tag/latest';
 var
   other, module, installed, str: string;
 begin
   if US_MYMAR_TXT = 'MariaDB' then
   begin
     other  := 'MySQL 8.4 LTS';
-    module := 'UniServer-Reload_mysql_module.zip';
+    module := 'winpacho_mysql_module.zip';
   end
   else
   begin
     other  := 'MariaDB LTS';
-    module := 'UniServer-Reload_mariadb_module.zip';
+    module := 'winpacho_mariadb_module.zip';
   end;
   installed := us_ini_get(USF_US_CONF_INI, 'APP', 'DatabaseVersion'); // stamped by the bundle build
   if installed = '' then installed := US_MYMAR_TXT + ' ' + MY_SQL_VER;

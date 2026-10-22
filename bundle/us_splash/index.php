@@ -56,9 +56,9 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Uniform Server Reload - Splash page</title>
-<meta name="Description" content="Uniform Server Reload - a maintained fork of The Uniform Server ZeroXV" />
-<meta name="Keywords" content="Uniform Server Reload,The Uniform Server,ZeroXV,WAMP,Apache,MariaDB,MySQL,PHP" />
+<title>winpacho - Splash page</title>
+<meta name="Description" content="winpacho - a maintained fork of The Uniform Server ZeroXV" />
+<meta name="Keywords" content="winpacho,The Uniform Server,ZeroXV,WAMP,Apache,MariaDB,MySQL,PHP" />
 <link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" type="text/css" href="css/style.css" media="screen" />
 </head>
@@ -69,8 +69,8 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
 
 <div id="wrap">
   <header id="header">
-    <a href="https://github.com/Wolfram33/uniserver-reload">
-      <img src="images/logo.png" width="465" height="93" alt="Uniform Server Reload - a lightweight WAMP server solution, reloaded" />
+    <a href="https://github.com/Wolfram33/winpacho">
+      <img src="images/logo.png" width="465" height="93" alt="winpacho - portable WAMP server for Windows" />
     </a>
     <div class="server-info">
       <strong>Reload<?php if ($version !== ""){ print " - ".us_h($version); } ?></strong><br />
@@ -87,8 +87,8 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
   </header>
 
   <main id="main">
-    <h1>Welcome to Uniform Server Reload</h1>
-    <p><strong>Uniform Server Reload</strong> is a maintained community fork of The Uniform Server ZeroXV. This page and every other file are being served by Apache running from your UniServer Reload folder. Documentation is included in its <strong>docs</strong> subfolder &mdash; see the <a href="/us_docs/manual/index.html">local documentation</a>.</p>
+    <h1>Welcome to winpacho</h1>
+    <p><strong>winpacho</strong> is a maintained community fork of The Uniform Server ZeroXV. This page and every other file are being served by Apache running from your winpacho folder. Documentation is included in its <strong>docs</strong> subfolder &mdash; see the <a href="/us_docs/manual/index.html">local documentation</a>.</p>
 
     <h2>This build</h2>
     <p>Everything below ships preinstalled in the all-in-one package &mdash; no further downloads or configuration needed.</p>
@@ -134,10 +134,10 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
   </main>
 
   <footer>
-    <p class="footer-links"><a target="_1" rel="noopener" href="https://github.com/Wolfram33/uniserver-reload">GitHub Repository</a> | <a target="_1" rel="noopener" href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">Latest Downloads</a> | <a target="_1" rel="noopener" href="https://github.com/Wolfram33/uniserver-reload/issues">Issues / Support</a> | <a href="/us_docs/manual/index.html">Local Documentation</a></p>
+    <p class="footer-links"><a target="_1" rel="noopener" href="https://github.com/Wolfram33/winpacho">GitHub Repository</a> | <a target="_1" rel="noopener" href="https://github.com/Wolfram33/winpacho/releases/tag/latest">Latest Downloads</a> | <a target="_1" rel="noopener" href="https://github.com/Wolfram33/winpacho/issues">Issues / Support</a> | <a href="/us_docs/manual/index.html">Local Documentation</a></p>
     <p><a class="donate" target="_1" rel="noopener" href="https://www.paypal.com/paypalme/robderoy"><span aria-hidden="true">&#9829;</span> Donate via PayPal</a></p>
-    <p>Uniform Server Reload is a portable WAMP package for Windows (64-bit): unpack it anywhere and Apache, MySQL and PHP are ready to run &mdash; no installation, no registry entries, no external dependencies. Updated builds with current PHP versions are published automatically on the <a target="_1" rel="noopener" href="https://github.com/Wolfram33/uniserver-reload/releases/tag/latest">releases page</a>.</p>
-    <p class="credits">Originally developed by <a target="_1" rel="noopener" href="https://www.uniformserver.com/">The Uniform Server Development Team</a> &mdash; Reload fork initiated by Rob de Roy</p>
+    <p>winpacho is a portable WAMP package for Windows (64-bit): unpack it anywhere and Apache, MySQL and PHP are ready to run &mdash; no installation, no registry entries, no external dependencies. Updated builds with current PHP versions are published automatically on the <a target="_1" rel="noopener" href="https://github.com/Wolfram33/winpacho/releases/tag/latest">releases page</a>.</p>
+    <p class="credits">Originally developed by <a target="_1" rel="noopener" href="https://www.uniformserver.com/">The Uniform Server Development Team</a> &mdash; winpacho (formerly Uniform Server Reload) initiated by Rob de Roy</p>
   </footer>
 </div>
 </body>

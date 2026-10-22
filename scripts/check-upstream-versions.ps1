@@ -1,4 +1,4 @@
-# Compare the component versions of the latest UniServer Reload release with
+# Compare the component versions of the latest winpacho release with
 # the newest upstream versions. Run weekly by .github/workflows/upstream-watch.yml;
 # a non-zero exit (= failed run, GitHub sends a mail) means: build a new
 # release. Locally: pwsh scripts/check-upstream-versions.ps1
@@ -12,12 +12,12 @@
 #
 # -Tag vX.Y.Z: compare an older release instead of the latest one.
 param(
-  [string]$Repo = 'Wolfram33/uniserver-reload',
+  [string]$Repo = 'Wolfram33/winpacho',
   [ValidatePattern('^(v\d+\.\d+\.\d+)?$')]
   [string]$Tag = ''
 )
 $ErrorActionPreference = 'Stop'
-$UA = @{ 'User-Agent' = 'uniserver-reload-upstream-watch' }
+$UA = @{ 'User-Agent' = 'winpacho-upstream-watch' }
 $TIMEOUT_SEC = 60
 
 function Get-Text([string]$url) {

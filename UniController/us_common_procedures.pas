@@ -1737,7 +1737,7 @@ command line switch for transparency, but it reads profile "fragments" that
 applications may place in
   %LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\<app>\<file>.json
 (a documented extension point). The controller keeps one such fragment with
-the profile "UniServer Reload Console" (black acrylic background, opacity
+the profile "winpacho Console" (black acrylic background, opacity
 from CONSOLE_OPACITY in us_user.ini, Reload icon) and opens its interactive
 consoles with that profile. The profile also shows up in the Windows Terminal
 dropdown, so a Reload console can be opened from there as well.
@@ -1747,9 +1747,12 @@ cannot be written, or with CONSOLE_OPACITY=100 the classic cmd window opens
 (white on black), exactly as before.
 =============================================================================}
 const
- US_CONSOLE_PROFILE      = 'UniServer Reload Console';                              // Profile name: fragment and wt -p
- US_CONSOLE_FRAGMENT_DIR = '\Microsoft\Windows Terminal\Fragments\UniServer Reload'; // Below %LOCALAPPDATA%
+ US_CONSOLE_PROFILE      = 'winpacho Console';                              // Profile name: fragment and wt -p
+ US_CONSOLE_FRAGMENT_DIR = '\Microsoft\Windows Terminal\Fragments\winpacho'; // Below %LOCALAPPDATA%
  US_CONSOLE_FRAGMENT     = 'console.json';
+ // Fragment folder of the console profile before the 2.0 rename; removed so
+ // Windows Terminal does not list the old profile next to the new one
+ US_CONSOLE_FRAGMENT_DIR_OLD = '\Microsoft\Windows Terminal\Fragments\UniServer Reload';
 
 { Escape a string for use inside a JSON string literal (paths) }
 function us_json_escape(const S: String): String;
@@ -1807,6 +1810,13 @@ begin
  if localAppData = '' then Exit;
  dir      := localAppData + US_CONSOLE_FRAGMENT_DIR;
  fileName := dir + '\' + US_CONSOLE_FRAGMENT;
+
+ // Only the file this controller wrote, then the folder if it is now empty
+ if FileExists(localAppData + US_CONSOLE_FRAGMENT_DIR_OLD + '\' + US_CONSOLE_FRAGMENT) then
+  begin
+   SysUtils.DeleteFile(localAppData + US_CONSOLE_FRAGMENT_DIR_OLD + '\' + US_CONSOLE_FRAGMENT);
+   RemoveDir(localAppData + US_CONSOLE_FRAGMENT_DIR_OLD);       // Fails harmlessly when not empty
+  end;
 
  wanted   := TStringList.Create;
  existing := TStringList.Create;
@@ -3091,7 +3101,7 @@ begin
    us_MessageDlg('Edit Windows hosts file',
      'The hosts file editor was not found:'                            + sLineBreak +
      USF_EDHOST_UTILITY                                                + sLineBreak + sLineBreak +
-     'Restore utils\EdHost.exe from the UniServer Reload package, or edit' + sLineBreak +
+     'Restore utils\EdHost.exe from the winpacho package, or edit' + sLineBreak +
      us_hosts_file_path                                                + sLineBreak +
      'with an editor started as administrator.', mtWarning, [mbOk], 0);
    Exit;
@@ -3351,7 +3361,7 @@ begin
  try
    If FileExists(us_hosts_file_path) Then
      sList.LoadFromFile(us_hosts_file_path);
-   sList.Add('127.0.0.1'+#9+host+#9+'# UniServer Reload vhost');
+   sList.Add('127.0.0.1'+#9+host+#9+'# winpacho vhost');
    us_write_hosts_file(sList);
  finally
    sList.Free;
