@@ -25,6 +25,9 @@ uses
  procedure us_set_additional_environment_vars;  //Set additional enironment variables defined in config
  procedure us_ini_set(IniFile:string;section:string;variable:string;value:string); //Set value in ini configuration file
  procedure us_clean_up;                     // Delete listed files and delete files in listed folders
+ procedure us_rotate_log(const log_file:string);       // Shift an oversized log into its ring of older parts
+ procedure us_delete_log_parts(const log_file:string); // Delete the older parts (<log>.1 ..) of a rotated log
+ procedure us_rotate_app_logs;              // Rotate the logs Apache's rotatelogs does not cover
  procedure us_set_icon_and_hover_text;      // Set icon displayed and hover text based on ServerType in config file
  procedure KillRunningProcess(ProcessName: string);        // Kill named process
  procedure us_display_in_editor(FileToDisplay: string);    // Display page in editor default - notepad
@@ -392,6 +395,92 @@ begin
  end;
 end;
 {--- End procedure us_clean_up --------------------------------------------}
+
+
+{********************************************************************
+Rolling logs for everything Apache's rotatelogs does not cover.
+Apache's own logs (and PHP's errors, which reach Apache's error log via
+FastCGI) rotate in core\apache2\logs\rotated. Three more logs grow
+without limit otherwise:
+  core\mysql\data\mysql.err   MySQL/MariaDB error log
+  core\msmtp\msmtp.log        mail log of PHP's mail()
+  home\us_cron\cron.log       cron log (when cron logging is on)
+Once a log passes LOG_ROTATE_MAX_BYTES it becomes <log>.1, the older
+parts move up one number and the oldest beyond LOG_ROTATE_OLD_PARTS is
+deleted - together with the current file at most 5 x 10 MB per log,
+the same as Apache's error logs.
+Housekeeping never interrupts the controller: a file that is locked
+right now (msmtp writing, the database holding mysql.err) is skipped and
+rotated on the next round.
+====================================================================}
+const
+  LOG_ROTATE_MAX_BYTES = 10 * 1024 * 1024; // Rotate a log once it is larger than 10 MB
+  LOG_ROTATE_OLD_PARTS = 4;                // Older parts kept: <log>.1 (newest) .. <log>.4 (oldest)
+
+function log_part_name(const log_file:string; part:Integer):string;
+begin
+  Result := log_file + '.' + IntToStr(part);
+end;
+
+function log_file_size(const log_file:string):Int64;
+var
+  sr: TSearchRec;
+begin
+  Result := -1;                                  // -1 = no such file
+  If FindFirst(log_file, faAnyFile, sr) = 0 Then
+    Result := sr.Size;
+  SysUtils.FindClose(sr);                        // windows.FindClose takes a handle, not the record
+end;
+
+procedure us_rotate_log(const log_file:string);
+var
+  part:    Integer;
+  pending: string;   // the full log, moved aside, waiting to become part 1
+begin
+  pending := log_file + '.rotating';
+  try
+    // Move the full log aside first. While a writer holds it open this
+    // fails, and the ring must stay untouched - otherwise every failed round
+    // would push another old part out. A leftover from an interrupted round
+    // is finished instead.
+    If not FileExists(pending) Then
+     begin
+       If log_file_size(log_file) <= LOG_ROTATE_MAX_BYTES Then Exit;   // Missing or small enough
+       If not RenameFile(log_file, pending) Then Exit;                  // Busy: next round retries
+     end;
+
+    If FileExists(log_part_name(log_file, 1)) Then                      // Make room for the new part 1
+     begin
+       SysUtils.DeleteFile(log_part_name(log_file, LOG_ROTATE_OLD_PARTS)); // Oldest part leaves the ring
+       For part := LOG_ROTATE_OLD_PARTS - 1 downto 1 do                    // .3 -> .4, .2 -> .3, .1 -> .2
+         If FileExists(log_part_name(log_file, part)) Then
+           RenameFile(log_part_name(log_file, part), log_part_name(log_file, part + 1));
+     end;
+
+    RenameFile(pending, log_part_name(log_file, 1)); // The writer starts a fresh log on its next entry
+  except
+    // Never let housekeeping break the controller - next round retries
+  end;
+end;
+
+procedure us_delete_log_parts(const log_file:string);
+var
+  part: Integer;
+begin
+  For part := 1 to LOG_ROTATE_OLD_PARTS do
+    SysUtils.DeleteFile(log_part_name(log_file, part));
+  SysUtils.DeleteFile(log_file + '.rotating');   // leftover of an interrupted rotation
+end;
+
+procedure us_rotate_app_logs;
+begin
+  us_rotate_log(USF_MSMTP_LOG);
+  us_rotate_log(USF_CRON_LOG);
+  // A running database keeps mysql.err open; it is rotated while stopped,
+  // at the latest right before the next start (us_start_mysql_program)
+  If not MysqlRunning() Then us_rotate_log(USF_MYSQL_ERROR_LOG);
+end;
+{--- End rolling logs ------------------------------------------------------}
 
 
 
@@ -1145,6 +1234,7 @@ Var
 begin
  if not MysqlRunning() then
   begin
+    us_rotate_log(USF_MYSQL_ERROR_LOG);  // Only chance while the database is down - it holds the file once running
     saftey_loop:=0;
      //--Run command string.
     AProcess := TProcess.Create(nil);                                              // Create new process

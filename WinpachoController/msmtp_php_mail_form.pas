@@ -205,6 +205,7 @@ begin
      Rewrite(f);                   // Clear file
      CloseFile(f);                 // Close empty file
    end;
+ us_delete_log_parts(USF_MSMTP_LOG); // Clear means all of it: the rotated parts too
 
  Memo_log.Lines.LoadFromFile(USF_MSMTP_LOG); // Load file
 

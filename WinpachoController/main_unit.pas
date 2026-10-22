@@ -306,6 +306,7 @@ type
   private
     { private declarations }
     state_refresh_tick: integer; // Timer divider for the periodic server-state refresh
+    log_rotate_tick: integer;    // Timer divider for the periodic log rotation (us_rotate_app_logs)
     FMedallion     : TUsMedallion;     // coin artwork + window region builder
     FBackground    : Graphics.TBitmap; // coin rendered at the current window size
     FBackgroundSize: Integer;          // edge length FBackground was rendered for
@@ -375,6 +376,8 @@ const
     (X: 290; Y: 268; W: 250; H: 34)); // Btn_opt3
 
   TITLE_BAR_SUBCLASS_ID = 1;  // our id for SetWindowSubclass on the form window
+
+  LOG_ROTATE_CHECK_TICKS = 600;  // Timer1 ticks once a second: check the rolling logs every 10 minutes
 
 { TMain }
 
@@ -1728,6 +1731,7 @@ If us_application_is_runable Then   // A draconian check. If a space found in pa
   us_command_line_start_up;         // WinpachoController started with parameters. Process and exit application
 
   us_main_init;                     // Set initial values for variables, paths and environment variables.
+  us_rotate_app_logs;               // Rolling logs: MySQL error log, msmtp and cron logs (Apache rotates its own)
   If (ParamCount = 0) Then AskGuiStyleOnce; // First interactive start: classic window or medallion
   ApplyGuiStyle;                    // Shape the window in the chosen look before it is shown
   ApplyDatabaseEngineName;         // Menus and buttons name the installed engine (us_opt.ini), not 'MySQL'
@@ -2379,6 +2383,14 @@ begin
   begin
     state_refresh_tick := 0;
     If Main.Visible Then us_update_server_state; // Update buttons/indicators/menus
+  end;
+
+ //--- Rolling logs, also while the controller just sits in the tray
+ Inc(log_rotate_tick);
+ If log_rotate_tick >= LOG_ROTATE_CHECK_TICKS Then
+  begin
+    log_rotate_tick := 0;
+    us_rotate_app_logs;
   end;
 
  Timer1.Enabled := True;  //Enable timer
