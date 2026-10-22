@@ -108,7 +108,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        branch: ['8.4', '8.5']
+        # 8.3 too: the base package's own 8.3.0 is replaced by the current 8.3
+        branch: ['8.3', '8.4', '8.5']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -278,6 +279,7 @@ jobs:
             echo "|---|---|"
             echo "| **${BUNDLE_ZIP_NAME}** | **All-in-one package: complete server with current Apache, MariaDB and PHP 8.3/8.4/8.5 (8.5 preselected) - extract into an empty folder, start \`UniController.exe\`, no further setup.** To update only the controller of an existing installation, take \`UniController.exe\` and \`utils\\UniService.exe\` out of this zip |"
             echo "| ${BUNDLE_7Z_NAME} | The same bundle as a .7z: about half the download size (this is why the old self-extracting exe was smaller). Windows 11 23H2+ extracts it with Explorer, older Windows needs [7-Zip](https://www.7-zip.org/) |"
+            echo "| UniServer-Reload_php83_module.zip | PHP 8.3 module - unzip into your server folder (the folder with UniController.exe) |"
             echo "| UniServer-Reload_php84_module.zip | PHP 8.4 module - unzip into your server folder (the folder with UniController.exe) |"
             echo "| UniServer-Reload_php85_module.zip | PHP 8.5 module - unzip into your server folder (the folder with UniController.exe) |"
             echo "| UniServer-Reload_mariadb_module.zip | The bundle's database engine (MariaDB LTS) as a separate module - for installations from 1.3.5 or older: export your databases, delete \`core\\mysql\`, unzip into your server folder, import again |"
@@ -290,6 +292,23 @@ jobs:
             echo "The bundle is smoke-tested on every build: Apache is started on the CI"
             echo "runner and must serve a PHP-rendered page, MariaDB is started and PHP"
             echo "and phpMyAdmin must log in to it, before the release is updated."
+            echo
+            echo "## PHP security update (1.3.16): PHP2Shell"
+            echo
+            echo "Releases up to 1.3.15 shipped PHP 8.5.11, 8.4.26 and - from the base package -"
+            echo "PHP 8.3.0. All three are affected by PHP2Shell (CVE-2026-109618 and"
+            echo "CVE-2026-109619, CVSS 9.2): unauthenticated remote code execution through"
+            echo "any PHP page served by Apache. Fixed in PHP 8.5.12, 8.4.27 and 8.3.36, which"
+            echo "this release ships. PHP 8.3 is now packaged from windows.php.net like 8.4 and"
+            echo "8.5 instead of being taken over from the 2023 base package."
+            echo
+            echo "**Please update now**, especially when Apache is reachable from other"
+            echo "computers (it listens on all network interfaces by default). Either extract"
+            echo "this bundle into a new folder and move your \`www\` and databases over, or update"
+            echo "PHP in place: stop Apache, then unzip the PHP module zips above into your"
+            echo "server folder (they replace \`core\php83\`, \`core\php84\` and \`core\php85\`;"
+            echo "your own changes to the php_*.ini files in those folders are overwritten),"
+            echo "then start Apache again. Check the running version via *PHP > View phpInfo*."
             echo
             echo "## Apache security update (1.3.13)"
             echo
@@ -352,7 +371,7 @@ jobs:
             echo "1. Extract \`${BUNDLE_ZIP_NAME}\` into an **empty target folder without spaces in the path**"
             echo "   (e.g. \`C:\\UniServer-Reload\`) - the server files land directly in it, without the old"
             echo "   \`UniServerZ\` subfolder (Uniform Server ZeroXV 15.0.2 base with the fork controller"
-            echo "   and the PHP 8.4/8.5 modules already integrated)."
+            echo "   and the PHP 8.3/8.4/8.5 modules already integrated)."
             echo "2. Start \`UniController.exe\` and start Apache and MariaDB."
             echo "3. PHP 8.5 is preselected (since 1.3.10; earlier bundles started on 8.3). To switch the PHP version: stop Apache first, then *PHP > Select PHP version*, then start Apache again."
             echo

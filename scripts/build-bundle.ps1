@@ -174,13 +174,22 @@ if ($apRuntime -and (Get-Content $cfg -Raw) -notmatch '(?m)^apache=14\.51') { th
 Set-Content "$root\home\version.txt" -Value "UniServer Reload $reloadVersion (base package Uniform Server ZeroXV $baseVersion)"
 
 # --- Merge the PHP modules ---------------------------------------------------
+# Every PHP version comes fresh from windows.php.net, php83 included: the base
+# package's own php83 is 8.3.0 from 2023 and misses two years of security
+# fixes (among them PHP2Shell, CVE-2026-109618/-109619). It is moved out of
+# the bundle tree first, so no stale file of it can survive the merge.
 $modules = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'UniServer-Reload_php8*_module.zip'
 if ($modules.Count -eq 0) { throw 'No PHP module ZIPs found in artifacts' }
+if (-not ($modules | Where-Object Name -eq 'UniServer-Reload_php83_module.zip')) { throw 'PHP 8.3 module missing in artifacts' }
+if (Test-Path "$root\core\php83") {
+  Write-Host '==> Replacing the base package php83 (8.3.0) with the current PHP 8.3 module'
+  Move-Item "$root\core\php83" 'base\php83-from-base-package'
+}
 foreach ($m in $modules) {
   Write-Host "==> Merging $($m.Name)"
   Expand-Archive -Path $m.FullName -DestinationPath $root -Force
 }
-foreach ($p in 'php84', 'php85') {
+foreach ($p in 'php83', 'php84', 'php85') {
   if (-not (Test-Path "$root\core\$p\php.exe")) { throw "core\$p\php.exe missing after merge" }
 }
 
@@ -244,32 +253,8 @@ Copy-Item 'bundle\msmtp\msmtprc.ini' "$root\core\msmtp\msmtprc.ini" -Force
 Copy-Item 'bundle\msmtp\mail_wrapper.php' "$root\core\msmtp\mail_wrapper.php" -Force
 # Normalize the bat to CRLF while copying
 Get-Content 'bundle\msmtp\sendmail.bat' | Set-Content "$root\core\msmtp\sendmail.bat"
-# Point the base php83 inis at the header wrapper AND enable the extensions
-# every version should ship with (the php84/85 module inis are generated with
-# these already). SQLite is the most common DB for small PHP apps; fileinfo
-# and curl are near-universally expected. DLLs are present in extensions\.
-# Covers php_production/development/test.ini (Apache-style, ;extension= lines)
-# and php-cli.ini (bare extension= lines, some extensions absent entirely).
-foreach ($ini in Get-ChildItem "$root\core\php83" -Filter 'php*.ini' -ErrorAction SilentlyContinue) {
-  $c = Get-Content $ini.FullName -Raw
-  $c = $c -replace '(?m)^sendmail_path = ".*msmtp\.exe.*"', 'sendmail_path = "${US_ROOTF}/core/msmtp/sendmail.bat"'
-  $append = ''
-  foreach ($ext in 'pdo_sqlite', 'sqlite3', 'fileinfo', 'curl') {
-    if ($c -match ('(?m)^extension=' + $ext + '\s*$')) { continue }       # already active
-    elseif ($c -match ('(?m)^;extension=' + $ext + '\s*$')) {
-      $c = $c -replace ('(?m)^;extension=' + $ext + '\s*$'), ('extension=' + $ext)
-    }
-    else { $append += "`nextension=$ext" }                                 # absent (e.g. cli ini)
-  }
-  if ($append) { $c = $c.TrimEnd() + "`n; Uniform Server Reload - default extensions" + $append + "`n" }
-  Set-Content $ini.FullName -Value $c -NoNewline
-  # Verify each extension is now active
-  foreach ($ext in 'pdo_sqlite', 'sqlite3', 'fileinfo', 'curl') {
-    if ((Get-Content $ini.FullName -Raw) -notmatch ('(?m)^extension=' + $ext + '\s*$')) {
-      throw "php83 $($ini.Name): failed to enable $ext"
-    }
-  }
-}
+# (The php83/84/85 module inis are generated with the header wrapper as
+# sendmail_path and the default extensions already enabled.)
 
 # (The database my.ini needs no patching here: the MariaDB module ships
 # bundle\db\mariadb-my.ini with the development and server-load values
@@ -379,6 +364,13 @@ $env:AP_PORT         = '8088'
 $env:PHP_INI_SELECT  = 'php_test.ini'
 $REQUIRED_EXT = @('pdo_sqlite', 'sqlite3', 'fileinfo', 'curl', 'mbstring', 'gd', 'openssl', 'Zend OPcache')
 
+# Expected PHP version per folder, from the module packaging ("PHP 8.4.27 (php84)").
+# Apache must run exactly this version: a php8x folder without a freshly
+# packaged module (like the base package's 8.3.0 before 1.3.16) fails here.
+$expectedPhp = @{}
+Get-ChildItem -Path 'artifacts' -Recurse -Filter 'module-versions.txt' | Get-Content |
+  ForEach-Object { if ($_ -match '^PHP (\d+\.\d+\.\d+) \((php\d+)\)') { $expectedPhp[$Matches[2]] = $Matches[1] } }
+
 # Probe page: prints a marker, the OPcache switch and the loaded extensions
 @'
 <?php echo "USR-PROBE ", PHP_VERSION, " OPC:", ini_get("opcache.enable"), " EXT:", implode(",", get_loaded_extensions());
@@ -418,12 +410,16 @@ foreach ($ver in $versions) {
   $text = ($resp -join "`n")
   if ($text -match '<\?php') { throw "Smoke test ($ver): PHP served as source instead of executing" }
   if ($text -notmatch 'USR-PROBE') { throw "Smoke test ($ver): Apache did not serve the PHP probe" }
+  if (-not $expectedPhp.ContainsKey($ver)) { throw "Smoke test ($ver): no packaged module for this PHP folder (stale PHP from the base package?)" }
+  if ($text -notmatch ('USR-PROBE ' + [regex]::Escape($expectedPhp[$ver]) + ' ')) {
+    throw "Smoke test ($ver): Apache runs a different PHP than the packaged $($expectedPhp[$ver]): $($text.Substring(0, [Math]::Min(40, $text.Length)))"
+  }
   if ($text -notmatch ' OPC:1 ') { throw "Smoke test ($ver): opcache.enable is not 1" }
   $loaded = @()
   if ($text -match 'EXT:(.*)$') { $loaded = $Matches[1] -split ',' }
   $missing = $REQUIRED_EXT | Where-Object { $_ -notin $loaded }
   if ($missing) { throw "Smoke test ($ver): required extensions not loaded: $($missing -join ', ')" }
-  Write-Host "   $ver OK - PHP executes, OPcache on, extensions loaded"
+  Write-Host "   $ver OK - PHP $($expectedPhp[$ver]) executes, OPcache on, extensions loaded"
 }
 Remove-Item "$root\www\_ci_probe.php" -Force
 

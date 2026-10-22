@@ -40,6 +40,7 @@ function Get-Shipped([string]$pattern) {
 }
 $shipped = [ordered]@{
   'Apache'      = Get-Shipped 'Apache (\d+\.\d+\.\d+) \(bundle\)'
+  'PHP 8.3'     = Get-Shipped 'PHP (\d+\.\d+\.\d+) \(php83\)'
   'PHP 8.4'     = Get-Shipped 'PHP (\d+\.\d+\.\d+) \(php84\)'
   'PHP 8.5'     = Get-Shipped 'PHP (\d+\.\d+\.\d+) \(php85\)'
   'MariaDB'     = Get-Shipped 'MariaDB (\d+\.\d+\.\d+) \(bundle\)'
@@ -62,7 +63,7 @@ try {
 
 try {
   $php = Get-Json 'https://windows.php.net/downloads/releases/releases.json'
-  foreach ($branch in '8.4', '8.5') {
+  foreach ($branch in '8.3', '8.4', '8.5') {
     $v = $php.$branch.version
     if (-not $v) { throw "branch $branch missing in releases.json" }
     $upstream["PHP $branch"] = $v
