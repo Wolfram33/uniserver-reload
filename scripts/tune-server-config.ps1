@@ -39,6 +39,10 @@
 #   core\mysql\my.ini (MySQL flavour, i.e. bundles up to 1.3.5 and the MySQL
 #       module; the MariaDB engine's my.ini ships tuned and is left alone)
 #       connections, caches, redo log and binlog retention for server load.
+#   home\us_opt1\config.inc.php (phpMyAdmin)
+#       The display name of the database server is "winpacho" instead of the
+#       base package's "Uniform Server". Only that stock value is replaced; a
+#       name the user chose stays.
 param([Parameter(Mandatory = $true)][string]$Root)
 $ErrorActionPreference = 'Stop'
 
@@ -384,6 +388,20 @@ else {
     foreach ($line in $MYSQL_LINES) { Assert-IniLine $t $line 'core\mysql\my.ini' }
     if ($t -notmatch 'Server sizing: the InnoDB buffer pool') { throw 'core\mysql\my.ini: buffer pool sizing hint missing' }
     Write-Host '==> MySQL my.ini: 500 connections, larger caches, 256M redo log, 7-day binlog retention'
+  }
+}
+
+# phpMyAdmin: server display name ("Datenbank-Server: Uniform Server" on the
+# start page). Installations without phpMyAdmin simply have no file here.
+$pmaConfig = Join-Path $Root 'home\us_opt1\config.inc.php'
+$PMA_STOCK_NAME = "(?m)^(\s*\`$cfg\['Servers'\]\[\`$i\]\['verbose'\]\s*=\s*)'Uniform Server'"
+if (Test-Path $pmaConfig) {
+  $t = Read-Text $pmaConfig
+  if ($t -match $PMA_STOCK_NAME) {
+    $t = $t -replace $PMA_STOCK_NAME, "`$1'winpacho'"
+    Write-Text $pmaConfig $t
+    if ((Read-Text $pmaConfig) -match $PMA_STOCK_NAME) { throw 'home\us_opt1\config.inc.php: phpMyAdmin server name could not be changed' }
+    Write-Host '==> phpMyAdmin: database server is shown as "winpacho"'
   }
 }
 
