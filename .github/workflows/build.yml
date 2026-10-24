@@ -192,28 +192,10 @@ jobs:
           path: dist/
           if-no-files-found: error
 
-  package-mysql-module:
-    name: Package MySQL module
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build module
-        shell: pwsh
-        run: ./scripts/package-mysql-module.ps1 -OutDir dist
-
-      - name: Upload module
-        uses: actions/upload-artifact@v4
-        with:
-          name: mysql-module
-          path: dist/
-          if-no-files-found: error
-
   release:
     name: Publish release
     if: github.event_name == 'push'
-    needs: [build, package-php-modules, bundle, package-mariadb-module, package-mysql-module]
+    needs: [build, package-php-modules, bundle, package-mariadb-module]
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.build.outputs.version }}
@@ -277,21 +259,44 @@ jobs:
             echo
             echo "| File | Description |"
             echo "|---|---|"
-            echo "| **${BUNDLE_ZIP_NAME}** | **All-in-one package: complete server with current Apache, MariaDB and PHP 8.3/8.4/8.5 (8.5 preselected) - extract into an empty folder, start \`WinpachoController.exe\`, no further setup.** To update only the controller of an existing installation, take \`WinpachoController.exe\` and \`utils\\WinpachoService.exe\` out of this zip (see *New program names* below) |"
+            echo "| **${BUNDLE_ZIP_NAME}** | **All-in-one package: complete server with current Apache, MariaDB, Adminer and PHP 8.3/8.4/8.5 (8.5 preselected) - extract into an empty folder, start \`WinpachoController.exe\`, no further setup.** To update only the controller of an existing installation, take \`WinpachoController.exe\` and \`utils\\WinpachoService.exe\` out of this zip (see *New program names* below) |"
             echo "| ${BUNDLE_7Z_NAME} | The same bundle as a .7z: about half the download size (this is why the old self-extracting exe was smaller). Windows 11 23H2+ extracts it with Explorer, older Windows needs [7-Zip](https://www.7-zip.org/) |"
             echo "| winpacho_php83_module.zip | PHP 8.3 module - unzip into your server folder (the folder with WinpachoController.exe) |"
             echo "| winpacho_php84_module.zip | PHP 8.4 module - unzip into your server folder (the folder with WinpachoController.exe) |"
             echo "| winpacho_php85_module.zip | PHP 8.5 module - unzip into your server folder (the folder with WinpachoController.exe) |"
-            echo "| winpacho_mariadb_module.zip | The bundle's database engine (MariaDB LTS) as a separate module - for installations from 1.3.5 or older: export your databases, delete \`core\\mysql\`, unzip into your server folder, import again |"
-            echo "| winpacho_mysql_module.zip | MySQL 8.4 LTS as the alternative engine - same procedure: export, delete \`core\\mysql\`, unzip, import (the two engines cannot read each other's data folder) |"
+            echo "| winpacho_mariadb_module.zip | The bundle's database engine (MariaDB LTS) as a separate module - for installations that still run MySQL (1.3.5 or older, or the MySQL module up to 2.1.x): export your databases, delete \`core\\mysql\`, unzip into your server folder, import again |"
             echo
             echo "## Packaged component versions"
             echo
             sed 's/^/- /' release-versions.txt
             echo
             echo "The bundle is smoke-tested on every build: Apache is started on the CI"
-            echo "runner and must serve a PHP-rendered page, MariaDB is started and PHP"
-            echo "and phpMyAdmin must log in to it, before the release is updated."
+            echo "runner and must serve a PHP-rendered page, MariaDB is started, PHP must"
+            echo "connect to it and Adminer must log in to MariaDB and to an SQLite file,"
+            echo "before the release is updated."
+            echo
+            echo "## Adminer replaces phpMyAdmin, MariaDB is the only engine (2.2.0)"
+            echo
+            echo "The database tool behind the controller's button is now **Adminer**: one"
+            echo "PHP file instead of phpMyAdmin's 54 MB and 4,100 files, and it opens"
+            echo "**SQLite** databases as well. The button logs in to MariaDB as root by"
+            echo "itself, as phpMyAdmin did. For SQLite choose *System: SQLite*, enter the"
+            echo "full path of the database file and the MariaDB root password (default"
+            echo "\`root\`). Adminer answers on this computer only (\`Require local\`) and"
+            echo "makes no calls to adminer.org (version check off)."
+            echo
+            echo "**MySQL is no longer shipped**: no \`winpacho_mysql_module.zip\` any more, and the"
+            echo "controller has no MySQL-specific code left. An installation that still runs"
+            echo "MySQL keeps starting, but the controller asks at every start to move to"
+            echo "MariaDB (back up, replace \`core\\mysql\` with the MariaDB module, restore)."
+            echo
+            echo "**Updating an existing installation:** stop Apache, rename \`home\\us_opt1\`"
+            echo "(the old phpMyAdmin) to e.g. \`us_opt1-phpmyadmin\`, copy \`home\\us_opt1\` from"
+            echo "this zip, then copy the new controller. Limit the folder to this computer:"
+            echo "run \`scripts\\tune-server-config.ps1\` from the repository, or in"
+            echo "\`core\\apache2\\conf\\httpd.conf\` change \`Require all granted\` to \`Require local\`"
+            echo "in the \`<Directory>\` block of \`home/us_opt1/\`. The phpMyAdmin leftovers in MariaDB (database \`phpmyadmin\`,"
+            echo "user \`pma\`) do no harm and can be dropped in Adminer."
             echo
             echo "## New program names (2.1.0)"
             echo
@@ -354,30 +359,20 @@ jobs:
             echo "(thread pool, audit plugin, hot backups with \`mariadb-backup\`), lighter"
             echo "on Windows and without the MySQL 8 password-plugin trouble with older"
             echo "clients. It lives in \`core\\mysql\` on port 3306 as before, the controller"
-            echo "menus now say *MariaDB*, phpMyAdmin and PHP's mysqli/PDO work unchanged."
-            echo "**MySQL 8.4 LTS stays available** as \`winpacho_mysql_module.zip\`."
+            echo "menus say *MariaDB*, PHP's mysqli/PDO work unchanged."
             echo
-            echo "**Coming from 1.3.5 or older (MySQL 8.2)?** The data folders are not"
-            echo "compatible. Export your databases in the old installation (*MySQL >"
-            echo "Database backup* or \`mysqldump\`), unpack the new bundle, import them"
+            echo "**Still running MySQL** (1.3.5 or older, or the MySQL module up to 2.1.x)?"
+            echo "The data folders are not compatible. Export your databases in the old"
+            echo "installation (*MySQL > Database backup* or \`mysqldump\`), replace \`core\\mysql\`"
+            echo "with \`winpacho_mariadb_module.zip\` (or unpack the new bundle), import them"
             echo "there (*MariaDB > Database restore*). Copying \`core\\mysql\\data\` across"
             echo "does not work."
             echo
-            echo "## I want MySQL, not MariaDB"
-            echo
-            echo "Take \`winpacho_mysql_module.zip\` (MySQL 8.4 LTS) from this release:"
-            echo "export your databases (*MariaDB > Database backup*), stop MariaDB, delete"
-            echo "\`core\\mysql\` completely, unzip the module into the server folder, restart"
-            echo "the controller (its menus then say *MySQL*) and import the dumps with"
-            echo "*MySQL > Database restore*. Apps, phpMyAdmin and PHP work the same with"
-            echo "either engine. The controller shows these steps under *MariaDB > Switch to"
-            echo "MySQL instead...*; the bundled documentation has them under *Databases*."
-            echo
             echo "Sized for a team, not just a laptop: OPcache is on in every PHP version,"
             echo "Apache logs rotate in place (\`logs\\rotated\\\` ring, bounded disk use),"
-            echo "400 Apache worker threads, 500 MySQL/MariaDB connections. Developer"
+            echo "400 Apache worker threads, 500 MariaDB connections. Developer"
             echo "limits stay: PHP 512M memory / 256M uploads / 120s execution time;"
-            echo "MySQL/MariaDB 512M InnoDB pool (raise it on a server, see README) /"
+            echo "MariaDB 512M InnoDB pool (raise it on a server, see README) /"
             echo "256M max_allowed_packet. Existing installations get the same tuning"
             echo "with \`scripts\\tune-server-config.ps1\` from the repository."
             echo "1.3.3 opened a terminal window per log writer on every Apache start;"

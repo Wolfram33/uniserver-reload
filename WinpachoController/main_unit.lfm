@@ -248,7 +248,7 @@ object Main: TMain
     Top = 454
     Width = 260
     BaseColor = 12608789
-    Caption = 'phpMyAdmin'
+    Caption = 'Adminer'
     FillOpacity = 240
     OnClick = Btn_opt1Click
     TabOrder = 16

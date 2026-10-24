@@ -39,6 +39,17 @@ if ($db_ver === ""){
 }
 if ($db_ver === "") $db_ver = "Database engine not installed";
 
+// Database tool: the version from the header of the upstream Adminer file
+$tool_file = "$root/home/us_opt1/adminer.php";
+$tool_head = is_readable($tool_file) ? file_get_contents($tool_file, false, null, 0, 1024) : false;
+if ($tool_head === false) {
+  $tool_ver = "Adminer not installed (folder home\\us_opt1)";
+} elseif (preg_match('/@version\s+(\d+\.\d+\.\d+)/', $tool_head, $m)) {
+  $tool_ver = "Adminer " . $m[1];
+} else {
+  $tool_ver = "Adminer";
+}
+
 // Installed PHP versions: scan core/php* folders so this list can never go stale
 $php_installed = array();
 foreach (glob("$root/core/php[0-9][0-9]", GLOB_ONLYDIR) as $dir) {
@@ -105,11 +116,11 @@ $apache_ver  = function_exists('apache_get_version') ? apache_get_version() : 'A
         <h3>Database</h3>
         <ul>
           <li><strong><?php print us_h($db_ver); ?></strong></li>
-          <li>Need MySQL instead? MySQL 8.4 LTS is available as a module &mdash; see <a href="/us_docs/manual/index.html#mysql">Databases</a> in the documentation</li>
+          <li>SQLite through PHP (sqlite3, pdo_sqlite) &mdash; no server needed</li>
         </ul>
         <h3>Database Admin</h3>
         <ul>
-          <li><strong>phpMyAdmin 5.2.1</strong></li>
+          <li><strong><a href="/us_opt1/"><?php print us_h($tool_ver); ?></a></strong> &mdash; MariaDB and SQLite, this computer only. Button <em>Adminer</em> in the controller logs in to MariaDB by itself; for SQLite see <a href="/us_docs/manual/index.html#sqlite">SQLite files in Adminer</a> in the documentation</li>
         </ul>
       </section>
 

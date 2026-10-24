@@ -325,8 +325,7 @@ type
     procedure CreateTrayMenu;          // Show / Exit for the notification area icon
     procedure TrayShowClick(Sender: TObject);
     procedure TrayExitClick(Sender: TObject);
-    procedure CreateEngineSwitchMenuItem; // "Switch to MySQL instead..." at the end of the database menu
-    procedure EngineSwitchInfoClick(Sender: TObject);
+    procedure WarnIfMySqlEngine;       // MariaDB only since 2.2.0: explain the move off an old MySQL
   protected
     procedure CreateWnd; override;     // hooks the title bar minimize button (see TitleBarMinimizeProc)
   public
@@ -748,7 +747,7 @@ end;
 
 {====================================================================
 The form is designed with 'MySQL' in every database caption. Since 1.3.6
-the bundle ships MariaDB (MySQL stays available as a module), and
+the bundle ships MariaDB (the only engine since 2.2.0), and
 core\mysql\us_opt.ini names the installed engine (US_MYMAR_TXT). Rename
 every caption once at start-up so the user sees the engine they actually
 run: menu tree (the tabs mirror it in SyncMenuTabs), utilities label,
@@ -875,7 +874,7 @@ begin
 
 end;
 
-//Default button function is phpMyAdmin
+//Default button function is the database tool Adminer (home\us_opt1, text and page from its us_opt.ini)
 procedure TMain.Btn_opt1Click(Sender: TObject);
 var
   url :string;
@@ -1735,7 +1734,7 @@ If us_application_is_runable Then   // A draconian check. If a space found in pa
   If (ParamCount = 0) Then AskGuiStyleOnce; // First interactive start: classic window or medallion
   ApplyGuiStyle;                    // Shape the window in the chosen look before it is shown
   ApplyDatabaseEngineName;         // Menus and buttons name the installed engine (us_opt.ini), not 'MySQL'
-  CreateEngineSwitchMenuItem;       // How to get the other engine (MySQL module / MariaDB module)
+  If (ParamCount = 0) Then WarnIfMySqlEngine; // Old installation still on MySQL: how to move to MariaDB
   us_auto_generate_ssl_cert;        // First start: generate localhost certificate and enable SSL
 
   //--- First interactive start: proactively offer to trust the certificate
@@ -2271,64 +2270,38 @@ begin
 end;
 
 {====================================================================
-Since 1.3.6 the bundle ships MariaDB; MySQL is a separate module (and
-vice versa). Someone who needs the other engine looks in the database
-menu first, so that is where the explanation lives: the last entry
-describes the switch and offers to open the download page. Built in
-code after ApplyDatabaseEngineName, so its captions are its own.
+MariaDB is the only database engine since 2.2.0: the MySQL module and
+the MySQL-specific code paths (password plugin, console window, skip-
+grants start) are gone. An installation that still runs MySQL - a bundle
+up to 1.3.5 or the MySQL module up to 2.1.x - keeps starting, but the
+root password functions are written for MariaDB. Every interactive start
+says so and explains the move until MariaDB is installed.
 --------------------------------------------------------------------}
-procedure TMain.CreateEngineSwitchMenuItem;
-var
-  item: TMenuItem;
-begin
-  item := TMenuItem.Create(MM_mysql);
-  item.Caption := '-';
-  MM_mysql.Add(item);
-
-  item := TMenuItem.Create(MM_mysql);
-  if US_MYMAR_TXT = 'MariaDB' then
-    item.Caption := 'Switch to MySQL instead...'
-  else
-    item.Caption := 'Switch to MariaDB instead...';
-  item.OnClick := @EngineSwitchInfoClick;
-  MM_mysql.Add(item);
-end;
-
-procedure TMain.EngineSwitchInfoClick(Sender: TObject);
+procedure TMain.WarnIfMySqlEngine;
 const
   RELEASES_URL = 'https://github.com/Wolfram33/winpacho/releases/tag/latest';
 var
-  other, module, installed, str: string;
+  str: string;
 begin
-  if US_MYMAR_TXT = 'MariaDB' then
-  begin
-    other  := 'MySQL 8.4 LTS';
-    module := 'winpacho_mysql_module.zip';
-  end
-  else
-  begin
-    other  := 'MariaDB LTS';
-    module := 'winpacho_mariadb_module.zip';
-  end;
-  installed := us_ini_get(USF_US_CONF_INI, 'APP', 'DatabaseVersion'); // stamped by the bundle build
-  if installed = '' then installed := US_MYMAR_TXT + ' ' + MY_SQL_VER;
+  if not (FileExists(USF_MYMAR_TXT_INI) and (US_MYMAR_TXT = 'MySQL')) then Exit;
 
-  str := 'This installation runs ' + installed + '.'                                       + sLineBreak +
-         'Apps, phpMyAdmin and PHP (mysqli, PDO) work the same with either engine.'         + sLineBreak +
-         'If an application needs ' + other + ' itself, the ' + other + ' module'           + sLineBreak +
-         'replaces the engine - the data folders of the two are not compatible,'            + sLineBreak +
+  str := 'This installation still runs MySQL (folder core\mysql).'                          + sLineBreak +
+         'Since 2.2.0 winpacho supports MariaDB only. Your apps keep working, but'         + sLineBreak +
+         'MySQL > Change MySQL password and Restore default password (root) are'           + sLineBreak +
+         'made for MariaDB and may fail on MySQL.'                                          + sLineBreak + sLineBreak +
+         'Move to MariaDB - the data folders of the two are not compatible,'               + sLineBreak +
          'so the databases travel as dumps:'                                                + sLineBreak + sLineBreak +
-         '1. ' + US_MYMAR_TXT + ' > Database backup for every database you need.'            + sLineBreak +
-         '2. Stop ' + US_MYMAR_TXT + ' and delete the folder core\mysql completely.'         + sLineBreak +
-         '3. Unzip ' + module + ' into the server folder'                                   + sLineBreak +
+         '1. MySQL > Database backup for every database you need.'                          + sLineBreak +
+         '2. Stop MySQL and delete the folder core\mysql completely.'                       + sLineBreak +
+         '3. Unzip winpacho_mariadb_module.zip into the server folder'                      + sLineBreak +
          '   (' + UniConPath + ').'                                                          + sLineBreak +
-         '4. Restart WinpachoController - the menus then say ' + Copy(other, 1, Pos(' ', other) - 1) +
-         ' - and import the dumps'                                                          + sLineBreak +
-         '   with Database restore. Recreate restricted users afterwards.'                  + sLineBreak + sLineBreak +
+         '4. Restart WinpachoController - the menus then say MariaDB - and import'          + sLineBreak +
+         '   the dumps with MariaDB > Database restore. Recreate restricted users.'         + sLineBreak + sLineBreak +
+         'This notice appears at every start until MariaDB is installed.'                   + sLineBreak +
          'The module is on the releases page, next to the bundle.'                          + sLineBreak + sLineBreak +
          'Open the releases page in the browser now?';
 
-  if us_MessageDlg('Switch to ' + other, str, mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+  if us_MessageDlg('MySQL is no longer supported', str, mtWarning, [mbYes, mbNo], 0) = mrYes then
     browser_display_url(RELEASES_URL);
 end;
 

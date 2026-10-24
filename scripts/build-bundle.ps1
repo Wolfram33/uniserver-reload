@@ -1,6 +1,7 @@
 # Build the all-in-one bundle (plain zip): Uniform Server ZeroXV base
 # package + freshly built WinpachoController/WinpachoService + PHP 8.4/8.5 modules +
-# the MariaDB module as the database engine (replaces the base's MySQL).
+# the MariaDB module as the database engine (replaces the base's MySQL) +
+# the newest Adminer as the database tool (replaces the base's phpMyAdmin).
 #
 # Expects (as laid out by actions/download-artifact):
 #   artifacts/uniserver-binaries/WinpachoController/WinpachoController.exe
@@ -136,7 +137,7 @@ Remove-Item "$root\core\mysql" -Recurse -Force
 Expand-Archive -Path $dbModule.FullName -DestinationPath $root -Force
 foreach ($f in 'core\mysql\bin\mysqld_z.exe', 'core\mysql\bin\mysql.exe', 'core\mysql\bin\mysqladmin.exe',
                'core\mysql\bin\mysqldump.exe', 'core\mysql\my.ini', 'core\mysql\us_opt.ini',
-               'core\mysql\data\mysql', 'core\mysql\data\phpmyadmin', 'htpasswd\mysql\passwd.txt') {
+               'core\mysql\data\mysql', 'htpasswd\mysql\passwd.txt') {
   if (-not (Test-Path "$root\$f")) { throw "MariaDB module incomplete: $f missing after merge" }
 }
 $dbVersionLine = ((& "$root\core\mysql\bin\mysqld_z.exe" --no-defaults --version 2>&1) | ForEach-Object { "$_" }) -join ' '
@@ -144,6 +145,43 @@ if ($dbVersionLine -notmatch '(\d+\.\d+\.\d+)-MariaDB') { throw "core\mysql\bin\
 $dbVersion = $Matches[1]
 if ((Get-Content "$root\core\mysql\us_opt.ini" -Raw) -notmatch '(?m)^text = MariaDB') { throw 'core\mysql\us_opt.ini does not name MariaDB' }
 Write-Host "==> Database engine: MariaDB $dbVersion"
+
+# --- Database tool: Adminer replaces phpMyAdmin (2.2.0) ----------------------
+# phpMyAdmin 5.2.1 from the base package (54 MB, 4,100 files, plus the 'pma'
+# control user and its storage database) gives way to Adminer: one PHP file
+# that also opens SQLite databases. The newest release comes from GitHub
+# unmodified; bundle\adminer adds the winpacho entry page (automatic root
+# login, SQLite login, no version check) and the controller's button text.
+# The tag comes from the redirect of /releases/latest - no API call, so no
+# rate limit on shared CI runners.
+$ADMINER_CURL = @('--max-time', '120', '--retry', '3')   # a hanging GitHub request must not block the job
+Write-Host '==> Looking up the latest Adminer release'
+$adminerTagUrl = & curl.exe -fsSLI @ADMINER_CURL -o NUL -w '%{url_effective}' 'https://github.com/vrana/adminer/releases/latest'
+if ($LASTEXITCODE -ne 0) { throw 'Could not resolve the latest Adminer release on GitHub' }
+if ($adminerTagUrl -notmatch '/releases/tag/v(\d+\.\d+\.\d+)$') { throw "Unexpected Adminer release URL: $adminerTagUrl" }
+$adminerVer = $Matches[1]
+Write-Host "==> Downloading Adminer $adminerVer"
+& curl.exe -fsSL @ADMINER_CURL -o adminer.php "https://github.com/vrana/adminer/releases/download/v$adminerVer/adminer-$adminerVer.php"
+if ($LASTEXITCODE -ne 0) { throw 'Adminer download failed' }
+# All drivers and languages: about 580 KB; the MySQL-only build is a third of that
+if ((Get-Item adminer.php).Length -lt 300KB) { throw 'Adminer download suspiciously small - not the full build?' }
+if (((Get-Content adminer.php -TotalCount 12) -join "`n") -notmatch "@version $([regex]::Escape($adminerVer))") { throw "adminer.php does not carry the header '@version $adminerVer'" }
+$opt1 = "$root\home\us_opt1"
+if (-not (Test-Path "$opt1\libraries\classes")) { throw 'Unexpected base package layout: phpMyAdmin not found in home\us_opt1' }
+Remove-Item $opt1 -Recurse -Force
+New-Item -ItemType Directory -Force $opt1 | Out-Null
+Copy-Item adminer.php "$opt1\adminer.php"
+foreach ($f in 'index.php', 'winpacho-adminer.php', 'us_opt.ini') { Copy-Item "bundle\adminer\$f" "$opt1\$f" }
+# Upload folder of the old phpMyAdmin config, nothing else uses it
+if (Test-Path "$root\etc\phpmyadmin") { Remove-Item "$root\etc\phpmyadmin" -Recurse -Force }
+# The base's us_user.ini lists the start-up pages; name the tool that is there
+$userIni = "$root\home\us_config\us_user.ini"
+$u = Get-Content $userIni -Raw
+$u = $u -replace '(/us_opt1/index\.php\s+)-- phpMyAdmin', '$1-- Adminer'
+$u = $u -replace '(?m)^;\s+/us_opt2/\?username=\s+-- Adminer\r?\n', ''
+Set-Content $userIni -Value $u -NoNewline
+if ((Get-Content $userIni -Raw) -match 'phpMyAdmin') { throw 'us_user.ini still mentions phpMyAdmin' }
+Write-Host "==> Database tool: Adminer $adminerVer in home\us_opt1"
 
 # --- Stamp the fork version --------------------------------------------------
 # AppVersion carries the fork version (splash page and controller read it);
@@ -251,6 +289,26 @@ if ($patched -ne $text) {
   Set-Content -Path $conf -Value $patched -NoNewline
 }
 if ((Get-Content $conf -Raw) -notmatch 'Options Indexes Includes FollowSymLinks') { throw 'FollowSymLinks patch failed' }
+
+# Database tool slots answer on this computer only: Adminer in us_opt1 logs
+# in as root by itself, and Apache listens on every network interface. (The
+# base's phpMyAdmin logged in the same way and was open to the network.)
+# us_opt2/us_opt3 are empty slots meant for the same kind of tool.
+$text = Get-Content $conf -Raw
+foreach ($slot in 'us_opt1', 'us_opt2', 'us_opt3') {
+  $block = '(?s)(<Directory "\$\{US_ROOTF\}/home/' + $slot + '/">.*?)Require all granted(.*?</Directory>)'
+  if ($text -notmatch $block) { throw "httpd.conf: <Directory> block of $slot with 'Require all granted' not found" }
+  $text = $text -replace $block, '$1Require local$2'
+}
+$text = $text -replace '#== Default phpMyAdmin', '#== Adminer (winpacho database tool) - this computer only'
+$text = $text -replace '#opt1>phpMyAdmin opt2>Adminer opt3>phpMyBackupPro', '#opt1>Adminer (winpacho), opt2/opt3>free slots for further tools (this computer only)'
+Set-Content -Path $conf -Value $text -NoNewline
+$text = Get-Content $conf -Raw
+foreach ($slot in 'us_opt1', 'us_opt2', 'us_opt3') {
+  if ($text -notmatch ('(?s)<Directory "\$\{US_ROOTF\}/home/' + $slot + '/">[^<]*?Require local\s*</Directory>')) { throw "httpd.conf: $slot is not limited to Require local" }
+}
+if ($text -match 'phpMyAdmin') { throw 'httpd.conf still mentions phpMyAdmin' }
+Write-Host '==> Database tool folders limited to this computer (Require local)'
 
 # --- Modern mail setup: CA bundle, secure msmtp template, header wrapper -----
 # The stock msmtprc disables certificate checks and PHP mail() via msmtp
@@ -447,9 +505,9 @@ $peOff = [BitConverter]::ToInt32($rz, 0x3C)
 if ([BitConverter]::ToUInt16($rz, $peOff + 4 + 20 + 68) -ne 2) { throw 'Smoke test: bin\rotatelogs_z.exe is not a GUI-subsystem executable' }
 Write-Host '   log rotation OK - access log written through the windowless rotatelogs_z.exe'
 
-# --- Smoke test: MariaDB starts, PHP reaches it, phpMyAdmin logs in ----------
+# --- Smoke test: MariaDB starts, PHP reaches it, Adminer logs in ------------
 # Started the way the controller starts it: --defaults-file only, the port
-# in MYSQL_TCP_PORT (server, client tools and phpMyAdmin's config.inc.php
+# in MYSQL_TCP_PORT (server, client tools and Adminer's winpacho-adminer.php
 # all read that variable), data directory implied by the exe location.
 Write-Host '==> Smoke test: database engine'
 $env:MYSQL_TCP_PORT = '33306'
@@ -472,40 +530,59 @@ if (-not $dbReady) {
 # The error log must be where the controller's "error log" menu looks
 if (-not (Test-Path $dbErrLog)) { throw 'Smoke test: core\mysql\data\mysql.err was not written (log_error in my.ini)' }
 
-# Probe page: connects as root and as the phpMyAdmin control user, the way
-# apps and phpMyAdmin do (TCP to 127.0.0.1, port from MYSQL_TCP_PORT)
+# Probe page: connects as root the way apps and Adminer do (TCP to
+# 127.0.0.1, port from MYSQL_TCP_PORT) and writes a small SQLite database
+# for the Adminer SQLite login below
+$sqliteProbe = Join-Path ([IO.Path]::GetTempPath()) 'winpacho_ci_probe.sqlite'
+if (Test-Path $sqliteProbe) { Remove-Item $sqliteProbe -Force }
 @'
 <?php
-$port  = (int) getenv('MYSQL_TCP_PORT');
-$parts = array();
 mysqli_report(MYSQLI_REPORT_OFF);
-foreach (array('root', 'pma') as $user) {
-  $db = @new mysqli('127.0.0.1', $user, 'root', 'phpmyadmin', $port);
-  if ($db->connect_errno) { echo 'USR-DBPROBE FAIL ', $user, ': ', $db->connect_error; exit; }
-  $version = $db->query('SELECT VERSION()')->fetch_row();
-  $tables  = $db->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'phpmyadmin'")->fetch_row();
-  $parts[] = $user . '=' . $version[0] . '/' . $tables[0];
-  $db->close();
-}
-echo 'USR-DBPROBE OK ', implode(' ', $parts);
-'@ | Set-Content "$root\www\_ci_dbprobe.php" -NoNewline
-$pmaTables = ([regex]::Matches((Get-Content 'bundle\db\phpmyadmin-create_tables.sql' -Raw), 'CREATE TABLE IF NOT EXISTS')).Count
+$db = new mysqli('127.0.0.1', 'root', 'root', 'mysql', (int) getenv('MYSQL_TCP_PORT'));
+if ($db->connect_errno) { echo 'USR-DBPROBE FAIL root: ', $db->connect_error; exit; }
+$version = $db->query('SELECT VERSION()')->fetch_row();
+$lite = new SQLite3('__SQLITE__');
+$lite->exec("CREATE TABLE ci_probe (id INTEGER PRIMARY KEY, name TEXT); INSERT INTO ci_probe (name) VALUES ('winpacho');");
+$lite->close();
+echo 'USR-DBPROBE OK root=', $version[0];
+'@.Replace('__SQLITE__', ($sqliteProbe -replace "'", '')) | Set-Content "$root\www\_ci_dbprobe.php" -NoNewline
 
 $env:PHP_SELECT = $defaultPhp
 Start-Process -FilePath $httpd -ArgumentList '-f', "$rootAbs\core\apache2\conf\httpd.conf", '-d', "$rootAbs\core\apache2" | Out-Null
 $resp = $null
 foreach ($i in 1..30) { Start-Sleep -Seconds 1; $resp = & curl.exe -fsS 'http://localhost:8088/_ci_dbprobe.php' 2>$null; if ($LASTEXITCODE -eq 0 -and $resp) { break } }
-$pmaHtml = & curl.exe -fsS 'http://localhost:8088/us_opt1/index.php' 2>$null
+# The controller's button opens the bare page: Adminer must log in as root by
+# itself and land on the server overview, which names the server version
+$jar = Join-Path ([IO.Path]::GetTempPath()) 'winpacho_ci_adminer.jar'
+if (Test-Path $jar) { Remove-Item $jar -Force }
+$adminerHtml = & curl.exe -fsS -L -c $jar -b $jar 'http://localhost:8088/us_opt1/' 2>$null
+# SQLite login: Adminer's own form with its CSRF token, password = root password
+$jarLite = "$jar-sqlite"
+$formHeaders = "$jar-headers"
+if (Test-Path $jarLite) { Remove-Item $jarLite -Force }
+$loginForm = (& curl.exe -sS -D $formHeaders -c $jarLite -b $jarLite 'http://localhost:8088/us_opt1/index.php?sqlite=' 2>$null) -join "`n"
+$adminerHeaders = if (Test-Path $formHeaders) { Get-Content $formHeaders } else { @() }
+$token = if ($loginForm -match "name=['""]token['""] value=['""]([^'""]+)") { $Matches[1] } else { '' }
+$liteHtml = & curl.exe -sS -L -c $jarLite -b $jarLite --data-urlencode 'auth[driver]=sqlite' --data-urlencode 'auth[username]=' `
+  --data-urlencode 'auth[password]=root' --data-urlencode "auth[db]=$sqliteProbe" --data-urlencode "token=$token" `
+  'http://localhost:8088/us_opt1/index.php?sqlite=' 2>$null
 Stop-SmokeApache
 $text = ($resp -join "`n")
-if ($text -notmatch 'USR-DBPROBE OK') { throw "Smoke test: PHP could not use the database: $text" }
-foreach ($user in 'root', 'pma') {
-  if ($text -notmatch "$user=$([regex]::Escape($dbVersion))-MariaDB/$pmaTables") { throw "Smoke test: unexpected probe result for $user (want MariaDB $dbVersion and $pmaTables phpmyadmin tables): $text" }
+if ($text -notmatch "USR-DBPROBE OK root=$([regex]::Escape($dbVersion))-MariaDB") { throw "Smoke test: PHP could not use the database (want MariaDB $dbVersion): $text" }
+$adminerText = ($adminerHtml -join "`n")
+if ($adminerText -notmatch 'Adminer') { throw 'Smoke test: Adminer page did not render' }
+if ($adminerText -match 'auth\[password\]') { throw 'Smoke test: Adminer showed the login form instead of logging in as root' }
+if ($adminerText -notmatch [regex]::Escape($dbVersion)) { throw "Smoke test: Adminer page does not show server version $dbVersion" }
+$csp = ($adminerHeaders | Where-Object { $_ -match '^Content-Security-Policy:' }) -join ' '
+if (-not $csp) { throw 'Smoke test: Adminer sent no Content-Security-Policy header' }
+if ($csp -match 'adminer\.org') { throw "Smoke test: Adminer's CSP still allows adminer.org (version check): $csp" }
+if (-not $token) { throw 'Smoke test: no CSRF token in the Adminer login form' }
+if ((($liteHtml -join "`n") -notmatch 'ci_probe')) { throw 'Smoke test: Adminer SQLite login with the root password failed' }
+Remove-Item $sqliteProbe, $jar, $jarLite, $formHeaders -Force -ErrorAction SilentlyContinue
+# The Adminer logins left PHP sessions (and maybe Adminer's own files) in tmp - they must not ship
+if (Test-Path "$root\tmp") {
+  Get-ChildItem "$root\tmp" -File | Where-Object { $_.Name -like 'sess_*' -or $_.Name -like 'adminer*' } | Remove-Item -Force
 }
-$pmaText = ($pmaHtml -join "`n")
-if ($pmaText -notmatch 'phpMyAdmin') { throw 'Smoke test: phpMyAdmin page did not render' }
-if ($pmaText -match 'mysqli::real_connect|Cannot connect|#1045|#2002') { throw 'Smoke test: phpMyAdmin could not log in to MariaDB' }
-if ($pmaText -notmatch [regex]::Escape($dbVersion)) { throw "Smoke test: phpMyAdmin page does not show server version $dbVersion" }
 
 & $mysqladm --host=127.0.0.1 --port=$env:MYSQL_TCP_PORT --user=root --password=root shutdown
 if ($LASTEXITCODE -ne 0) { throw 'Smoke test: mysqladmin shutdown failed' }
@@ -514,7 +591,7 @@ Remove-Item "$root\www\_ci_dbprobe.php" -Force
 Remove-Item Env:\MYSQL_TCP_PORT
 # The run's error log and pid file must not ship
 foreach ($f in 'mysql.err', 'mysql.pid') { Remove-Item "$root\core\mysql\data\$f" -Force -ErrorAction SilentlyContinue }
-Write-Host "   MariaDB $dbVersion OK - PHP and phpMyAdmin connect as root and pma, clean shutdown"
+Write-Host "   MariaDB $dbVersion OK - PHP connects, Adminer $adminerVer logs in as root and opens SQLite, clean shutdown"
 
 # Splash page and www test page render (fork content) under the shipped default version
 $env:PHP_SELECT = $defaultPhp
@@ -554,6 +631,10 @@ foreach ($old in 'UniController.exe', 'UniService.exe', 'utils\UniService.exe', 
 }
 if ($listing -notcontains 'Path = utils\WinpachoService.exe') { throw 'Bundle layout broken: utils\WinpachoService.exe is missing' }
 if ($listing -notcontains 'Path = core\mysql\bin\mysqld_z.exe') { throw 'Bundle layout broken: core\mysql\bin\mysqld_z.exe (MariaDB) is missing' }
+foreach ($f in 'adminer.php', 'index.php', 'winpacho-adminer.php', 'us_opt.ini') {
+  if ($listing -notcontains "Path = home\us_opt1\$f") { throw "Bundle layout broken: home\us_opt1\$f (Adminer) is missing" }
+}
+if ($listing | Where-Object { $_ -like 'Path = home\us_opt1\libraries*' }) { throw 'Bundle layout broken: phpMyAdmin files left in home\us_opt1' }
 
 # Second flavour: a plain .7z (LZMA, solid) - roughly half the size of the zip,
 # the footprint the old self-extracting exe had, minus the exe stub Defender
@@ -569,5 +650,6 @@ if ($listing7z -notcontains 'Path = WinpachoController.exe') { throw 'Bundle lay
 Add-Content 'dist\module-versions.txt' "winpacho $reloadVersion (base ZeroXV $baseVersion)"
 Add-Content 'dist\module-versions.txt' "Apache $apVer (bundle)"
 Add-Content 'dist\module-versions.txt' "MariaDB $dbVersion (bundle)"
+Add-Content 'dist\module-versions.txt' "Adminer $adminerVer (bundle)"
 
 Get-Item 'dist\winpacho.zip', 'dist\winpacho.7z' | Format-List Name, Length

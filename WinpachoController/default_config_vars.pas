@@ -57,13 +57,13 @@ Var
   //==== End User Config and Enironment variables
 
   //==== User Config button options
-   US_OPT1_BTN_TXT     :string;   // button text - phpMyAdmin
+   US_OPT1_BTN_TXT     :string;   // button text - Adminer (phpMyAdmin up to 2.1.x)
    US_OPT1_PAGE        :string;   // page to display when button clicked
    US_OPT2_BTN_TXT     :string;   // button text - Adminer
    US_OPT2_PAGE        :string;   // page to display when button clicked
    US_OPT3_BTN_TXT     :string;   // button text - phpMyBackupPro
    US_OPT3_PAGE        :string;   // page to display when button clicked
-   US_MYMAR_TXT        :string;   // Display string MySQL or MariaDB - Depends on server installed
+   US_MYMAR_TXT        :string;   // Display string of the engine: MariaDB ('MySQL' = old installation)
   //==== User Config button options
 
 
@@ -145,7 +145,6 @@ Var
  MY_EXE_NAME       :string;   // MySQL exe
  MY_PWD            :String;   // MySQL password from file
  US_DB_HOST        :String;   // MySQL host 127.0.0.1
- MY_SQL_VER        :String;   // MySQL version
 
  //===  Top level folders =====
  UniConPath        :String;  // Path to this application back slashes
@@ -206,7 +205,7 @@ Var
 
  US_MSMTP          :String;  // msmtp mail utility folder
 
- US_OPT1           :String;  // Default phpMyAdmin folder
+ US_OPT1           :String;  // Database tool folder (Adminer)
  US_OPT2           :String;  // Default Adminer folder
  US_OPT3           :String;  // Default phpMyBackupPro / Sypex folder
 
@@ -472,7 +471,7 @@ begin
 
   US_MSMTP           := UniConPath +  '\core\msmtp';        // msmtp mail utility folder
 
-  US_OPT1            := US_HOME +'\us_opt1';            // default phpMyAdmin folder
+  US_OPT1            := US_HOME +'\us_opt1';            // database tool folder (Adminer)
   US_OPT2            := US_HOME +'\us_opt2';            // default Adminer folder
   US_OPT3            := US_HOME +'\us_opt3';            // phpMyBackupPro / sypex folder
 
@@ -923,8 +922,9 @@ begin
    Ini7 := TINIFile.Create(USF_MYMAR_TXT_INI); // create object
    //*** Start ***
    //[USER]
-   US_MYMAR_TXT   := Ini7.ReadString('USER','text','MySQL'); //MySQL or MariaDB
-   MY_SQL_VER   := Ini7.ReadString('USER','version','8');     //MySQL version
+   // MariaDB is the only engine since 2.2.0; 'MySQL' here marks an old
+   // installation that WarnIfMySqlEngine (main_unit) asks to move to MariaDB
+   US_MYMAR_TXT   := Ini7.ReadString('USER','text','MariaDB');
 
    //*** End ***
    Ini7.Free;     // Free method of object

@@ -3,7 +3,7 @@
 # a non-zero exit (= failed run, GitHub sends a mail) means: build a new
 # release. Locally: pwsh scripts/check-upstream-versions.ps1
 #
-# The build scripts already fetch the newest PHP/MariaDB/MySQL/Apache, so a
+# The build scripts already fetch the newest PHP/MariaDB/Adminer/Apache, so a
 # version bump + tag is normally all an update takes. Only for Apache the
 # patch-level floor $MinApachePatch in build-bundle.ps1 should be raised too.
 #
@@ -44,8 +44,11 @@ $shipped = [ordered]@{
   'PHP 8.4'     = Get-Shipped 'PHP (\d+\.\d+\.\d+) \(php84\)'
   'PHP 8.5'     = Get-Shipped 'PHP (\d+\.\d+\.\d+) \(php85\)'
   'MariaDB'     = Get-Shipped 'MariaDB (\d+\.\d+\.\d+) \(bundle\)'
-  'MySQL 8.4'   = Get-Shipped 'MySQL (\d+\.\d+\.\d+) \(module\)'
+  'Adminer'     = Get-Shipped 'Adminer (\d+\.\d+\.\d+) \(bundle\)'
 }
+# Shipped since 2.2.0 (replaced phpMyAdmin): older releases do not list it,
+# which is no failed check
+$sinceLaterRelease = @('Adminer')
 
 # --- Upstream versions: same sources as the build scripts ---------------------
 $upstream = [ordered]@{}
@@ -82,13 +85,10 @@ try {
 } catch { $errors += "MariaDB: $($_.Exception.Message)" }
 
 try {
-  $tags = & git ls-remote --tags 'https://github.com/mysql/mysql-server' 'refs/tags/mysql-8.4.*'
-  if ($LASTEXITCODE -ne 0) { throw 'git ls-remote failed' }
-  $patch = $tags | ForEach-Object { if ($_ -match 'refs/tags/mysql-8\.4\.(\d+)$') { [int]$Matches[1] } } |
-    Sort-Object -Descending | Select-Object -First 1
-  if ($null -eq $patch) { throw 'no mysql-8.4.x tag found' }
-  $upstream['MySQL 8.4'] = "8.4.$patch"
-} catch { $errors += "MySQL: $($_.Exception.Message)" }
+  $tag = (Get-Json 'https://api.github.com/repos/vrana/adminer/releases/latest' $apiHeaders).tag_name
+  if ($tag -notmatch '^v(\d+\.\d+\.\d+)$') { throw "unexpected release tag '$tag'" }
+  $upstream['Adminer'] = $Matches[1]
+} catch { $errors += "Adminer: $($_.Exception.Message)" }
 
 # --- Compare and report --------------------------------------------------------
 $rows = @()
@@ -97,7 +97,8 @@ foreach ($name in $shipped.Keys) {
   $have = $shipped[$name]
   $new = $upstream[$name]
   $state = 'ok'
-  if (-not $have) { $state = 'not in release notes'; $errors += "$name`: shipped version not found in release $($release.tag_name)" }
+  if (-not $have -and $name -in $sinceLaterRelease) { $state = 'not shipped in this release yet' }
+  elseif (-not $have) { $state = 'not in release notes'; $errors += "$name`: shipped version not found in release $($release.tag_name)" }
   elseif (-not $new) { $state = 'check failed' }
   elseif ([version]$new -gt [version]$have) { $state = 'UPDATE AVAILABLE'; $updates++ }
   $rows += [pscustomobject]@{ Component = $name; Shipped = $have; Upstream = $new; State = $state }

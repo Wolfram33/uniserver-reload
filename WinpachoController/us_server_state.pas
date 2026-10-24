@@ -88,8 +88,8 @@ begin
 
  //--MySQL option buttons
  //-- Note: Btn_opt3 Default button phpMyBackupPro (Bottom-right)
- Main.Btn_opt1.Caption := US_OPT1_BTN_TXT; // Values:user set e.g phpMyAdmin
- Main.Btn_opt2.Caption := US_OPT2_BTN_TXT; // Values:user set e.g Adminer
+ Main.Btn_opt1.Caption := US_OPT1_BTN_TXT; // Values:user set, bundle: Adminer
+ Main.Btn_opt2.Caption := US_OPT2_BTN_TXT; // Values:user set (free slot)
  Main.Btn_opt3.Caption := US_OPT3_BTN_TXT; // Values:user set e.g phpMyBackupPro,Sypex Dumper
 
  If FileExists(US_DOCS+'\manual\index.html') Then
@@ -223,11 +223,20 @@ begin
      Main.Btn_mysql_console.Enabled := False;     // Disable console button
   End;
 
-  //--Apache and MySQL server running. PHP and phpMyAdmin (us_opt1) installed
-  If (AP and MY and Not(UENV_PHP_SELECT = 'None') and DirectoryExists(US_OPT1) ) then
-     Main.Btn_opt1.Enabled := True             // Enable opt1 (phpMyAdmin) button
+  //--Apache running, PHP selected and the database tool (us_opt1, Adminer) installed.
+  //  MariaDB is not required: Adminer also opens SQLite files, and its page
+  //  says when MariaDB is not running.
+  If (AP and Not(UENV_PHP_SELECT = 'None') and DirectoryExists(US_OPT1) ) then
+   begin
+     Main.Btn_opt1.Enabled := True;
+     Main.Btn_opt1.Hint    := '';
+   end
   Else
-    Main.Btn_opt1.Enabled := False;            // Disable opt1 (phpMyAdmin) button
+   begin
+     Main.Btn_opt1.Enabled := False;
+     Main.Btn_opt1.Hint    := US_OPT1_BTN_TXT + ' needs Apache running with a PHP version selected' +
+                              ' (and the folder ' + US_OPT1 + ').';
+   end;
 
   //--Apache and MySQL server running. PHP and us_opt3 (phpMyBackupPro) installed
   If (AP and MY and Not(UENV_PHP_SELECT = 'None') and DirectoryExists(US_OPT3) ) then

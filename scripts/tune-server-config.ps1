@@ -1,9 +1,9 @@
 # Server tuning for winpacho: rotating Apache logs with bounded disk
-# use, OPcache on in every PHP version, Apache/MySQL limits sized for a small
+# use, OPcache on in every PHP version, Apache limits sized for a small
 # business server instead of a developer laptop.
 #
 # build-bundle.ps1 runs this for every bundle. It also works stand-alone on an
-# existing installation (with Apache and MySQL stopped):
+# existing installation (with Apache stopped):
 #
 #   powershell -ExecutionPolicy Bypass -File tune-server-config.ps1 -Root C:\winpacho
 #
@@ -36,13 +36,12 @@
 #       OPcache enabled with 256M cache / 20000 files, realpath cache on.
 #       The zend_extension line uses the php_opcache.dll form the controller's
 #       PHP > Accelerator toggle understands.
-#   core\mysql\my.ini (MySQL flavour, i.e. bundles up to 1.3.5 and the MySQL
-#       module; the MariaDB engine's my.ini ships tuned and is left alone)
-#       connections, caches, redo log and binlog retention for server load.
-#   home\us_opt1\config.inc.php (phpMyAdmin)
-#       The display name of the database server is "winpacho" instead of the
-#       base package's "Uniform Server". Only that stock value is replaced; a
-#       name the user chose stays.
+#   core\apache2\conf\httpd.conf, <Directory> blocks of home\us_opt1..3
+#       'Require local' instead of 'Require all granted': the database tool
+#       Adminer logs in by itself and must not be reachable from the network.
+#   core\mysql\my.ini is left alone: the MariaDB module ships it tuned. An
+#       installation that still runs MySQL (no longer supported since 2.2.0)
+#       gets a note on how to move to MariaDB.
 param([Parameter(Mandatory = $true)][string]$Root)
 $ErrorActionPreference = 'Stop'
 
@@ -131,8 +130,9 @@ function Assert-IniLine([string]$text, [string]$line, [string]$file) {
 }
 
 # --- Servers must be stopped: the files below are open while they run ---------
-foreach ($p in 'httpd_z', 'mysqld_z', 'rotatelogs', 'rotatelogs_z') {
-  if (Get-Process -Name $p -ErrorAction SilentlyContinue) { throw "$p.exe is running - stop Apache and MySQL (WinpachoController or the Windows services) before running this script" }
+# (MariaDB may keep running: its my.ini is not touched any more.)
+foreach ($p in 'httpd_z', 'rotatelogs', 'rotatelogs_z') {
+  if (Get-Process -Name $p -ErrorAction SilentlyContinue) { throw "$p.exe is running - stop Apache (WinpachoController or the Windows service) before running this script" }
 }
 
 # =============================================================================
@@ -333,76 +333,49 @@ foreach ($dir in $phpDirs) {
 }
 
 # =============================================================================
-# MySQL: connections, caches, redo log, binlog retention
+# Database tool folders: this computer only
 # =============================================================================
-# 400 Apache threads can open 400 connections in a burst; MySQL's default
-# max_connections (151) would answer 'Too many connections'. Binlogs are kept
-# 7 days instead of 30: on a single server they only serve point-in-time
-# recovery, and 30 days of a busy CRM's binlogs are gigabytes.
-$myIni = Join-Path $Root 'core\mysql\my.ini'
-if (-not (Test-Path $myIni)) { Write-Host '==> core\mysql\my.ini not found - MySQL tuning skipped' }
-else {
-  $t = Read-Text $myIni
-  if ($t -match 'MariaDB configuration for (Uniform Server Reload|winpacho)') {   # my.ini header before / after the 2.0 rename
-    Write-Host '==> MariaDB module my.ini detected - it ships tuned, nothing to do'
+# Adminer (home\us_opt1, since 2.2.0) logs in as root by itself, and Apache
+# listens on every network interface. The bundle ships these blocks with
+# 'Require local'; older installations get it here. A block the user set to
+# something else than the stock 'Require all granted' stays as it is.
+$conf = Join-Path $apache 'conf\httpd.conf'
+$t = Read-Text $conf
+$limited = @()
+foreach ($slot in 'us_opt1', 'us_opt2', 'us_opt3') {
+  $block = '(?s)(<Directory "\$\{US_ROOTF\}/home/' + $slot + '/">[^<]*?)Require all granted([^<]*?</Directory>)'
+  if ($t -match $block) { $t = $t -replace $block, '$1Require local$2'; $limited += $slot }
+}
+if ($limited) {
+  Write-Text $conf $t
+  foreach ($slot in $limited) {
+    if ((Read-Text $conf) -notmatch ('(?s)<Directory "\$\{US_ROOTF\}/home/' + $slot + '/">[^<]*?Require local')) { throw "httpd.conf: $slot could not be limited to Require local" }
   }
-  elseif ($t -notmatch '(?m)^\[mysqld\]') { throw 'core\mysql\my.ini: no [mysqld] section' }
-  else {
-    $nl = Get-Newline $t
-    $MYSQL_LINES = @(
-      'max_connections = 500',
-      'thread_cache_size = 64',
-      'table_open_cache = 4000',
-      'table_definition_cache = 2000',
-      'tmp_table_size = 128M',
-      'max_heap_table_size = 128M',
-      'innodb_io_capacity = 1000',
-      'innodb_io_capacity_max = 2000'
-    )
-    # MySQL 8 only settings (the MariaDB module has its own my.ini)
-    if ($t -match '(?m)^innodb_redo_log_capacity') { $MYSQL_LINES += 'innodb_redo_log_capacity = 256M' }
-    if ($t -match '(?m)^authentication_policy')    { $MYSQL_LINES += @('binlog_expire_logs_seconds = 604800', 'max_binlog_size = 256M') }
-    # Keys already in [mysqld] are changed in place; new ones are added as a
-    # block at the end of [mysqld] (before [mysqldump]) so they cannot land in
-    # another section.
-    $mysqldEnd = [regex]::Match($t, '(?m)^\[mysqldump\]')
-    if (-not $mysqldEnd.Success) { throw 'core\mysql\my.ini: [mysqldump] section not found (needed as the end marker of [mysqld])' }
-    $missing = @()
-    foreach ($line in $MYSQL_LINES) {
-      $key = ($line -split '=', 2)[0].Trim()
-      if ($t -match ('(?m)^[#\t ]*' + [regex]::Escape($key) + '[\t ]*=')) { $t = Set-IniLine $t $line '#' } else { $missing += $line }
-    }
-    if ($missing) {
-      $block = '# winpacho - server load settings (see README, "Sized for a server")' + $nl + ($missing -join $nl) + $nl + $nl
-      $pos = [regex]::Match($t, '(?m)^\[mysqldump\]').Index
-      $t = $t.Insert($pos, $block)
-    }
-    if ($t -notmatch 'Server sizing: the InnoDB buffer pool') {
-      $hint = '# Server sizing: the InnoDB buffer pool should hold the hot data set. On a box' + $nl +
-              '# shared with Apache/PHP use 25-50% of RAM (16 GB box: 2G-4G); on a dedicated' + $nl +
-              '# database server up to 70%. 512M is the developer-laptop default.' + $nl
-      $t = $t -replace '(?m)^(innodb_buffer_pool_size = )', ($hint + '$1')
-    }
-    Write-Text $myIni $t
-    $t = Read-Text $myIni
-    foreach ($line in $MYSQL_LINES) { Assert-IniLine $t $line 'core\mysql\my.ini' }
-    if ($t -notmatch 'Server sizing: the InnoDB buffer pool') { throw 'core\mysql\my.ini: buffer pool sizing hint missing' }
-    Write-Host '==> MySQL my.ini: 500 connections, larger caches, 256M redo log, 7-day binlog retention'
-  }
+  Write-Host "==> httpd.conf: $($limited -join ', ') answer on this computer only (Require local)"
+} else {
+  Write-Host '==> httpd.conf: database tool folders already limited (or changed by hand) - nothing to do'
 }
 
-# phpMyAdmin: server display name ("Datenbank-Server: Uniform Server" on the
-# start page). Installations without phpMyAdmin simply have no file here.
-$pmaConfig = Join-Path $Root 'home\us_opt1\config.inc.php'
-$PMA_STOCK_NAME = "(?m)^(\s*\`$cfg\['Servers'\]\[\`$i\]\['verbose'\]\s*=\s*)'Uniform Server'"
-if (Test-Path $pmaConfig) {
-  $t = Read-Text $pmaConfig
-  if ($t -match $PMA_STOCK_NAME) {
-    $t = $t -replace $PMA_STOCK_NAME, "`$1'winpacho'"
-    Write-Text $pmaConfig $t
-    if ((Read-Text $pmaConfig) -match $PMA_STOCK_NAME) { throw 'home\us_opt1\config.inc.php: phpMyAdmin server name could not be changed' }
-    Write-Host '==> phpMyAdmin: database server is shown as "winpacho"'
-  }
+# =============================================================================
+# Database: MariaDB ships tuned
+# =============================================================================
+# The MariaDB module's my.ini already carries the server-load values (500
+# connections for 400 Apache threads, larger caches). Up to 2.1.x this section
+# also tuned a MySQL my.ini (bundles up to 1.3.5, the MySQL module) and named
+# the server in phpMyAdmin; since 2.2.0 MariaDB is the only engine and Adminer
+# the database tool, so a MySQL installation gets a note instead.
+$myIni = Join-Path $Root 'core\mysql\my.ini'
+if (-not (Test-Path $myIni)) {
+  Write-Host '==> core\mysql\my.ini not found - no database engine installed, nothing to do'
+}
+elseif ((Read-Text $myIni) -match 'MariaDB configuration for (Uniform Server Reload|winpacho)') {   # my.ini header before / after the 2.0 rename
+  Write-Host '==> MariaDB my.ini detected - it ships tuned, nothing to do'
+}
+else {
+  Write-Host '==> core\mysql\my.ini is not the MariaDB one: this installation still runs MySQL, which winpacho'
+  Write-Host '    no longer supports (since 2.2.0). my.ini stays unchanged. Move to MariaDB as the README'
+  Write-Host '    describes in "Databases": back up every database, replace core\mysql with the MariaDB'
+  Write-Host '    module, restore the backups.'
 }
 
 Write-Host "==> Server tuning applied to $Root"

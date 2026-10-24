@@ -502,8 +502,7 @@ function us_get_new_port(old_port:string;var new_port:string;standard:string): b
   file:///G:\us_traymenu\docs\English\index.html
   http://UENV_US_SERVERNAME:UENV_AP_PORT/index.php
   http://UENV_US_SERVERNAME:UENV_AP_PORT/us_splash/index.php
-  http://UENV_US_SERVERNAME:UENV_AP_PORT/us_opt1/index.php      - phpMyAdmin
-  http://UENV_US_SERVERNAME:UENV_AP_PORT/us_opt2/?username=     - Adminer
+  http://UENV_US_SERVERNAME:UENV_AP_PORT/us_opt1/index.php      - Adminer
   http://UENV_US_SERVERNAME:UENV_AP_PORT/us_extra/phpinfo.php
 
   Configured Aliases:
@@ -516,7 +515,7 @@ function us_get_new_port(old_port:string;var new_port:string;standard:string): b
     Alias /us_extra      "US_ROOTF/home/us_extra/"
     Alias /us_mongoadmin "US_ROOTF/home/us_mongoadmin/"
     Alias /us_pear       "US_ROOTF/home/us_pear/"
-    Alias /us_opt1       "US_ROOTF/home/us_opt1/"        - us_phpmyadmin
+    Alias /us_opt1       "US_ROOTF/home/us_opt1/"        - Adminer
     Alias /us_opt2       "US_ROOTF/home/us_opt2/"
     Alias /us_splash     "US_ROOTF/home/us_splash/"
     Alias /test_access   "US_ROOTF/home/us_access/www/"
@@ -592,7 +591,7 @@ function us_get_valid_web_page(var web_page:string): boolean;
       web_page := StringReplace(web_page,UniConPath_F+'/home/us_extra/',      '/us_extra/',     [rfReplaceAll]);
       web_page := StringReplace(web_page,UniConPath_F+'/home/us_mongoadmin/', '/us_mongoadmin/',[rfReplaceAll]);
       web_page := StringReplace(web_page,UniConPath_F+'/home/us_pear/',       '/us_pear/',      [rfReplaceAll]);
-      web_page := StringReplace(web_page,UniConPath_F+'/home/us_opt1/',       '/us_opt1/',      [rfReplaceAll]); //phpMyAdmin
+      web_page := StringReplace(web_page,UniConPath_F+'/home/us_opt1/',       '/us_opt1/',      [rfReplaceAll]); //Adminer
       web_page := StringReplace(web_page,UniConPath_F+'/home/us_opt2/',       '/us_opt2/',      [rfReplaceAll]); //Adminer
       web_page := StringReplace(web_page,UniConPath_F+'/home/us_splash/',     '/us_splash/',    [rfReplaceAll]);
       web_page := StringReplace(web_page,UniConPath_F+'/home/us_access/www/', '/test_access/',  [rfReplaceAll]);
@@ -1412,6 +1411,7 @@ us_start_mysql_skip_grants:
   Changes:
   --------
   2019-09-07 : SudeepJD: Add in the --shared-memory for MySQL8
+  2.2.0      : MariaDB only - the MySQL 8 --shared-memory switch is gone
 =============================================================================}
 function us_start_mysql_skip_grants():boolean;
 
@@ -1428,10 +1428,7 @@ begin
 
     AProcess.Executable := US_MYSQL_BIN + '\' + MY_EXE_NAME;            // Executable to run
     AProcess.Parameters.Add('--defaults-file="' + USF_MYSQL_INI+ '"');  // Force use of default file
-    AProcess.Parameters.Add('--skip-grant-tables');                     // Temp folder
-    If (US_MYMAR_TXT='MySQL') And (StrtoInt(MY_SQL_VER)>=8) Then
-      AProcess.Parameters.Add('--shared-memory');                       //Shared Memory Start for MySQL8
-
+    AProcess.Parameters.Add('--skip-grant-tables');                     // Start without privilege checks
 
     AProcess.Options  := AProcess.Options + [poNoConsole];              // Set option no console
     AProcess.Execute;                                                   // Run command

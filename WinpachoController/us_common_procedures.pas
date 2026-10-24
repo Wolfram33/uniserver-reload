@@ -1230,7 +1230,6 @@ procedure us_start_mysql_program;
 Var
  AProcess: TProcess;
  saftey_loop: Integer;
- mysql_exe: string;
 begin
  if not MysqlRunning() then
   begin
@@ -1285,16 +1284,6 @@ begin
         end;
      end;
     Until MysqlRunning();
-
-    //=== If the MySQL version is 8 then the Console window does not close
-    //=== with the pnoconsole. Use the Window ShowWindowHide to close it.
-
-    If (US_MYMAR_TXT = 'MySQL') And (StrToInt(MY_SQL_VER) >= 8) Then
-     begin
-       sleep(1000);
-       mysql_exe := US_MYSQL_BIN + '\' + MY_EXE_NAME;
-       ShowWindow(FindWindow(nil,PChar(mysql_exe)),SW_HIDE);
-     end;
   end;
 end;
 {--- End us_start_mysql_program --------------------------------------------}
@@ -1535,8 +1524,8 @@ MySQL Change root password:
     The file is run during MSQL server start-up and contains the following
     sql instructions:
 
-    UPDATE mysql.user SET Password = PASSWORD('newpass') WHERE User = 'root';
-    UPDATE mysql.user SET Password = PASSWORD('newpass') WHERE User = 'pma';
+    FLUSH PRIVILEGES;
+    ALTER USER 'root'@'localhost' IDENTIFIED BY 'newpass';
     FLUSH PRIVILEGES;
 
  2) Start MySQL server
@@ -1555,6 +1544,10 @@ MySQL Change root password:
   2019-09-07 : SudeepJD: Added in the MySQL8 support as it needs to be handled differntly
   2021-04-06 : SudeepJD: MySQL5.7+ and MySQL8 are now handled the same way using ALTER instead of UPDATE
                Updated the method of changing the password since we know the old password
+  2.2.0      : MariaDB only, root only - the phpMyAdmin control user 'pma' is gone
+               with phpMyAdmin. The password is escaped for the SQL string: the
+               password dialog allows ' and \, which broke the statement before.
+               The temp file holding the new password is deleted again.
 =============================================================================}
 procedure mysql_change_root_password(new_password:string);
 var
@@ -1563,26 +1556,19 @@ var
   saftey_loop   : Integer;     // Loop counter
   failed        : Boolean;     // Failed to set password
   root_password : String;      //The existing password
+  sql_password  : String;      // new_password as SQL string content
 begin
   failed := False;                          // Assume not failed
 
   root_password := us_get_mysql_password();
+  sql_password  := StringReplace(StringReplace(new_password, '\', '\\', [rfReplaceAll]), '''', '\''', [rfReplaceAll]);
 
   //1==Create new mysql-init.txt
   Assign(FileVar1,USF_MYSQL_TEMP_SQL);      // Assign file
   ReWrite(FileVar1);                        // Create file for writing
 
   Writeln(FileVar1, 'FLUSH PRIVILEGES;');
-  If (US_MYMAR_TXT = 'MySQL') Then
-   Begin
-    Writeln(FileVar1, 'ALTER USER ''root''@''localhost'' IDENTIFIED WITH caching_sha2_password BY '''+new_password+''';');
-    Writeln(FileVar1, 'ALTER USER ''pma''@''localhost'' IDENTIFIED WITH caching_sha2_password BY '''+new_password+''';');
-   End
-  Else
-   Begin
-    Writeln(FileVar1, 'ALTER USER ''root''@''localhost'' IDENTIFIED BY '''+new_password+''';');
-    Writeln(FileVar1, 'ALTER USER ''pma''@''localhost'' IDENTIFIED BY '''+new_password+''';');
-   End;
+  Writeln(FileVar1, 'ALTER USER ''root''@''localhost'' IDENTIFIED BY '''+sql_password+''';');
   Writeln(FileVar1, 'FLUSH PRIVILEGES;');
 
   CloseFile(FileVar1);                     // Close file
@@ -1645,8 +1631,11 @@ begin
       AProcess.Parameters.Add('--password=' + root_password);       // User password
       AProcess.Parameters.Add('--execute="SOURCE '+USF_MYSQL_TEMP_SQL+'"'); // mysql-init.txt
 
-      AProcess.Options  := AProcess.Options + [poNoConsole];                // Set option no console
+      // Wait for the client: only a statement that ran without error may
+      // change passwd.txt, which Adminer's automatic login reads as well
+      AProcess.Options  := AProcess.Options + [poNoConsole, poWaitOnExit];
       AProcess.Execute;                                                     // Run command
+      If AProcess.ExitStatus <> 0 Then Failed := True;                      // ALTER USER refused
       AProcess.Free;
    End;
 
@@ -1654,9 +1643,11 @@ begin
   Sleep(4000);
   us_kill_mysql_program;                  // Kills MySQL server
 
-  //4)==Delete temp file mysql-init.txt
-  If FileExists(USF_MYSQL_TEMP_SQL) Then
-    //DeleteFile(Pchar(USF_MYSQL_TEMP_SQL));
+  //4)==Delete temp file mysql-init.txt - it holds the new password in plain text
+  If FileExists(USF_MYSQL_TEMP_SQL) and not DeleteFile(Pchar(USF_MYSQL_TEMP_SQL)) Then
+    us_MessageDlg('Warning', 'Could not delete ' + USF_MYSQL_TEMP_SQL + sLineBreak +
+                  'It contains the new root password in plain text - please delete it by hand.',
+                  mtWarning, [mbOk], 0);
 
   //5)==Update parameters
   If Failed then //Failed to change root password
@@ -1686,8 +1677,6 @@ mysql_restore_root_password:
 
  To restore password and privileges MySQL server is started with no-privileges using:
  mysqld_z.exe --defaults-file="C:\winpacho\core\mysql\my.ini" --skip-grant-tables
- On MYSQL8 this needs to be started with --shared-memory as well or the server will
- not start
 
  With server running the following line is executed which runs the restore file.
  mysql.exe --user=root --execute="SOURCE C:\winpacho\core\mysql\bin\mysql-init.txt"
@@ -1701,7 +1690,7 @@ mysql_restore_root_password:
  3) Start MySQL server with skip grant tables
     mysqld_z.exe --defaults-file="C:\winpacho\core\mysql\my.ini" --skip-grant-tables
 
- 4) Insert and Replace the root and pma if they were deleted
+ 4) Insert root if it was deleted, set password 'root' and all privileges
 
  5) Kill the server
 
@@ -1715,68 +1704,31 @@ mysql_restore_root_password:
                          MySQL8 does not have a Password in the Database but uses the identified by
   2021-04-07 : SudeepJD: MariaDB post 10.5 has made mysql.user a view, so it cannot be modified
                          This has moved to global_privs and the restore needs to be done differently.
+  2.2.0      : MariaDB only, root only (the MySQL branch and the phpMyAdmin control
+               user 'pma' are gone). root gets WITH GRANT OPTION back, which
+               Create restricted user needs and the old restore left out.
 =============================================================================}
 procedure mysql_restore_root_password;
 var
   FileVar1 : TextFile;  // Text File handle
   AProcess : TProcess;  // Process handle
-  str1     : string;
-  str2     : string;
-  str3     : string;
-  str4     : string;
-  str5     : string;
-  str6     : string;
-  str7     : string;
-  str8     : string;
-  str9     : string;
 begin
 
   //1==Kill server
   us_kill_mysql_program;                    // Check server running. If running kill it
 
-  //2===Set sql strings to write to file. This is based on the results obtained from list of privileges
-  //    Specific privileges are named a set not the root password is calculated using Password(''root'') 
-
-  If (US_MYMAR_TXT='MySQL') Then
-   Begin
-    str1 := 'use mysql;';
-    str2 := 'INSERT IGNORE INTO user SET user = ''root'', plugin = ''caching_sha2_password'', authentication_string = '''', host = ''localhost'', select_priv = ''y'', insert_priv = ''y'', update_priv = ''y'', delete_priv = ''y'', create_priv = ''y'', drop_priv = ''y'', reload_priv = ''y'', shutdown_priv = ''y'', process_priv = ''y'', file_priv = ''y'', grant_priv = ''y'', references_priv = ''y'', index_priv = ''y'', alter_priv = ''y'', show_db_priv = ''y'', super_priv = ''y'', create_tmp_table_priv = ''y'', lock_tables_priv = ''y'', execute_priv = ''y'', repl_slave_priv = ''y'', repl_client_priv = ''y'', create_view_priv = ''y'', show_view_priv = ''y'', create_routine_priv = ''y'', alter_routine_priv = ''y'', create_user_priv = ''y'', Event_priv = ''Y'', Trigger_priv = ''Y'', Create_tablespace_priv = ''Y'', ssl_type = '''', ssl_cipher ='''', x509_issuer = '''', x509_subject = '''', max_questions = ''0'', max_updates = ''0'', max_connections = ''0'', max_user_connections = ''0'';';
-    str3 := 'REPLACE INTO user SET       user = ''root'', plugin = ''caching_sha2_password'', authentication_string = '''', host = ''localhost'', select_priv = ''y'', insert_priv = ''y'', update_priv = ''y'', delete_priv = ''y'', create_priv = ''y'', drop_priv = ''y'', reload_priv = ''y'', shutdown_priv = ''y'', process_priv = ''y'', file_priv = ''y'', grant_priv = ''y'', references_priv = ''y'', index_priv = ''y'', alter_priv = ''y'', show_db_priv = ''y'', super_priv = ''y'', create_tmp_table_priv = ''y'', lock_tables_priv = ''y'', execute_priv = ''y'', repl_slave_priv = ''y'', repl_client_priv = ''y'', create_view_priv = ''y'', show_view_priv = ''y'', create_routine_priv = ''y'', alter_routine_priv = ''y'', create_user_priv = ''y'', Event_priv = ''Y'', Trigger_priv = ''Y'', Create_tablespace_priv = ''Y'', ssl_type = '''', ssl_cipher ='''', x509_issuer = '''', x509_subject = '''', max_questions = ''0'', max_updates = ''0'', max_connections = ''0'', max_user_connections = ''0'' ;';
-    str4 := 'INSERT IGNORE INTO user SET user = ''pma'', plugin = ''caching_sha2_password'', authentication_string = '''', host = ''localhost'', select_priv = ''y'', insert_priv = ''y'', update_priv = ''y'', delete_priv = ''y'', create_priv = ''y'', drop_priv = ''y'', reload_priv = ''y'', shutdown_priv = ''y'', process_priv = ''y'', file_priv = ''y'', grant_priv = ''y'', references_priv = ''y'', index_priv = ''y'', alter_priv = ''y'', show_db_priv = ''y'', super_priv = ''y'', create_tmp_table_priv = ''y'', lock_tables_priv = ''y'', execute_priv = ''y'', repl_slave_priv = ''y'', repl_client_priv = ''y'', create_view_priv = ''y'', show_view_priv = ''y'', create_routine_priv = ''y'', alter_routine_priv = ''y'', create_user_priv = ''y'', Event_priv = ''y'', Trigger_priv = ''Y'', Create_tablespace_priv = ''Y'', ssl_type = '''', ssl_cipher ='''', x509_issuer = '''', x509_subject = '''', max_questions = ''0'', max_updates = ''0'', max_connections = ''0'', max_user_connections = ''0'';';
-    str5 := 'REPLACE INTO user SET       user = ''pma'', plugin = ''caching_sha2_password'', authentication_string = '''', host = ''localhost'', select_priv = ''y'', insert_priv = ''y'', update_priv = ''y'', delete_priv = ''y'', create_priv = ''y'', drop_priv = ''y'', reload_priv = ''y'', shutdown_priv = ''y'', process_priv = ''y'', file_priv = ''y'', grant_priv = ''y'', references_priv = ''y'', index_priv = ''y'', alter_priv = ''y'', show_db_priv = ''y'', super_priv = ''y'', create_tmp_table_priv = ''y'', lock_tables_priv = ''y'', execute_priv = ''y'', repl_slave_priv = ''y'', repl_client_priv = ''y'', create_view_priv = ''y'', show_view_priv = ''y'', create_routine_priv = ''y'', alter_routine_priv = ''y'', create_user_priv = ''y'', Event_priv = ''y'', Trigger_priv = ''Y'', Create_tablespace_priv = ''Y'', ssl_type = '''', ssl_cipher ='''', x509_issuer = '''', x509_subject = '''', max_questions = ''0'', max_updates = ''0'', max_connections = ''0'', max_user_connections = ''0'';';
-    str6 := 'FLUSH PRIVILEGES;';
-    str7 := 'ALTER USER ''root''@''localhost'' IDENTIFIED WITH caching_sha2_password BY ''root'';';
-    str8 := 'ALTER USER ''pma''@''localhost'' IDENTIFIED WITH caching_sha2_password BY ''root'';';
-    str9 := 'FLUSH PRIVILEGES;';
-   End
-  Else
-   Begin
-    str1 := 'use mysql;';
-    // mysql_native_password: MariaDB's own default; caching_sha2_password is
-    // a MySQL 8 plugin MariaDB does not ship as a server plugin, a row naming
-    // it would leave a user account that cannot log in
-    str2 := 'INSERT IGNORE INTO global_priv (Host, User, Priv) VALUES (''localhost'', ''root'', ''{"access":0,"plugin":"mysql_native_password","authentication_string":"","password_last_changed":0}'');';
-    str3 := 'INSERT IGNORE INTO global_priv (Host, User, Priv) VALUES (''localhost'', ''pma'', ''{"access":0,"plugin":"mysql_native_password","authentication_string":"","password_last_changed":0}'');';
-    str4 := 'FLUSH PRIVILEGES;';
-    str5 := 'ALTER USER ''root''@''localhost'' IDENTIFIED BY ''root'';';
-    str6 := 'ALTER USER ''pma''@''localhost'' IDENTIFIED BY ''root'';';
-    str7 := 'GRANT ALL ON *.* TO ''root''@''localhost'';';
-    str8 := 'GRANT ALL ON *.* TO ''pma''@''localhost'';';
-    str9 := 'FLUSH PRIVILEGES;';
-   End;
-
-  //2==Write above strings to file mysql-init.txt this is used to restore user
+  //2==Write the restore statements to mysql-init.txt.
+  //   mysql_native_password: MariaDB's own default; caching_sha2_password is
+  //   a MySQL 8 plugin MariaDB does not ship as a server plugin, a row naming
+  //   it would leave a user account that cannot log in
    Assign(FileVar1,USF_MYSQL_TEMP_SQL);      // Assign file
    ReWrite(FileVar1);                        // Create file for writting
-   Writeln(FileVar1, str1);
-   Writeln(FileVar1, str2);
-   Writeln(FileVar1, str3);
-   Writeln(FileVar1, str4);
-   Writeln(FileVar1, str5);
-   Writeln(FileVar1, str6);
-   Writeln(FileVar1, str7);
-   Writeln(FileVar1, str8);
-   Writeln(FileVar1, str9);
+   Writeln(FileVar1, 'use mysql;');
+   Writeln(FileVar1, 'INSERT IGNORE INTO global_priv (Host, User, Priv) VALUES (''localhost'', ''root'', ''{"access":0,"plugin":"mysql_native_password","authentication_string":"","password_last_changed":0}'');');
+   Writeln(FileVar1, 'FLUSH PRIVILEGES;');
+   Writeln(FileVar1, 'ALTER USER ''root''@''localhost'' IDENTIFIED BY ''root'';');
+   Writeln(FileVar1, 'GRANT ALL ON *.* TO ''root''@''localhost'' WITH GRANT OPTION;');
+   Writeln(FileVar1, 'FLUSH PRIVILEGES;');
 
    CloseFile(FileVar1);                     // Close file
    Sleep(100);                              // Wait for file to be created

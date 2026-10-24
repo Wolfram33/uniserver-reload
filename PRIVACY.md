@@ -1,8 +1,8 @@
 # Privacy Policy — winpacho
 
-*Last updated: 2026-09-14*
+*Last updated: 2026-10-24*
 
-winpacho is a free, open-source, portable WAMP stack for Windows (Apache, MariaDB/MySQL, PHP, phpMyAdmin and the WinpachoController / WinpachoService control programs). It is developed in the open at <https://github.com/Wolfram33/winpacho>.
+winpacho is a free, open-source, portable WAMP stack for Windows (Apache, MariaDB, PHP, Adminer and the WinpachoController / WinpachoService control programs). It is developed in the open at <https://github.com/Wolfram33/winpacho>.
 
 **In short: winpacho does not collect, store or transmit any personal data. There is no telemetry, no usage statistics, no crash reporting, no account and no automatic update check.**
 
@@ -18,7 +18,7 @@ None. The programs written by this project (`WinpachoController.exe`, `WinpachoS
 
 ## 2. Network connections the software makes
 
-winpacho runs a web server on **your** machine. By default Apache and the database listen on `localhost` only. Network activity is limited to what you configure and trigger yourself:
+winpacho runs a web server on **your** machine. By default the database listens on `localhost` only; Apache listens on all network interfaces (so other computers can reach your `www` pages unless the Windows firewall blocks them), while the database tool Adminer answers on this computer only. Network activity is limited to what you configure and trigger yourself:
 
 * **Local server traffic:** Apache, the database and PHP answer requests from browsers or applications that connect to your server. If you expose the server to your network or the internet, the access logs written by Apache (`core\apache2\logs`) contain the IP addresses and requested URLs of the visitors — stored locally on your machine only, under your control, and never sent to the project.
 * **Scheduled tasks (cron):** the controller's cron feature can fetch a URL at intervals. It only requests the addresses you enter yourself.
@@ -27,9 +27,9 @@ winpacho runs a web server on **your** machine. By default Apache and the databa
 
 ## 3. Bundled third-party components
 
-The bundle ships software from other vendors unchanged: Apache HTTP Server, MariaDB (or MySQL as an optional module), PHP, phpMyAdmin, msmtp and OpenSSL. Their behaviour is governed by their own projects. One point worth knowing:
+The bundle ships software from other vendors unchanged: Apache HTTP Server, MariaDB, PHP, Adminer, msmtp and OpenSSL. Their behaviour is governed by their own projects. One point worth knowing:
 
-* **phpMyAdmin** has a built-in version check that, when you open phpMyAdmin in your browser, asks `phpmyadmin.net` for the latest version number. This is a phpMyAdmin feature, not something added by this project. It can be switched off by setting `$cfg['VersionCheck'] = false;` in `home\us_opt1\config.inc.php`.
+* **Adminer** has a built-in version check that would ask `adminer.org` for the latest version number when you open it. winpacho switches it off in its Adminer entry page (`home\us_opt1\winpacho-adminer.php`) and removes adminer.org from Adminer's Content-Security-Policy, so the page makes no outside connection. (Up to 2.1.x the bundle shipped phpMyAdmin, whose version check asked `phpmyadmin.net` unless `$cfg['VersionCheck']` was set to `false`.)
 
 None of these components report anything to winpacho.
 

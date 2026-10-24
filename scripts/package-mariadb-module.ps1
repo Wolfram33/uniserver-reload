@@ -3,8 +3,9 @@
 # Since 1.3.6 this module IS the bundle's database engine: build-bundle.ps1
 # replaces the base package's core\mysql (MySQL) with the zip this script
 # produces, so the all-in-one package and the module are identical. The
-# module also upgrades an installation from before 1.3.6 (or from the MySQL
-# module) - fresh core\mysql only, see README "Databases".
+# module also moves an installation that still runs MySQL (bundles up to
+# 1.3.5, the MySQL module up to 2.1.x) to MariaDB - fresh core\mysql only,
+# see README "Databases".
 #
 # Layout (the core\mysql structure WinpachoController expects; the same one the
 # original Uniform Server used for its database modules):
@@ -13,11 +14,10 @@
 #                         mariadb-backup.exe (hot backups), required DLLs
 #   core/mysql/lib/plugin optional server plugins (audit, extra engines)
 #   core/mysql/share/     error messages, charsets
-#   core/mysql/data/      initialized system tables, root password 'root',
-#                         phpMyAdmin control user 'pma' + storage tables
+#   core/mysql/data/      initialized system tables, root password 'root'
 #   core/mysql/my.ini     from bundle/db/mariadb-my.ini
 #   core/mysql/us_opt.ini flavour info for the controller
-#   htpasswd/mysql/passwd.txt  password file read by controller/phpMyAdmin
+#   htpasswd/mysql/passwd.txt  password file read by controller and Adminer
 #
 # Which MariaDB: the stable long-term-support series with the longest
 # remaining support (release_eol_date from the MariaDB REST API), newest
@@ -91,21 +91,21 @@ if (-not (Test-Path "$dist\data\mysql")) { throw 'Data directory initialization 
 # core\mysql\my.ini may be in effect
 Remove-Item "$dist\data\my.ini" -ErrorAction SilentlyContinue
 
-# --- First start: phpMyAdmin control user and tables --------------------------
-# The controller's password dialogs assume root and pma exist with the same
-# password; phpMyAdmin's configuration storage expects its tables.
+# --- First start: root login and version check -------------------------------
+# Also leaves a data directory that went through one clean start and shutdown.
+# (Up to 2.1.x this step created the phpMyAdmin control user 'pma' and its
+# storage tables; Adminer needs neither.)
 $client = if (Test-Path "$dist\bin\mysql.exe") { "$dist\bin\mysql.exe" } else { "$dist\bin\mariadb.exe" }
 $admin  = if (Test-Path "$dist\bin\mysqladmin.exe") { "$dist\bin\mysqladmin.exe" } else { "$dist\bin\mariadb-admin.exe" }
 $port = Get-FreeTcpPort
-Write-Host "==> Temporary server on port $port for the first-start setup"
-# Name resolution stays on, as in the shipped my.ini: the accounts are
-# 'root'@'localhost' and 'pma'@'localhost', and phpMyAdmin connects to
-# 127.0.0.1 - that only matches 'localhost' with reverse lookup enabled.
+Write-Host "==> Temporary server on port $port for the first-start check"
+# Name resolution stays on, as in the shipped my.ini: the account is
+# 'root'@'localhost', and Adminer connects to 127.0.0.1 - that only
+# matches 'localhost' with reverse lookup enabled.
 $server = Start-TempDbServer -ServerExe "$dist\bin\mariadbd.exe" -AdminExe $admin -Port $port -Password $rootPassword -Arguments @(
   '--no-defaults', "--datadir=$dist\data", "--port=$port", '--bind-address=127.0.0.1',
   "--log-error=$dist\data\packaging.err")
 try {
-  Initialize-PmaControlUser -ClientExe $client -Port $port -Password $rootPassword -RepoRoot $repo
   $reported = Invoke-DbQuery -ClientExe $client -Port $port -Password $rootPassword -Sql 'SELECT VERSION()'
   if ($reported -notmatch [regex]::Escape($ver)) { throw "Server reports version '$reported', expected $ver" }
 } finally {

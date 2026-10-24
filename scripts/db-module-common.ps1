@@ -1,15 +1,14 @@
-# Shared helpers for the database module packaging scripts
-# (package-mariadb-module.ps1, package-mysql-module.ps1). Dot-source it:
+# Helpers for the database module packaging script
+# (package-mariadb-module.ps1). Dot-source it:
 #   . "$PSScriptRoot\db-module-common.ps1"
 #
-# Both modules follow the same recipe: unpack the vendor zip, initialize a
-# data directory, run a temporary server once to set the root password and
-# create the phpMyAdmin control user with its tables, shut it down cleanly,
+# The recipe: unpack the vendor zip, initialize a data directory, run a
+# temporary server once to check the root login, shut it down cleanly,
 # then arrange the files in the core\mysql layout the controller expects
-# and zip them as a winpacho module. The
-# engine-specific parts (download source, init command, which binaries)
-# stay in the two scripts; everything else lives here so the two modules
-# cannot drift apart.
+# and zip them as a winpacho module. The engine-specific parts (download
+# source, init command, which binaries) stay in the packaging script.
+# Until 2.1.x a MySQL module shared these helpers; since 2.2.0 MariaDB is
+# the only engine (the folder keeps the historic name core\mysql).
 
 # The engines create files such as
 # data\sys\x@0024statements_with_runtimes_in_95th_percentile.frm~ during
@@ -74,15 +73,6 @@ function Start-TempDbServer([string]$ServerExe, [string[]]$Arguments, [string]$A
   return $proc
 }
 
-# Runs one SQL file through the command line client (SOURCE keeps the
-# client's own statement parsing, so multi-statement files just work).
-function Invoke-DbSqlFile([string]$ClientExe, [int]$Port, [string]$Password, [string]$SqlFile) {
-  if (-not (Test-Path $SqlFile)) { throw "SQL file not found: $SqlFile" }
-  $path = (Resolve-Path $SqlFile).Path -replace '\\', '/'
-  & $ClientExe --no-defaults --host=127.0.0.1 --port=$Port --user=root "--password=$Password" --batch "--execute=SOURCE $path"
-  if ($LASTEXITCODE -ne 0) { throw "SQL file failed: $SqlFile (exit code $LASTEXITCODE)" }
-}
-
 # Runs one statement and returns its output without column headers.
 function Invoke-DbQuery([string]$ClientExe, [int]$Port, [string]$Password, [string]$Sql, [string]$User = 'root') {
   $out = & $ClientExe --no-defaults --host=127.0.0.1 --port=$Port "--user=$User" "--password=$Password" --batch --skip-column-names "--execute=$Sql"
@@ -99,19 +89,6 @@ function Stop-TempDbServer([string]$AdminExe, [int]$Port, [string]$Password, [Sy
     $Process.Kill()
     throw 'Temporary database server did not stop within 120 s'
   }
-}
-
-# phpMyAdmin control user 'pma' plus the configuration storage tables, then
-# proof that both work: the table count and a login as pma.
-function Initialize-PmaControlUser([string]$ClientExe, [int]$Port, [string]$Password, [string]$RepoRoot) {
-  Invoke-DbSqlFile -ClientExe $ClientExe -Port $Port -Password $Password -SqlFile (Join-Path $RepoRoot 'bundle\db\pma-user.sql')
-  Invoke-DbSqlFile -ClientExe $ClientExe -Port $Port -Password $Password -SqlFile (Join-Path $RepoRoot 'bundle\db\phpmyadmin-create_tables.sql')
-  $expected = ([regex]::Matches((Get-Content (Join-Path $RepoRoot 'bundle\db\phpmyadmin-create_tables.sql') -Raw), 'CREATE TABLE IF NOT EXISTS')).Count
-  $tables = [int](Invoke-DbQuery -ClientExe $ClientExe -Port $Port -Password $Password -Sql "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='phpmyadmin'")
-  if ($tables -ne $expected) { throw "phpmyadmin database has $tables tables, expected $expected" }
-  $asPma = Invoke-DbQuery -ClientExe $ClientExe -Port $Port -Password $Password -User 'pma' -Sql "SELECT CURRENT_USER()"
-  if ($asPma -ne 'pma@localhost') { throw "login as pma failed (got '$asPma')" }
-  Write-Host "   phpMyAdmin control user 'pma' and $tables storage tables ready"
 }
 
 # Files the temporary run leaves behind that must not ship: the error log
@@ -140,7 +117,7 @@ function Write-DbModuleConfig([string]$ModuleDir, [string]$RepoRoot, [string]$Fl
 function Compress-DbModule([string]$ModuleDir, [string]$OutDir, [string]$ZipName, [string]$Flavor, [string]$Version) {
   foreach ($f in 'core\mysql\bin\mysqld_z.exe', 'core\mysql\bin\mysql.exe', 'core\mysql\bin\mysqladmin.exe',
                  'core\mysql\bin\mysqldump.exe', 'core\mysql\my.ini', 'core\mysql\us_opt.ini',
-                 'core\mysql\data\mysql', 'core\mysql\data\phpmyadmin', 'htpasswd\mysql\passwd.txt') {
+                 'core\mysql\data\mysql', 'htpasswd\mysql\passwd.txt') {
     if (-not (Test-Path (Join-Path $ModuleDir $f))) { throw "Module layout incomplete: $f missing" }
   }
   $ver = & (Join-Path $ModuleDir 'core\mysql\bin\mysqld_z.exe') --no-defaults --version 2>&1
